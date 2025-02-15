@@ -12,10 +12,10 @@ interface CameraState {
 
 interface Post {
   url: string;
-  title: string;
+  uid: string;
+  character: string;
   content: string;
-  date: string;
-  author: string;
+  creationDate: number;
 }
 
 export function Post() {
@@ -42,7 +42,7 @@ export function Post() {
   useEffect(() => {
     if (cameraState?.closestNodeId !== undefined && posts.length > 0) {
       const post = posts.find(
-        (p) => p.url === cameraState.closestNodeId.toString()
+        (p) => p.uid === cameraState.closestNodeId?.toString()
       );
       setCurrentPost(post || null);
     }
@@ -78,11 +78,8 @@ export function Post() {
 
   // Styles communs pour le conteneur principal
   const containerStyle = {
-    display: "flex",
-    flexDirection: "column" as const,
-    justifyContent: "center",
-    alignItems: "center",
-    height: "100vh",
+    padding: "2rem",
+    minHeight: "100vh",
     background: "#000119",
     color: "#fff",
     fontFamily: "monospace",
@@ -92,7 +89,6 @@ export function Post() {
   if (!cameraState.closestNodeId) {
     return (
       <div style={containerStyle}>
-        <h1 style={{ fontSize: "5rem", marginBottom: "2rem" }}>POST</h1>
         <div
           style={{
             background: "rgba(255,255,255,0.1)",
@@ -100,7 +96,6 @@ export function Post() {
             borderRadius: "1rem",
             fontSize: "1.2rem",
             lineHeight: "1.5",
-            width: "80%",
             maxWidth: "600px",
           }}
         >
@@ -112,7 +107,6 @@ export function Post() {
 
   return (
     <div style={containerStyle}>
-      <h1 style={{ fontSize: "5rem", marginBottom: "2rem" }}>POST</h1>
       <div
         style={{
           background: "rgba(255,255,255,0.1)",
@@ -120,10 +114,9 @@ export function Post() {
           borderRadius: "1rem",
           fontSize: "1.2rem",
           lineHeight: "1.5",
-          width: "80%",
           maxWidth: "800px",
           overflow: "auto",
-          maxHeight: "70vh",
+          maxHeight: "calc(100vh - 4rem)",
         }}
       >
         {currentPost ? (
@@ -135,11 +128,16 @@ export function Post() {
                 color: "#ff6b6b",
               }}
             >
-              {currentPost.title}
+              {currentPost.character || "Inconnu"}
             </h2>
             <div style={{ marginBottom: "1.5rem", opacity: 0.7 }}>
-              <p>Par {currentPost.author}</p>
-              <p>Le {new Date(currentPost.date).toLocaleDateString("fr-FR")}</p>
+              <p>{currentPost.source}</p>
+              <p>
+                Le{" "}
+                {new Date(currentPost.creationDate * 1000).toLocaleDateString(
+                  "fr-FR"
+                )}
+              </p>
             </div>
             <div
               style={{
@@ -150,27 +148,6 @@ export function Post() {
               }}
             >
               {currentPost.content}
-            </div>
-            <div
-              style={{
-                marginTop: "1.5rem",
-                padding: "1rem",
-                background: "rgba(0,0,0,0.2)",
-                borderRadius: "0.5rem",
-                fontSize: "0.9rem",
-                opacity: 0.7,
-              }}
-            >
-              <p>ID du nœud: {cameraState.closestNodeId}</p>
-              <p>URL du post: {currentPost.url}</p>
-              {cameraState.closestNodePosition && (
-                <>
-                  <p>Position du nœud:</p>
-                  <p>X: {cameraState.closestNodePosition[0].toFixed(2)}</p>
-                  <p>Y: {cameraState.closestNodePosition[1].toFixed(2)}</p>
-                  <p>Z: {cameraState.closestNodePosition[2].toFixed(2)}</p>
-                </>
-              )}
             </div>
           </>
         ) : (
