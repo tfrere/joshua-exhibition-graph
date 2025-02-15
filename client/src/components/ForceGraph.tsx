@@ -22,6 +22,7 @@ interface GraphNode {
   id: number;
   name: string;
   depth: number;
+  rootId: number;
   x?: number;
   y?: number;
   z?: number;
@@ -37,23 +38,24 @@ interface GraphData {
   links: GraphLink[];
 }
 
-const MAX_NODES = 3000;
+const MAX_NODES = 40000;
 const SOCKET_UPDATE_INTERVAL = 1000 / 10; // 10 fois par seconde pour le socket
 const HYSTERESIS_DISTANCE = 20; // Augmenté pour plus de stabilité
 
 // Function to convert tree data to graph format
-const convertTreeToGraph = (treeData: TreeNode): GraphData => {
+const convertTreeToGraph = (treeData: TreeNode[]): GraphData => {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
   let nodeCount = 0;
 
-  const processNode = (node: TreeNode): boolean => {
+  const processNode = (node: TreeNode, rootId: number): boolean => {
     if (nodeCount >= MAX_NODES) return false;
 
     nodes.push({
       id: node.uid,
       name: node.name || `Node ${node.uid}`,
       depth: node.depth,
+      rootId,
     });
     nodeCount++;
 
@@ -61,7 +63,7 @@ const convertTreeToGraph = (treeData: TreeNode): GraphData => {
       for (const child of node.children) {
         if (nodeCount >= MAX_NODES) break;
 
-        const shouldContinue = processNode(child);
+        const shouldContinue = processNode(child, rootId);
         if (shouldContinue) {
           links.push({
             source: node.uid,
@@ -74,7 +76,12 @@ const convertTreeToGraph = (treeData: TreeNode): GraphData => {
     return true;
   };
 
-  processNode(treeData);
+  // Traiter chaque nœud racine
+  for (const rootNode of treeData) {
+    if (nodeCount >= MAX_NODES) break;
+    processNode(rootNode, rootNode.uid);
+  }
+
   console.log(
     `Graph généré avec ${nodes.length} nœuds et ${links.length} liens`
   );
@@ -123,9 +130,9 @@ export default forwardRef(function Graph(props, ref) {
   }, []);
 
   useEffect(() => {
-    fetch("/data/hierarchy.json")
+    fetch("/data/merged_hierarchy.json")
       .then((response) => response.json())
-      .then((treeData: TreeNode) => {
+      .then((treeData: TreeNode[]) => {
         const convertedData = convertTreeToGraph(treeData);
         setGraphData(convertedData);
       })
@@ -217,23 +224,43 @@ export default forwardRef(function Graph(props, ref) {
       ref={fgRef}
       graphData={graphData}
       nodeColor={(node: GraphNode) => {
-        // Mettre en évidence le nœud le plus proche
-        if (lastClosestNode.current && node.id === lastClosestNode.current.id) {
-          return "#ff0000"; // Rouge pour le nœud le plus proche
-        }
-        const colors = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeead"];
-        return colors[node.depth % colors.length];
+        const rootColors = [
+          "#ff6b6b",
+          "#4ecdc4",
+          "#45b7d1",
+          "#96ceb4",
+          "#ffeead",
+          "#ff9a9e",
+          "#81ecec",
+          "#74b9ff",
+          "#a8e6cf",
+          "#dfe6e9",
+          "#fab1a0",
+          "#55efc4",
+          "#0984e3",
+          "#b2bec3",
+          "#fd79a8",
+          "#00cec9",
+          "#6c5ce7",
+          "#00b894",
+          "#d63031",
+          "#e17055",
+        ];
+        // Utiliser le rootId pour déterminer la couleur
+        return rootColors[node.rootId % rootColors.length];
       }}
       linkColor={() => "rgba(255,255,255,1)"}
-      nodeRelSize={4}
-      linkWidth={2}
+      linkOpacity={1}
+      linkVisibility={false}
+      nodeRelSize={1}
+      linkWidth={0}
       linkDirectionalParticles={0}
       linkDirectionalParticleWidth={4}
       linkDirectionalParticleSpeed={0.005}
       linkDirectionalParticleColor={() => "rgba(255,255,255,.3)"}
       d3VelocityDecay={0.3}
       d3AlphaDecay={0.01}
-      linkCurvature={1}
+      linkCurvature={0}
       warmupTicks={0}
       cooldownTicks={0}
       nodeResolution={8}

@@ -35,7 +35,7 @@ interface GraphData {
 }
 
 // Function to convert tree data to graph format and position nodes in a grid
-const convertTreeToGraph = (treeData: TreeNode): GraphData => {
+const convertTreeToGraph = (treeDataList: TreeNode[]): GraphData => {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
   let nodeCount = 0;
@@ -49,7 +49,7 @@ const convertTreeToGraph = (treeData: TreeNode): GraphData => {
     nodesByLevel[node.depth].push(node);
     node.children?.forEach(countNodesAtLevel);
   };
-  countNodesAtLevel(treeData);
+  treeDataList.forEach(countNodesAtLevel);
 
   // Paramètres de la grille
   const Z_SPACING = 200; // Espacement entre les niveaux de profondeur
@@ -147,7 +147,11 @@ const convertTreeToGraph = (treeData: TreeNode): GraphData => {
     return true;
   };
 
-  processNode(treeData);
+  // Traiter chaque nœud racine
+  treeDataList.forEach((rootNode) => {
+    processNode(rootNode);
+  });
+
   console.log(
     `Graph généré avec ${nodes.length} nœuds et ${links.length} liens`
   );
@@ -169,10 +173,10 @@ export function CustomGraphView() {
 
   // Charger et convertir les données
   useEffect(() => {
-    fetch("/data/hierarchy.json")
+    fetch("/data/merged_hierarchy.json")
       .then((response) => response.json())
-      .then((treeData: TreeNode) => {
-        const convertedData = convertTreeToGraph(treeData);
+      .then((treeDataList: TreeNode[]) => {
+        const convertedData = convertTreeToGraph(treeDataList);
         setGraphData(convertedData);
       })
       .catch((error) => console.error("Error loading graph data:", error));
