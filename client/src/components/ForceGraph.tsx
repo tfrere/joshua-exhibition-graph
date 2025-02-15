@@ -251,6 +251,7 @@ export default forwardRef(function Graph(props, ref) {
       }}
       linkColor={() => "rgba(255,255,255,1)"}
       linkOpacity={1}
+      // forceEngine="ngraph"
       linkVisibility={false}
       nodeRelSize={1}
       linkWidth={0}
@@ -262,7 +263,7 @@ export default forwardRef(function Graph(props, ref) {
       d3AlphaDecay={0.01}
       linkCurvature={0}
       warmupTicks={0}
-      cooldownTicks={0}
+      cooldownTicks={3}
       nodeResolution={8}
     />
   );

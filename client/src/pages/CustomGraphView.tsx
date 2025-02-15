@@ -22,6 +22,7 @@ interface GraphNode {
   y?: number;
   z?: number;
   isLeaf: boolean;
+  rootId: number;
 }
 
 interface GraphLink {
@@ -55,101 +56,113 @@ const convertTreeToGraph = (treeDataList: TreeNode[]): GraphData => {
   const Z_SPACING = 200; // Espacement entre les niveaux de profondeur
   const GRID_SPACING = 80; // Espacement entre les nœuds
   const SPHERE_RADIUS = 150; // Rayon de la sphère pour les posts
+  const GROUP_SPACING = 800; // Espacement entre les groupes
 
-  const processNode = (node: TreeNode): boolean => {
-    if (nodeCount >= 3000) return false;
+  // Calculer la disposition des groupes racine
+  const rootGridSize = Math.ceil(Math.sqrt(treeDataList.length));
+  const rootOffsetX = (rootGridSize * GROUP_SPACING) / 2;
+  const rootOffsetY = (rootGridSize * GROUP_SPACING) / 2;
 
-    // Vérifier si c'est une feuille (post)
-    const isLeaf = !node.children || node.children.length === 0;
+  // Traiter chaque nœud racine
+  treeDataList.forEach((rootNode, rootIndex) => {
+    // Calculer la position du groupe
+    const rootRow = Math.floor(rootIndex / rootGridSize);
+    const rootCol = rootIndex % rootGridSize;
+    const groupX = rootCol * GROUP_SPACING - rootOffsetX;
+    const groupY = rootRow * GROUP_SPACING - rootOffsetY;
 
-    if (!isLeaf) {
-      // Pour les nœuds non-feuilles, utiliser le placement en grille normal
-      const levelNodes = nodesByLevel[node.depth];
-      const nodeIndex = levelNodes.indexOf(node);
-      const gridSize = Math.ceil(Math.sqrt(levelNodes.length));
+    const processNodeWithRoot = (node: TreeNode) => {
+      if (nodeCount >= 3000) return false;
 
-      // Calculer la position dans la grille
-      const row = Math.floor(nodeIndex / gridSize);
-      const col = nodeIndex % gridSize;
+      // Vérifier si c'est une feuille (post)
+      const isLeaf = !node.children || node.children.length === 0;
 
-      // Centrer la grille
-      const gridOffset = (gridSize * GRID_SPACING) / 2;
-      const x = col * GRID_SPACING - gridOffset;
-      const y = row * GRID_SPACING - gridOffset;
-      const z = -node.depth * Z_SPACING;
+      if (!isLeaf) {
+        // Pour les nœuds non-feuilles, utiliser le placement en grille normal
+        const levelNodes = nodesByLevel[node.depth];
+        const nodeIndex = levelNodes.indexOf(node);
+        const gridSize = Math.ceil(Math.sqrt(levelNodes.length));
 
-      nodes.push({
-        id: node.uid,
-        name: node.name || `Node ${node.uid}`,
-        depth: node.depth,
-        x,
-        y,
-        z,
-        isLeaf: false,
-      });
-      nodeCount++;
+        // Calculer la position dans la grille
+        const row = Math.floor(nodeIndex / gridSize);
+        const col = nodeIndex % gridSize;
 
-      // Traiter les enfants
-      if (node.children) {
-        // Calculer le nombre de posts (feuilles) pour ce nœud
-        const posts = node.children.filter(
-          (child) => !child.children || child.children.length === 0
-        );
-        const numPosts = posts.length;
+        // Centrer la grille et l'offset par rapport à la position du groupe
+        const gridOffset = (gridSize * GRID_SPACING) / 2;
+        const x = groupX + (col * GRID_SPACING - gridOffset);
+        const y = groupY + (row * GRID_SPACING - gridOffset);
+        const z = -node.depth * Z_SPACING;
 
-        // Distribuer les posts en sphère
-        posts.forEach((post, index) => {
-          if (nodeCount >= 3000) return;
-
-          // Calculer les angles pour une distribution uniforme sur une sphère
-          const phi = Math.acos(-1 + (2 * index) / numPosts);
-          const theta = Math.sqrt(numPosts * Math.PI) * phi;
-
-          // Convertir en coordonnées cartésiennes
-          const postX = x + SPHERE_RADIUS * Math.cos(theta) * Math.sin(phi);
-          const postY = y + SPHERE_RADIUS * Math.sin(theta) * Math.sin(phi);
-          const postZ = z + SPHERE_RADIUS * Math.cos(phi);
-
-          nodes.push({
-            id: post.uid,
-            name: post.name || `Post ${post.uid}`,
-            depth: post.depth,
-            x: postX,
-            y: postY,
-            z: postZ,
-            isLeaf: true,
-          });
-          nodeCount++;
-
-          links.push({
-            source: node.uid,
-            target: post.uid,
-          });
+        nodes.push({
+          id: node.uid,
+          name: node.name || `Node ${node.uid}`,
+          depth: node.depth,
+          x,
+          y,
+          z,
+          isLeaf: false,
+          rootId: rootNode.uid,
         });
+        nodeCount++;
 
-        // Traiter les nœuds non-feuilles normalement
-        const nonLeafChildren = node.children.filter(
-          (child) => child.children && child.children.length > 0
-        );
-        nonLeafChildren.forEach((child) => {
-          if (nodeCount >= 3000) return;
-          const shouldContinue = processNode(child);
-          if (shouldContinue) {
+        // Traiter les enfants
+        if (node.children) {
+          // Calculer le nombre de posts (feuilles) pour ce nœud
+          const posts = node.children.filter(
+            (child) => !child.children || child.children.length === 0
+          );
+          const numPosts = posts.length;
+
+          // Distribuer les posts en sphère
+          posts.forEach((post, index) => {
+            if (nodeCount >= 3000) return;
+
+            // Calculer les angles pour une distribution uniforme sur une sphère
+            const phi = Math.acos(-1 + (2 * index) / numPosts);
+            const theta = Math.sqrt(numPosts * Math.PI) * phi;
+
+            // Convertir en coordonnées cartésiennes et ajouter l'offset du groupe
+            const postX = x + SPHERE_RADIUS * Math.cos(theta) * Math.sin(phi);
+            const postY = y + SPHERE_RADIUS * Math.sin(theta) * Math.sin(phi);
+            const postZ = z + SPHERE_RADIUS * Math.cos(phi);
+
+            nodes.push({
+              id: post.uid,
+              name: post.name || `Post ${post.uid}`,
+              depth: post.depth,
+              x: postX,
+              y: postY,
+              z: postZ,
+              isLeaf: true,
+              rootId: rootNode.uid,
+            });
+            nodeCount++;
+
+            links.push({
+              source: node.uid,
+              target: post.uid,
+            });
+          });
+
+          // Traiter les nœuds non-feuilles normalement
+          const nonLeafChildren = node.children.filter(
+            (child) => child.children && child.children.length > 0
+          );
+          nonLeafChildren.forEach((child) => {
+            if (nodeCount >= 3000) return;
+            processNodeWithRoot(child);
             links.push({
               source: node.uid,
               target: child.uid,
             });
-          }
-        });
+          });
+        }
       }
-    }
 
-    return true;
-  };
+      return true;
+    };
 
-  // Traiter chaque nœud racine
-  treeDataList.forEach((rootNode) => {
-    processNode(rootNode);
+    processNodeWithRoot(rootNode);
   });
 
   console.log(
@@ -233,8 +246,8 @@ export function CustomGraphView() {
     <div style={{ width: "100vw", height: "100vh" }}>
       <Canvas
         camera={{
-          position: [0, 0, 1000],
-          fov: 75,
+          position: [0, 0, 2500],
+          fov: 60,
           near: 0.1,
           far: 10000,
         }}

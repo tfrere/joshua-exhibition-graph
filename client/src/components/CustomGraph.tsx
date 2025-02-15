@@ -11,6 +11,7 @@ interface GraphNode {
   y?: number;
   z?: number;
   isLeaf?: boolean;
+  rootId: number;
 }
 
 interface GraphLink {
@@ -28,9 +29,28 @@ interface CustomGraphProps {
   onNodeClick?: (node: GraphNode) => void;
 }
 
-const NODE_COLORS = ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#ffeead"].map(
-  (color) => new Color(color)
-);
+const NODE_COLORS = [
+  "#ff6b6b",
+  "#4ecdc4",
+  "#45b7d1",
+  "#96ceb4",
+  "#ffeead",
+  "#ff9a9e",
+  "#81ecec",
+  "#74b9ff",
+  "#a8e6cf",
+  "#dfe6e9",
+  "#fab1a0",
+  "#55efc4",
+  "#0984e3",
+  "#b2bec3",
+  "#fd79a8",
+  "#00cec9",
+  "#6c5ce7",
+  "#00b894",
+  "#d63031",
+  "#e17055",
+].map((color) => new Color(color));
 const NODE_SIZE_BASE = 2;
 const NODE_SIZE_DECAY = 0.85; // Réduction plus douce de la taille avec la profondeur
 const HIGHLIGHT_COLOR = new Color("#ff0000");
@@ -128,7 +148,7 @@ export default forwardRef(function CustomGraph(
 
         // Calculer la taille du nœud en fonction de sa profondeur
         const nodeSize = NODE_SIZE_BASE * Math.pow(NODE_SIZE_DECAY, node.depth);
-        const color = NODE_COLORS[node.depth % NODE_COLORS.length];
+        const color = NODE_COLORS[node.rootId % NODE_COLORS.length];
         const intensity = Math.max(0.4, 1 - node.depth / maxDepth);
 
         return (
