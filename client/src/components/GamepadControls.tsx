@@ -3,10 +3,10 @@ import { useThree, useFrame } from "@react-three/fiber";
 import { Vector3, Quaternion, Euler } from "three";
 
 const DEADZONE = 0.15;
-const MAX_SPEED = 400; // Vitesse maximale
+const MAX_SPEED = 1400; // Vitesse maximale
 const ACCELERATION = 800; // Force d'accélération
 const DECELERATION = 0.95; // Facteur de décélération (friction)
-const ROTATION_SPEED = 1.2;
+const ROTATION_SPEED = 4.2;
 
 export function GamepadControls() {
   const { camera } = useThree();

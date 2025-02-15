@@ -1,4 +1,10 @@
-import { useRef, useEffect, useState } from "react";
+import {
+  useRef,
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import ForceGraph from "r3f-forcegraph";
 import { Vector3 } from "three";
@@ -31,7 +37,7 @@ interface GraphData {
   links: GraphLink[];
 }
 
-const MAX_NODES = 1000;
+const MAX_NODES = 3000;
 const SOCKET_UPDATE_INTERVAL = 1000 / 10; // 10 fois par seconde pour le socket
 const HYSTERESIS_DISTANCE = 20; // Augmenté pour plus de stabilité
 
@@ -75,7 +81,7 @@ const convertTreeToGraph = (treeData: TreeNode): GraphData => {
   return { nodes, links };
 };
 
-export default function Graph() {
+export default forwardRef(function Graph(props, ref) {
   const fgRef = useRef<any>();
   const socketRef = useRef<any>(null);
   const { camera } = useThree();
@@ -86,6 +92,25 @@ export default function Graph() {
   const tempVector = useRef(new Vector3());
   const lastClosestNode = useRef<GraphNode | null>(null);
   const lastUpdateTime = useRef(0);
+
+  // Exposer les méthodes via la ref
+  useImperativeHandle(ref, () => ({
+    getGraphData: () => {
+      if (fgRef.current) {
+        return {
+          nodes: graphData.nodes.map((node) => ({
+            ...node,
+            // Les propriétés x, y, z sont déjà mises à jour par le graphe
+            x: node.x || 0,
+            y: node.y || 0,
+            z: node.z || 0,
+          })),
+          links: graphData.links,
+        };
+      }
+      return graphData;
+    },
+  }));
 
   // Initialiser la connexion socket
   useEffect(() => {
@@ -154,7 +179,10 @@ export default function Graph() {
       const currentTime = state.clock.getElapsedTime() * 1000;
       if (
         currentTime - lastUpdateTime.current >= SOCKET_UPDATE_INTERVAL &&
-        lastClosestNode.current
+        lastClosestNode.current &&
+        lastClosestNode.current.x !== undefined &&
+        lastClosestNode.current.y !== undefined &&
+        lastClosestNode.current.z !== undefined
       ) {
         lastUpdateTime.current = currentTime;
 
@@ -197,17 +225,18 @@ export default function Graph() {
         return colors[node.depth % colors.length];
       }}
       linkColor={() => "rgba(255,255,255,1)"}
-      nodeRelSize={8}
+      nodeRelSize={4}
       linkWidth={2}
       linkDirectionalParticles={0}
       linkDirectionalParticleWidth={4}
       linkDirectionalParticleSpeed={0.005}
-      linkDirectionalParticleColor={() => "rgba(255,255,255,1)"}
+      linkDirectionalParticleColor={() => "rgba(255,255,255,.3)"}
       d3VelocityDecay={0.3}
       d3AlphaDecay={0.01}
-      warmupTicks={100}
-      cooldownTicks={50}
+      linkCurvature={1}
+      warmupTicks={0}
+      cooldownTicks={0}
       nodeResolution={8}
     />
   );
-}
+});
