@@ -25,30 +25,45 @@ interface GraphData {
   links: GraphLink[];
 }
 
+const MAX_NODES = 1000;
+
 // Function to convert tree data to graph format
 const convertTreeToGraph = (treeData: TreeNode): GraphData => {
   const nodes: GraphNode[] = [];
   const links: GraphLink[] = [];
+  let nodeCount = 0;
 
-  const processNode = (node: TreeNode) => {
+  const processNode = (node: TreeNode): boolean => {
+    if (nodeCount >= MAX_NODES) return false;
+
     nodes.push({
       id: node.uid,
       name: node.name || `Node ${node.uid}`,
       depth: node.depth,
     });
+    nodeCount++;
 
     if (node.children) {
-      node.children.forEach((child) => {
-        links.push({
-          source: node.uid,
-          target: child.uid,
-        });
-        processNode(child);
-      });
+      for (const child of node.children) {
+        if (nodeCount >= MAX_NODES) break;
+
+        const shouldContinue = processNode(child);
+        if (shouldContinue) {
+          links.push({
+            source: node.uid,
+            target: child.uid,
+          });
+        }
+      }
     }
+
+    return true;
   };
 
   processNode(treeData);
+  console.log(
+    `Graph généré avec ${nodes.length} nœuds et ${links.length} liens`
+  );
   return { nodes, links };
 };
 
@@ -60,7 +75,7 @@ export default function Graph() {
   });
 
   useEffect(() => {
-    fetch("/data/tree.json")
+    fetch("/data/hierarchy.json")
       .then((response) => response.json())
       .then((treeData: TreeNode) => {
         const convertedData = convertTreeToGraph(treeData);

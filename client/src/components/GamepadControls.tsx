@@ -3,15 +3,17 @@ import { useThree, useFrame } from "@react-three/fiber";
 import { Vector3, Quaternion, Euler } from "three";
 
 const DEADZONE = 0.15;
-const MOVEMENT_SPEED = 200; // Doublé pour plus de vitesse
-const ROTATION_SPEED = 1.2; // Réduit de 2 à 1.2 pour une rotation plus douce
+const MAX_SPEED = 400; // Vitesse maximale
+const ACCELERATION = 800; // Force d'accélération
+const DECELERATION = 0.95; // Facteur de décélération (friction)
+const ROTATION_SPEED = 1.2;
 
 export function GamepadControls() {
   const { camera } = useThree();
   const gamepadIndex = useRef<number | null>(null);
-  const moveVector = useRef(new Vector3());
+  const velocity = useRef(new Vector3()); // Vélocité actuelle
   const tempVector = useRef(new Vector3());
-  const euler = useRef(new Euler(0, 0, 0, "YXZ")); // YXZ pour un contrôle FPS classique
+  const euler = useRef(new Euler(0, 0, 0, "YXZ"));
   const rotationQuaternion = useRef(new Quaternion());
 
   useEffect(() => {
@@ -46,19 +48,17 @@ export function GamepadControls() {
     const gamepad = gamepads[gamepadIndex.current];
     if (!gamepad) return;
 
-    // Mouvement avant/arrière et latéral (Left stick)
-    const forwardBackward =
-      Math.abs(gamepad.axes[1]) > DEADZONE ? -gamepad.axes[1] : 0;
-    const leftRight =
-      Math.abs(gamepad.axes[0]) > DEADZONE ? -gamepad.axes[0] : 0;
+    // Mouvement avant/arrière (Left stick Y)
+    const thrust = Math.abs(gamepad.axes[1]) > DEADZONE ? -gamepad.axes[1] : 0;
 
     // Mouvement vertical (Boutons)
     const upDown =
       (gamepad.buttons[3]?.pressed ? 1 : 0) -
       (gamepad.buttons[0]?.pressed ? 1 : 0);
 
-    // Rotation (Right stick)
-    const yawInput = Math.abs(gamepad.axes[2]) > DEADZONE ? gamepad.axes[2] : 0;
+    // Rotation vue (Right stick)
+    const viewYawInput =
+      Math.abs(gamepad.axes[2]) > DEADZONE ? gamepad.axes[2] : 0;
     const pitchInput =
       Math.abs(gamepad.axes[3]) > DEADZONE ? gamepad.axes[3] : 0;
 
@@ -66,33 +66,41 @@ export function GamepadControls() {
     const rollInput =
       (gamepad.buttons[6]?.value || 0) - (gamepad.buttons[7]?.value || 0);
 
-    // Appliquer les mouvements
-    moveVector.current.set(0, 0, 0);
-
-    // Avant/Arrière
-    tempVector.current.set(0, 0, -1).applyQuaternion(camera.quaternion);
-    moveVector.current.addScaledVector(tempVector.current, forwardBackward);
-
-    // Gauche/Droite
-    tempVector.current.set(1, 0, 0).applyQuaternion(camera.quaternion);
-    moveVector.current.addScaledVector(tempVector.current, leftRight);
-
-    // Haut/Bas
-    tempVector.current.set(0, 1, 0);
-    moveVector.current.addScaledVector(tempVector.current, upDown);
-
-    // Normaliser et appliquer la vitesse
-    if (moveVector.current.length() > 0) {
-      moveVector.current.normalize().multiplyScalar(MOVEMENT_SPEED * delta);
-      camera.position.add(moveVector.current);
+    // Calculer l'accélération dans la direction de vue
+    if (thrust !== 0) {
+      tempVector.current
+        .set(0, 0, -1)
+        .applyQuaternion(camera.quaternion)
+        .multiplyScalar(thrust * ACCELERATION * delta);
+      velocity.current.add(tempVector.current);
     }
+
+    // Ajouter l'accélération verticale
+    if (upDown !== 0) {
+      tempVector.current
+        .set(0, 1, 0)
+        .multiplyScalar(upDown * ACCELERATION * delta);
+      velocity.current.add(tempVector.current);
+    }
+
+    // Appliquer la décélération
+    velocity.current.multiplyScalar(DECELERATION);
+
+    // Limiter la vitesse maximale
+    const currentSpeed = velocity.current.length();
+    if (currentSpeed > MAX_SPEED) {
+      velocity.current.multiplyScalar(MAX_SPEED / currentSpeed);
+    }
+
+    // Appliquer le mouvement
+    camera.position.add(velocity.current.clone().multiplyScalar(delta));
 
     // Obtenir les angles actuels de la caméra
     euler.current.setFromQuaternion(camera.quaternion);
 
-    // Appliquer les rotations de manière relative
-    if (yawInput !== 0) {
-      euler.current.y -= yawInput * ROTATION_SPEED * delta;
+    // Vue libre avec le stick droit
+    if (viewYawInput !== 0) {
+      euler.current.y -= viewYawInput * ROTATION_SPEED * delta;
     }
     if (pitchInput !== 0) {
       euler.current.x = Math.max(
@@ -113,8 +121,10 @@ export function GamepadControls() {
       );
     }
 
-    // Appliquer les rotations à la caméra
-    camera.quaternion.setFromEuler(euler.current);
+    // Appliquer les rotations de la vue
+    if (viewYawInput !== 0 || pitchInput !== 0 || rollInput !== 0) {
+      camera.quaternion.setFromEuler(euler.current);
+    }
   });
 
   return null;

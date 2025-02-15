@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { FlyControls } from "@react-three/drei";
+import { FlyControls, Stats } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import ForceGraph from "../components/ForceGraph";
 import { GamepadControls } from "../components/GamepadControls";
@@ -23,6 +23,7 @@ export function Graph() {
           far: 100000,
         }}
       >
+        <Stats />
         <color attach="background" args={["#000119"]} />
         <ambientLight intensity={2} />
         <pointLight position={[10, 10, 10]} />
