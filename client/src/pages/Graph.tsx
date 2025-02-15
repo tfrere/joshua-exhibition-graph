@@ -93,14 +93,14 @@ export function Graph() {
         <FlyControls movementSpeed={500} rollSpeed={0.5} dragToLook={true} />
         <GamepadControls />
         <CameraSync />
-        {/* <EffectComposer>
+        <EffectComposer>
           <Bloom
             intensity={19}
             luminanceThreshold={0.02}
             luminanceSmoothing={0.9}
             mipmapBlur
           />
-        </EffectComposer> */}
+        </EffectComposer>
       </Canvas>
     </div>
   );
