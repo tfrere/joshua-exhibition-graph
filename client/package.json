@@ -11,7 +11,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve dist"
+    "start": "serve -s dist --config serve.json"
   },
   "dependencies": {
     "@react-three/drei": "^9.121.5",
