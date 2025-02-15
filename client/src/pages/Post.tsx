@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import { SOCKET_SERVER_URL } from "../config";
 
 interface CameraState {
   cameraPosition: [number, number, number];
@@ -13,7 +14,7 @@ export function Post() {
   });
 
   useEffect(() => {
-    const socket = io("http://localhost:3000");
+    const socket = io(SOCKET_SERVER_URL);
 
     socket.on("initialState", (state: CameraState) => {
       setCameraState(state);
