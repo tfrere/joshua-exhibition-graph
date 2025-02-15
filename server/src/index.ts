@@ -6,12 +6,15 @@ import cors from "cors";
 const app = express();
 const ALLOWED_ORIGINS =
   process.env.NODE_ENV === "production"
-    ? [process.env.CLIENT_URL || ""]
+    ? process.env.CLIENT_URL
+      ? [process.env.CLIENT_URL]
+      : []
     : ["http://localhost:5173"];
 
 app.use(
   cors({
     origin: ALLOWED_ORIGINS,
+    credentials: true,
   })
 );
 
@@ -20,6 +23,7 @@ const io = new Server(httpServer, {
   cors: {
     origin: ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -27,6 +31,9 @@ const io = new Server(httpServer, {
 interface SharedState {
   cameraPosition: [number, number, number];
   cameraRotation: [number, number, number, number];
+  closestNodeId?: number;
+  closestNodeName?: string;
+  closestNodePosition?: [number, number, number];
 }
 
 let currentState: SharedState = {
@@ -42,6 +49,13 @@ io.on("connection", (socket) => {
   socket.on("updateState", (newState: SharedState) => {
     currentState = newState;
     socket.broadcast.emit("stateUpdated", newState);
+
+    // Log du nœud le plus proche si changement
+    if (newState.closestNodeId) {
+      console.log(
+        `Nœud le plus proche : ${newState.closestNodeName} (ID: ${newState.closestNodeId})`
+      );
+    }
   });
 
   socket.on("disconnect", () => {
