@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { Vector3, Quaternion, Camera } from "three";
+import { SOCKET_SERVER_URL } from "../config";
 
 interface SharedState {
   cameraPosition: [number, number, number];
   cameraRotation: [number, number, number, number];
 }
-
-const SOCKET_SERVER_URL = "http://localhost:3000";
 
 export function useSocketSync(isMainView: boolean, camera?: Camera) {
   const socketRef = useRef<Socket | null>(null);

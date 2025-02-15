@@ -4,12 +4,21 @@ import { Server } from "socket.io";
 import cors from "cors";
 
 const app = express();
-app.use(cors());
+const ALLOWED_ORIGINS =
+  process.env.NODE_ENV === "production"
+    ? [process.env.CLIENT_URL || ""]
+    : ["http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: ALLOWED_ORIGINS,
+  })
+);
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", // URL du client Vite
+    origin: ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
   },
 });
@@ -17,24 +26,21 @@ const io = new Server(httpServer, {
 // État partagé entre les clients
 interface SharedState {
   cameraPosition: [number, number, number];
-  cameraRotation: [number, number, number, number]; // Quaternion
+  cameraRotation: [number, number, number, number];
 }
 
 let currentState: SharedState = {
   cameraPosition: [0, 0, 500],
-  cameraRotation: [0, 0, 0, 1], // Quaternion par défaut
+  cameraRotation: [0, 0, 0, 1],
 };
 
 io.on("connection", (socket) => {
   console.log("Client connecté");
 
-  // Envoyer l'état actuel au nouveau client
   socket.emit("initialState", currentState);
 
-  // Écouter les mises à jour de l'état depuis la vue principale (/)
   socket.on("updateState", (newState: SharedState) => {
     currentState = newState;
-    // Diffuser la mise à jour à tous les autres clients
     socket.broadcast.emit("stateUpdated", newState);
   });
 
@@ -46,4 +52,5 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`Serveur en écoute sur le port ${PORT}`);
+  console.log("Origins autorisés:", ALLOWED_ORIGINS);
 });
