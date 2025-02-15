@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { FlyControls } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import ForceGraph from "../components/ForceGraph";
 import { GamepadControls } from "../components/GamepadControls";
@@ -27,7 +27,7 @@ export function Graph() {
         <ambientLight intensity={2} />
         <pointLight position={[10, 10, 10]} />
         <ForceGraph />
-        <OrbitControls makeDefault />
+        <FlyControls movementSpeed={200} rollSpeed={0.5} dragToLook={true} />
         <GamepadControls />
         <CameraSync />
         <EffectComposer>
