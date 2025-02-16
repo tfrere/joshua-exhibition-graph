@@ -20,7 +20,7 @@ export function CustomGraphView() {
     <div style={{ width: "100vw", height: "100vh" }}>
       <Canvas
         camera={{
-          position: [2000, 2000, 2000],
+          position: [400, 400, 400],
           fov: 75,
           near: 1,
           far: 20000,
@@ -28,7 +28,7 @@ export function CustomGraphView() {
       >
         <Stats className="stats" showPanel={0} />
         <color attach="background" args={["#000119"]} />
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={3} />
         <pointLight position={[0, 0, 0]} intensity={2} />
         <pointLight position={[2000, 2000, 2000]} intensity={2} />
         <CustomGraph

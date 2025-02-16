@@ -42,7 +42,7 @@ export function Post() {
   useEffect(() => {
     if (cameraState?.closestNodeId !== undefined && posts.length > 0) {
       const post = posts.find(
-        (p) => p.uid === cameraState.closestNodeId?.toString()
+        (p) => p.creationDate === parseInt(cameraState.closestNodeId)
       );
       setCurrentPost(post || null);
     }

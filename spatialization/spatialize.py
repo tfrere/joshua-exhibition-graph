@@ -11,10 +11,11 @@ from scipy.sparse import hstack
 
 # Configuration
 UMAP_PARAMS = {
-    'n_neighbors': 15,
-    'min_dist': 0.1,
+    'n_neighbors': 25,    # encore plus de voisins pour une meilleure connexion globale
+    'min_dist': 0.25,     # un peu plus proche mais pas trop
+    'spread': 0.3,        # forcer une distribution plus compacte
     'n_components': 3,
-    'random_state': 42  # Pour la reproductibilité
+    'random_state': 42
 }
 
 # Poids des différentes composantes dans la vectorisation finale
@@ -157,7 +158,8 @@ def save_results(posts, coordinates, output_file):
         }
         results.append(spatialized_post)
     
-    output_path = f"spatialized_posts_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    # Création du nom de fichier avec les paramètres
+    output_path = f"spatialized_posts_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
     
