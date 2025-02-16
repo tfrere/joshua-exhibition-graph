@@ -1,15 +1,20 @@
 import json
 import numpy as np
 import pandas as pd
-from cudf import DataFrame
-from cuml.preprocessing import OneHotEncoder
-from cuml.manifold import UMAP
+import torch
+from torch_geometric.transforms import UMAP
+from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
 from tqdm import tqdm
 from time import time
-from cuml.metrics import pairwise_distances
-import os
 from pathlib import Path
+import torch.nn.functional as F
+
+# Vérification du GPU
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Utilisation de : {device}")
+if torch.cuda.is_available():
+    print(f"GPU : {torch.cuda.get_device_name(0)}")
 
 # Chemins des fichiers
 INPUT_PATH = Path("../client/public/data/posts.json")
@@ -69,51 +74,55 @@ def load_data(file_path):
     return processed_posts
 
 def vectorize_features_gpu(posts):
-    """Vectorise les métadonnées avec accélération GPU."""
+    """Vectorise les métadonnées avec PyTorch sur GPU."""
     print("\n🔤 Vectorisation des données sur GPU...")
     start_time = time()
     
-    # Création du DataFrame RAPIDS
-    df = DataFrame({
-        'sourceType': [post['sourceType'] for post in posts],
-        'thematic': [post['thematic'] for post in posts],
-        'character': [post['character'] for post in posts]
-    })
+    # Préparation des données pour one-hot encoding
+    features = ['sourceType', 'thematic', 'character']
+    encoders = {}
+    feature_vectors = {}
     
-    # Encodage des métadonnées catégorielles
-    print("   Encodage des métadonnées...")
-    categorical_vectors = {}
-    
-    for feature in ['sourceType', 'thematic', 'character']:
-        # Utilisation de get_dummies de cudf pour one-hot encoding
-        feature_vectors = DataFrame.get_dummies(df[feature], prefix=feature)
-        categorical_vectors[feature] = feature_vectors
+    for feature in features:
+        # Utiliser sklearn pour l'encodage initial
+        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+        values = [[post[feature]] for post in posts]
+        vectors = encoder.fit_transform(values)
         
-        # Afficher les catégories uniques
-        unique_values = df[feature].unique().values_host
+        # Convertir en tensor PyTorch sur GPU
+        feature_vectors[feature] = torch.tensor(vectors, dtype=torch.float32, device=device)
+        encoders[feature] = encoder
+        
+        # Afficher les statistiques
+        unique_values = encoder.categories_[0]
         print(f"\n📊 Catégories pour {feature}:")
         for val in unique_values:
-            count = (df[feature] == val).sum()
+            count = sum(1 for post in posts if post[feature] == val)
             print(f"   - {val}: {count} posts")
     
-    # Combinaison des vecteurs avec les poids
-    print("\n   Combinaison des vecteurs...")
+    # Normalisation et pondération sur GPU
     weighted_vectors = []
+    for feature in features:
+        vectors = feature_vectors[feature]
+        if vectors.shape[1] > 0:
+            # Normalisation min-max sur GPU
+            vectors = (vectors - vectors.min(0)[0]) / (vectors.max(0)[0] - vectors.min(0)[0] + 1e-8)
+            weighted_vectors.append(WEIGHTS[feature] * vectors)
     
-    for feature in ['sourceType', 'thematic', 'character']:
-        feature_vectors = categorical_vectors[feature]
-        if len(feature_vectors.columns) > 0:
-            feature_vectors_normalized = feature_vectors / feature_vectors.max() if feature_vectors.max().any() else feature_vectors
-            weighted_vectors.append(WEIGHTS[feature] * feature_vectors_normalized)
-    
-    # Combiner tous les vecteurs
-    combined_vectors = pd.concat([v.to_pandas() for v in weighted_vectors], axis=1)
+    # Concaténation sur GPU
+    combined_vectors = torch.cat(weighted_vectors, dim=1)
     
     # Calcul de similarités sur un échantillon
     sample_size = min(1000, combined_vectors.shape[0])
-    sample_vectors = combined_vectors.iloc[:sample_size]
-    similarities = pairwise_distances(sample_vectors, metric='cosine')
-    avg_similarity = float(np.mean(similarities[np.eye(sample_size, dtype=bool) == 0]))
+    sample_vectors = combined_vectors[:sample_size]
+    
+    # Calcul de similarité cosinus sur GPU
+    normalized = F.normalize(sample_vectors, p=2, dim=1)
+    similarities = torch.mm(normalized, normalized.t())
+    
+    # Masquer la diagonale pour le calcul de la moyenne
+    mask = ~torch.eye(sample_size, device=device).bool()
+    avg_similarity = similarities[mask].mean().item()
     
     print(f"\n✅ Dimension des vecteurs finaux : {combined_vectors.shape}")
     print(f"📊 Similarité moyenne entre les posts : {avg_similarity:.3f}")
@@ -122,31 +131,34 @@ def vectorize_features_gpu(posts):
     return combined_vectors
 
 def apply_umap_gpu(vectors):
-    """Applique UMAP avec accélération GPU."""
+    """Applique UMAP avec PyTorch sur GPU."""
     print("\n🌐 Application d'UMAP sur GPU...")
     start_time = time()
     
-    # Initialisation de UMAP optimisé GPU
-    umap_model = UMAP(**UMAP_PARAMS)
+    # Configuration UMAP pour PyTorch Geometric
+    umap = UMAP(n_components=UMAP_PARAMS['n_components'],
+                n_neighbors=UMAP_PARAMS['n_neighbors'],
+                min_dist=UMAP_PARAMS['min_dist'],
+                spread=UMAP_PARAMS['spread'])
     
-    with tqdm(total=100, desc="Progression UMAP") as pbar:
-        def update_progress(progress):
-            increment = progress - pbar.n
-            if increment > 0:
-                pbar.update(increment)
-        
-        coordinates = umap_model.fit_transform(vectors)
+    # Conversion en format attendu par PyTorch Geometric
+    data = vectors.to(device)
+    
+    # Application de UMAP
+    with torch.no_grad():
+        coordinates = umap(data)
     
     # Calcul des statistiques
-    distances = pairwise_distances(coordinates, metric='euclidean')
-    avg_distance = float(np.mean(distances[distances > 0]))
-    max_distance = float(np.max(distances))
+    distances = torch.cdist(coordinates, coordinates)
+    mask = ~torch.eye(len(coordinates), device=device).bool()
+    avg_distance = distances[mask].mean().item()
+    max_distance = distances.max().item()
     
     print(f"📊 Distance moyenne entre les points : {avg_distance:.3f}")
     print(f"📊 Distance maximale entre les points : {max_distance:.3f}")
     print(f"⏱️  Temps de réduction dimensionnelle : {time() - start_time:.2f}s")
     
-    return coordinates
+    return coordinates.cpu().numpy()
 
 def save_results(posts, coordinates, output_file):
     """Sauvegarde les résultats avec les coordonnées."""
@@ -164,7 +176,7 @@ def save_results(posts, coordinates, output_file):
         results.append(spatialized_post)
     
     # Création du nom de fichier avec les paramètres
-    output_filename = f"spatialized_posts_gpu_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
+    output_filename = f"spatialized_posts_gpu_torch_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
     output_path = OUTPUT_DIR / output_filename
     
     # Créer le dossier de sortie s'il n'existe pas
