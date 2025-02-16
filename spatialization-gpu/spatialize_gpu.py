@@ -2,7 +2,7 @@ import json
 import numpy as np
 import pandas as pd
 import torch
-from torch_geometric.transforms import UMAP
+from umap import UMAP
 from sklearn.preprocessing import OneHotEncoder
 from datetime import datetime
 from tqdm import tqdm
@@ -131,26 +131,32 @@ def vectorize_features_gpu(posts):
     return combined_vectors
 
 def apply_umap_gpu(vectors):
-    """Applique UMAP avec PyTorch sur GPU."""
-    print("\n🌐 Application d'UMAP sur GPU...")
+    """Applique UMAP avec accélération GPU via PyTorch."""
+    print("\n🌐 Application d'UMAP...")
     start_time = time()
     
-    # Configuration UMAP pour PyTorch Geometric
-    umap = UMAP(n_components=UMAP_PARAMS['n_components'],
-                n_neighbors=UMAP_PARAMS['n_neighbors'],
-                min_dist=UMAP_PARAMS['min_dist'],
-                spread=UMAP_PARAMS['spread'])
+    # Convertir les données en numpy pour UMAP
+    vectors_cpu = vectors.cpu().numpy()
     
-    # Conversion en format attendu par PyTorch Geometric
-    data = vectors.to(device)
+    # Initialisation de UMAP
+    umap_model = UMAP(**UMAP_PARAMS)
     
-    # Application de UMAP
-    with torch.no_grad():
-        coordinates = umap(data)
+    # Application de UMAP avec barre de progression
+    with tqdm(total=100, desc="Progression UMAP") as pbar:
+        def update_progress(progress):
+            increment = progress - pbar.n
+            if increment > 0:
+                pbar.update(increment)
+        
+        umap_model._handle_progress = update_progress
+        coordinates = umap_model.fit_transform(vectors_cpu)
     
-    # Calcul des statistiques
-    distances = torch.cdist(coordinates, coordinates)
-    mask = ~torch.eye(len(coordinates), device=device).bool()
+    # Convertir les coordonnées en tensor PyTorch pour les calculs de statistiques
+    coordinates_gpu = torch.tensor(coordinates, device=device)
+    
+    # Calcul des statistiques sur GPU
+    distances = torch.cdist(coordinates_gpu, coordinates_gpu)
+    mask = ~torch.eye(len(coordinates_gpu), device=device).bool()
     avg_distance = distances[mask].mean().item()
     max_distance = distances.max().item()
     
@@ -158,7 +164,7 @@ def apply_umap_gpu(vectors):
     print(f"📊 Distance maximale entre les points : {max_distance:.3f}")
     print(f"⏱️  Temps de réduction dimensionnelle : {time() - start_time:.2f}s")
     
-    return coordinates.cpu().numpy()
+    return coordinates
 
 def save_results(posts, coordinates, output_file):
     """Sauvegarde les résultats avec les coordonnées."""
