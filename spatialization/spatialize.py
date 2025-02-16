@@ -11,9 +11,9 @@ from scipy.sparse import hstack
 
 # Configuration
 UMAP_PARAMS = {
-    'n_neighbors': 25,    # encore plus de voisins pour une meilleure connexion globale
-    'min_dist': 0.25,     # un peu plus proche mais pas trop
-    'spread': 0.3,        # forcer une distribution plus compacte
+    'n_neighbors': 1000,    # encore plus de voisins pour une meilleure connexion globale
+    'min_dist': 0.05,     # un peu plus proche mais pas trop
+    'spread': 0.8,        # distribution plus étalée pour faciliter la navigation
     'n_components': 3,
     'random_state': 42
 }

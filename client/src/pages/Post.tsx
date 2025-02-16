@@ -16,6 +16,8 @@ interface Post {
   character: string;
   content: string;
   creationDate: number;
+  thematic: string;
+  sourceType: string;
 }
 
 export function Post() {
@@ -25,6 +27,7 @@ export function Post() {
   });
   const [posts, setPosts] = useState<Post[]>([]);
   const [currentPost, setCurrentPost] = useState<Post | null>(null);
+  const [randomImageIndex] = useState(() => Math.floor(Math.random() * 6));
 
   // Charger les posts au démarrage
   useEffect(() => {
@@ -42,7 +45,11 @@ export function Post() {
   useEffect(() => {
     if (cameraState?.closestNodeId !== undefined && posts.length > 0) {
       const post = posts.find(
-        (p) => p.creationDate === parseInt(cameraState.closestNodeId)
+        (p) =>
+          p.creationDate ===
+          (typeof cameraState.closestNodeId === "number"
+            ? cameraState.closestNodeId
+            : parseInt(String(cameraState.closestNodeId)))
       );
       setCurrentPost(post || null);
     }
@@ -121,39 +128,71 @@ export function Post() {
       >
         {currentPost ? (
           <>
-            <label
-              style={{
-                marginBottom: 0,
-                fontSize: "1rem",
-              }}
+            <div
+              style={{ display: "flex", gap: "2rem", alignItems: "flex-start" }}
             >
-              {currentPost.thematic}
-            </label>
-            <h2
-              style={{
-                marginBottom: "1rem",
-                marginTop: 0,
-                fontSize: "2rem",
-                color: "#ff6b6b",
-              }}
-            >
-              {currentPost.character || "Inconnu"}
-            </h2>
-            <div style={{ marginBottom: "1.5rem", opacity: 0.7 }}>
-              <p>{currentPost.sourceType}</p>
-              <p>
-                Le{" "}
-                {new Date(currentPost.creationDate * 1000).toLocaleDateString(
-                  "fr-FR"
-                )}
-              </p>
+              <div
+                style={{
+                  width: "150px",
+                  height: "150px",
+                  flexShrink: 0,
+                  borderRadius: "1rem",
+                  overflow: "hidden",
+                  background: "rgba(255,255,255,0.05)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={`/img/${randomImageIndex}.png`}
+                  alt={`Avatar de ${currentPost.character}`}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <label
+                  style={{
+                    marginBottom: 0,
+                    fontSize: "1rem",
+                  }}
+                >
+                  {currentPost.thematic}
+                </label>
+                <h2
+                  style={{
+                    marginBottom: "1rem",
+                    marginTop: 0,
+                    fontSize: "2rem",
+                    color: "#ff6b6b",
+                  }}
+                >
+                  {currentPost.character || "Inconnu"}
+                </h2>
+                <div style={{ marginBottom: "1.5rem", opacity: 0.7 }}>
+                  <p>{currentPost.sourceType}</p>
+                  <p>
+                    Le{" "}
+                    {new Date(
+                      currentPost.creationDate * 1000
+                    ).toLocaleDateString("fr-FR")}{" "}
+                    à{" "}
+                    {new Date(
+                      currentPost.creationDate * 1000
+                    ).toLocaleTimeString("fr-FR")}
+                  </p>
+                </div>
+              </div>
             </div>
+
             <div
               style={{
                 background: "rgba(255,255,255,0.05)",
                 padding: "1.5rem",
                 borderRadius: "0.5rem",
                 whiteSpace: "pre-wrap",
+                marginTop: "1.5rem",
               }}
             >
               {currentPost.content}

@@ -40,14 +40,14 @@ export function CustomGraphView() {
         <FlyControls movementSpeed={1000} rollSpeed={0.5} dragToLook={true} />
         <GamepadControls />
         <CameraSync />
-        {/* <EffectComposer>
+        <EffectComposer>
           <Bloom
-            intensity={2}
-            luminanceThreshold={0.2}
-            luminanceSmoothing={0.9}
+            intensity={10}
+            luminanceThreshold={0.01}
+            luminanceSmoothing={1.2}
             mipmapBlur
           />
-        </EffectComposer> */}
+        </EffectComposer>
       </Canvas>
     </div>
   );

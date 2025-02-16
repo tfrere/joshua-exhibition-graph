@@ -18,8 +18,7 @@ import {
   InstancedBufferAttribute,
 } from "three";
 import { useFrame, useThree } from "@react-three/fiber";
-import { io } from "socket.io-client";
-import { SOCKET_SERVER_URL } from "../config";
+import { useClosestNode } from "../hooks/useClosestNode";
 
 interface Post {
   creationDate: number;
@@ -105,8 +104,8 @@ const normalizeCoordinates = (posts: RawPost[]) => {
     z: [minZ, maxZ],
   });
 
-  // Normaliser à une échelle de -500 à 500
-  const scale = 200;
+  // Normaliser à une échelle adaptée
+  const scale = 1000; // Réduction de l'échelle pour compenser le spread plus élevé
   return posts.map((post) => ({
     ...post,
     coordinates: {
@@ -117,9 +116,7 @@ const normalizeCoordinates = (posts: RawPost[]) => {
   }));
 };
 
-const SOCKET_UPDATE_INTERVAL = 1000 / 30;
-const HYSTERESIS_DISTANCE = 5;
-const HIGHLIGHT_SCALE = 3;
+const HIGHLIGHT_SCALE = 2;
 
 // Fonction utilitaire pour mettre à jour les visuels
 const updateInstancedMesh = (
@@ -166,22 +163,10 @@ export default forwardRef(function CustomGraph(
 ) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [colorMap, setColorMap] = useState<{ [key: string]: Color }>({});
-  const [activePost, setActivePost] = useState<Post | null>(null);
   const meshRef = useRef<InstancedMesh>(null);
-  const socketRef = useRef<any>(null);
-  const tempVector = useRef(new Vector3());
-  const lastUpdateTime = useRef(0);
   const { camera } = useThree();
 
-  // Initialiser la connexion socket
-  useEffect(() => {
-    socketRef.current = io(SOCKET_SERVER_URL);
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+  const { activePost, findClosestNode } = useClosestNode(posts, camera);
 
   // Mettre à jour les visuels quand l'activePost change
   useEffect(() => {
@@ -227,72 +212,10 @@ export default forwardRef(function CustomGraph(
       .catch((error) => console.error("Error loading posts:", error));
   }, []);
 
-  // Détecter le post le plus proche
+  // Détecter le post le plus proche à chaque frame
   useFrame((state) => {
     if (posts.length === 0 || !meshRef.current) return;
-
-    let closestPost: Post | null = null;
-    let minDistance = Infinity;
-    const cameraPosition = camera.position;
-
-    for (const post of posts) {
-      tempVector.current.set(
-        post.coordinates.x,
-        post.coordinates.y,
-        post.coordinates.z
-      );
-      const distance = tempVector.current.distanceTo(cameraPosition);
-
-      // Simplification de la logique d'hystérésis
-      if (distance < minDistance) {
-        // Si la distance est significativement plus courte ou si c'est un nouveau post
-        if (
-          !activePost ||
-          distance < minDistance - HYSTERESIS_DISTANCE ||
-          activePost.creationDate !== post.creationDate
-        ) {
-          minDistance = distance;
-          closestPost = post;
-        }
-      }
-    }
-
-    // Mettre à jour le post actif si nécessaire
-    if (closestPost && closestPost.creationDate !== activePost?.creationDate) {
-      setActivePost(closestPost);
-    }
-
-    // Envoyer les données via socket
-    const currentTime = state.clock.getElapsedTime() * 1000;
-    if (
-      currentTime - lastUpdateTime.current >= SOCKET_UPDATE_INTERVAL &&
-      activePost
-    ) {
-      lastUpdateTime.current = currentTime;
-
-      if (socketRef.current) {
-        socketRef.current.emit("updateState", {
-          cameraPosition: [
-            camera.position.x,
-            camera.position.y,
-            camera.position.z,
-          ],
-          cameraRotation: [
-            camera.quaternion.x,
-            camera.quaternion.y,
-            camera.quaternion.z,
-            camera.quaternion.w,
-          ],
-          closestNodeId: activePost.creationDate,
-          closestNodeName: activePost.thematic,
-          closestNodePosition: [
-            activePost.coordinates.x,
-            activePost.coordinates.y,
-            activePost.coordinates.z,
-          ],
-        });
-      }
-    }
+    findClosestNode(state.clock.getElapsedTime() * 1000);
   });
 
   // Exposer les méthodes via la ref
@@ -324,7 +247,7 @@ export default forwardRef(function CustomGraph(
         }
       }}
     >
-      <sphereGeometry args={[0.2, 16, 16]} />
+      <sphereGeometry args={[0.3, 16, 16]} />
       <meshPhongMaterial
         vertexColors={true}
         emissive="#000000"
