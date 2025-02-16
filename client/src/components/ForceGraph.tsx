@@ -7,9 +7,16 @@ import {
 } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import ForceGraph from "r3f-forcegraph";
-import { Vector3 } from "three";
+import {
+  Vector3,
+  Object3D,
+  Sprite,
+  SpriteMaterial,
+  CanvasTexture,
+} from "three";
 import { io } from "socket.io-client";
 import { SOCKET_SERVER_URL } from "../config";
+import { Html } from "@react-three/drei";
 
 interface TreeNode {
   name: string;
@@ -219,52 +226,99 @@ export default forwardRef(function Graph(props, ref) {
     }
   });
 
+  const createTextSprite = (text: string, color: string, size: number) => {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    if (!context) return new Object3D();
+
+    canvas.width = 256;
+    canvas.height = 128;
+
+    context.font = `${size}px Arial`;
+    context.fillStyle = color;
+    context.textAlign = "center";
+    context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+    const texture = new CanvasTexture(canvas);
+    const spriteMaterial = new SpriteMaterial({
+      map: texture,
+      transparent: true,
+    });
+    const sprite = new Sprite(spriteMaterial);
+    sprite.scale.set(20, 10, 1);
+    sprite.position.y = 10;
+
+    return sprite;
+  };
+
   return (
-    <ForceGraph
-      ref={fgRef}
-      graphData={graphData}
-      nodeColor={(node: GraphNode) => {
-        const rootColors = [
-          "#ff6b6b",
-          "#4ecdc4",
-          "#45b7d1",
-          "#96ceb4",
-          "#ffeead",
-          "#ff9a9e",
-          "#81ecec",
-          "#74b9ff",
-          "#a8e6cf",
-          "#dfe6e9",
-          "#fab1a0",
-          "#55efc4",
-          "#0984e3",
-          "#b2bec3",
-          "#fd79a8",
-          "#00cec9",
-          "#6c5ce7",
-          "#00b894",
-          "#d63031",
-          "#e17055",
-        ];
-        // Utiliser le rootId pour déterminer la couleur
-        return rootColors[node.rootId % rootColors.length];
-      }}
-      linkColor={() => "rgba(255,255,255,1)"}
-      linkOpacity={1}
-      // forceEngine="ngraph"
-      linkVisibility={false}
-      nodeRelSize={1}
-      linkWidth={0}
-      linkDirectionalParticles={0}
-      linkDirectionalParticleWidth={4}
-      linkDirectionalParticleSpeed={0.005}
-      linkDirectionalParticleColor={() => "rgba(255,255,255,.3)"}
-      d3VelocityDecay={0.3}
-      d3AlphaDecay={0.01}
-      linkCurvature={0}
-      warmupTicks={0}
-      cooldownTicks={3}
-      nodeResolution={8}
-    />
+    <>
+      <ForceGraph
+        ref={fgRef}
+        graphData={graphData}
+        nodeColor={(node: GraphNode) => {
+          const rootColors = [
+            "#ff6b6b",
+            "#4ecdc4",
+            "#45b7d1",
+            "#96ceb4",
+            "#ffeead",
+            "#ff9a9e",
+            "#81ecec",
+            "#74b9ff",
+            "#a8e6cf",
+            "#dfe6e9",
+            "#fab1a0",
+            "#55efc4",
+            "#0984e3",
+            "#b2bec3",
+            "#fd79a8",
+            "#00cec9",
+            "#6c5ce7",
+            "#00b894",
+            "#d63031",
+            "#e17055",
+          ];
+          return rootColors[node.rootId % rootColors.length];
+        }}
+        nodeThreeObject={(node: any) => {
+          if (node.depth <= 2) {
+            let color;
+            let size;
+            if (node.depth === 0) {
+              color = "#ffffff";
+              size = 200;
+            } else if (node.depth === 1) {
+              color = "pink";
+              size = 150;
+            } else {
+              color = "blue";
+              size = 100;
+            }
+            const sprite = createTextSprite(node.name, color, size);
+            if (sprite) {
+              node.__threeObj = sprite;
+              return sprite;
+            }
+          }
+          return node.__threeObj;
+        }}
+        linkColor={() => "rgba(255,255,255,1)"}
+        linkOpacity={1}
+        linkVisibility={false}
+        nodeRelSize={1}
+        linkWidth={0}
+        linkDirectionalParticles={0}
+        linkDirectionalParticleWidth={4}
+        linkDirectionalParticleSpeed={0.005}
+        linkDirectionalParticleColor={() => "rgba(255,255,255,.3)"}
+        d3VelocityDecay={0.3}
+        d3AlphaDecay={0.01}
+        linkCurvature={0}
+        warmupTicks={0}
+        cooldownTicks={3}
+        nodeResolution={8}
+      />
+    </>
   );
 });

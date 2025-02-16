@@ -121,9 +121,18 @@ export function Post() {
       >
         {currentPost ? (
           <>
+            <label
+              style={{
+                marginBottom: 0,
+                fontSize: "1rem",
+              }}
+            >
+              {currentPost.thematic}
+            </label>
             <h2
               style={{
                 marginBottom: "1rem",
+                marginTop: 0,
                 fontSize: "2rem",
                 color: "#ff6b6b",
               }}
@@ -131,7 +140,7 @@ export function Post() {
               {currentPost.character || "Inconnu"}
             </h2>
             <div style={{ marginBottom: "1.5rem", opacity: 0.7 }}>
-              <p>{currentPost.source}</p>
+              <p>{currentPost.sourceType}</p>
               <p>
                 Le{" "}
                 {new Date(currentPost.creationDate * 1000).toLocaleDateString(

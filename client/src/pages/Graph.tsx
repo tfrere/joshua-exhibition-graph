@@ -95,9 +95,9 @@ export function Graph() {
         <CameraSync />
         <EffectComposer>
           <Bloom
-            intensity={19}
-            luminanceThreshold={0.02}
-            luminanceSmoothing={0.9}
+            intensity={40}
+            luminanceThreshold={0.001}
+            luminanceSmoothing={0.2}
             mipmapBlur
           />
         </EffectComposer>

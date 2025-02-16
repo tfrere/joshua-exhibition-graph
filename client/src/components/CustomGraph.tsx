@@ -1,190 +1,231 @@
-import { useRef, forwardRef, useImperativeHandle } from "react";
-import { Vector3, Color, QuadraticBezierCurve3 } from "three";
+import {
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
+import {
+  Vector3,
+  Color,
+  InstancedMesh,
+  Matrix4,
+  Object3D,
+  BufferGeometry,
+  Material,
+} from "three";
 import { useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 
-interface GraphNode {
-  id: number;
-  name: string;
-  depth: number;
-  x?: number;
-  y?: number;
-  z?: number;
-  isLeaf?: boolean;
-  rootId: number;
-}
-
-interface GraphLink {
-  source: number;
-  target: number;
-}
-
-interface GraphData {
-  nodes: GraphNode[];
-  links: GraphLink[];
+interface Post {
+  creationDate: number;
+  thematic: string;
+  coordinates: {
+    x: number;
+    y: number;
+    z: number;
+  };
 }
 
 interface CustomGraphProps {
-  graphData: GraphData;
-  onNodeClick?: (node: GraphNode) => void;
+  onNodeClick?: (post: Post) => void;
 }
 
-const NODE_COLORS = [
-  "#ff6b6b",
-  "#4ecdc4",
-  "#45b7d1",
-  "#96ceb4",
-  "#ffeead",
-  "#ff9a9e",
-  "#81ecec",
-  "#74b9ff",
-  "#a8e6cf",
-  "#dfe6e9",
-  "#fab1a0",
-  "#55efc4",
-  "#0984e3",
-  "#b2bec3",
-  "#fd79a8",
-  "#00cec9",
-  "#6c5ce7",
-  "#00b894",
-  "#d63031",
-  "#e17055",
-].map((color) => new Color(color));
-const NODE_SIZE_BASE = 2;
-const NODE_SIZE_DECAY = 0.85; // Réduction plus douce de la taille avec la profondeur
-const HIGHLIGHT_COLOR = new Color("#ff0000");
+interface RawPost {
+  creationDate: number;
+  thematic: string;
+  coordinates: {
+    x: number;
+    y: number;
+    z: number;
+  };
+}
+
+// Génération de couleurs uniques pour les thématiques
+const generateColorMap = (thematics: string[]) => {
+  const colors: { [key: string]: Color } = {};
+  const baseColors = [
+    "#ff6b6b",
+    "#4ecdc4",
+    "#45b7d1",
+    "#96ceb4",
+    "#ffeead",
+    "#ff9a9e",
+    "#81ecec",
+    "#74b9ff",
+    "#a8e6cf",
+    "#dfe6e9",
+    "#fab1a0",
+    "#55efc4",
+    "#0984e3",
+    "#b2bec3",
+    "#fd79a8",
+    "#00cec9",
+    "#6c5ce7",
+    "#00b894",
+    "#d63031",
+    "#e17055",
+  ];
+
+  thematics.forEach((thematic, index) => {
+    colors[thematic] = new Color(baseColors[index % baseColors.length]);
+  });
+
+  return colors;
+};
+
+// Fonction pour normaliser les coordonnées
+const normalizeCoordinates = (posts: RawPost[]) => {
+  // Trouver les min/max pour chaque axe
+  let minX = Infinity,
+    maxX = -Infinity;
+  let minY = Infinity,
+    maxY = -Infinity;
+  let minZ = Infinity,
+    maxZ = -Infinity;
+
+  posts.forEach((post) => {
+    minX = Math.min(minX, post.coordinates.x);
+    maxX = Math.max(maxX, post.coordinates.x);
+    minY = Math.min(minY, post.coordinates.y);
+    maxY = Math.max(maxY, post.coordinates.y);
+    minZ = Math.min(minZ, post.coordinates.z);
+    maxZ = Math.max(maxZ, post.coordinates.z);
+  });
+
+  console.log("Échelle d'origine:", {
+    x: [minX, maxX],
+    y: [minY, maxY],
+    z: [minZ, maxZ],
+  });
+
+  // Normaliser à une échelle de -500 à 500
+  const scale = 1000;
+  return posts.map((post) => ({
+    ...post,
+    coordinates: {
+      x: ((post.coordinates.x - minX) / (maxX - minX) - 0.5) * scale,
+      y: ((post.coordinates.y - minY) / (maxY - minY) - 0.5) * scale,
+      z: ((post.coordinates.z - minZ) / (maxZ - minZ) - 0.5) * scale,
+    },
+  }));
+};
 
 export default forwardRef(function CustomGraph(
-  { graphData, onNodeClick }: CustomGraphProps,
+  { onNodeClick }: CustomGraphProps,
   ref
 ) {
-  const nodesRef = useRef<{ [key: number]: Vector3 }>({});
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [colorMap, setColorMap] = useState<{ [key: string]: Color }>({});
+  const meshRef = useRef<InstancedMesh>(null);
+  const tempObject = useMemo(() => new Object3D(), []);
+  const tempColor = useMemo(() => new Color(), []);
+
+  // Chargement des données
+  useEffect(() => {
+    console.log("Chargement des posts...");
+    fetch("/data/spatialized_posts.json")
+      .then((response) => response.json())
+      .then((data: RawPost[]) => {
+        console.log(`${data.length} posts chargés`);
+
+        // Normaliser les coordonnées
+        const normalizedData = normalizeCoordinates(data);
+
+        // Log des premières coordonnées normalisées
+        console.log(
+          "Exemple de coordonnées normalisées:",
+          normalizedData.slice(0, 3).map((p) => p.coordinates)
+        );
+
+        const loadedPosts = normalizedData.map((post) => ({
+          creationDate: post.creationDate,
+          thematic: post.thematic || "unknown",
+          coordinates: post.coordinates,
+        }));
+
+        // Trier par creationDate pour assurer un ordre cohérent
+        loadedPosts.sort((a: Post, b: Post) => a.creationDate - b.creationDate);
+        setPosts(loadedPosts);
+
+        // Générer la map des couleurs pour les thématiques uniques
+        const uniqueThematics = Array.from(
+          new Set(loadedPosts.map((p: Post) => p.thematic))
+        );
+        console.log("Thématiques uniques:", uniqueThematics);
+        setColorMap(generateColorMap(uniqueThematics));
+      })
+      .catch((error) => console.error("Error loading posts:", error));
+  }, []);
+
+  // Mettre à jour les positions et les couleurs
+  useEffect(() => {
+    if (!meshRef.current || posts.length === 0) {
+      console.log("Mesh ref ou posts non disponibles");
+      return;
+    }
+
+    console.log("Mise à jour des positions pour", posts.length, "posts");
+
+    posts.forEach((post, i) => {
+      // Position
+      tempObject.position.set(
+        post.coordinates.x,
+        post.coordinates.y,
+        post.coordinates.z
+      );
+      tempObject.updateMatrix();
+      meshRef.current!.setMatrixAt(i, tempObject.matrix);
+
+      // Couleur
+      const color = colorMap[post.thematic] || new Color("#ffffff");
+      meshRef.current!.setColorAt(i, color);
+    });
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
+    if (meshRef.current.instanceColor)
+      meshRef.current.instanceColor.needsUpdate = true;
+
+    console.log("Mise à jour terminée");
+  }, [posts, colorMap]);
 
   // Exposer les méthodes via la ref
   useImperativeHandle(ref, () => ({
     getGraphData: () => ({
-      nodes: graphData.nodes.map((node) => ({
-        ...node,
-        x: nodesRef.current[node.id]?.x || node.x || 0,
-        y: nodesRef.current[node.id]?.y || node.y || 0,
-        z: nodesRef.current[node.id]?.z || node.z || 0,
+      posts: posts.map((post) => ({
+        ...post,
+        x: post.coordinates.x,
+        y: post.coordinates.y,
+        z: post.coordinates.z,
       })),
-      links: graphData.links,
     }),
   }));
 
-  // Mettre à jour les positions des nœuds
-  useFrame(() => {
-    graphData.nodes.forEach((node) => {
-      if (
-        node.x !== undefined &&
-        node.y !== undefined &&
-        node.z !== undefined
-      ) {
-        if (!nodesRef.current[node.id]) {
-          nodesRef.current[node.id] = new Vector3(node.x, node.y, node.z);
-        } else {
-          nodesRef.current[node.id].set(node.x, node.y, node.z);
-        }
-      }
-    });
-  });
+  if (posts.length === 0) {
+    console.log("Pas de posts à afficher");
+    return null;
+  }
 
-  // Calculer la profondeur maximale pour l'échelle des nœuds
-  const maxDepth = Math.max(...graphData.nodes.map((node) => node.depth));
+  console.log("Rendu du graphe avec", posts.length, "posts");
 
   return (
-    <group>
-      {/* Rendu des liens */}
-      {graphData.links.map((link) => {
-        const sourceNode = graphData.nodes.find((n) => n.id === link.source);
-        const targetNode = graphData.nodes.find((n) => n.id === link.target);
-
-        if (!sourceNode || !targetNode) return null;
-        if (
-          !sourceNode.x ||
-          !sourceNode.y ||
-          !sourceNode.z ||
-          !targetNode.x ||
-          !targetNode.y ||
-          !targetNode.z
-        )
-          return null;
-
-        // Créer une ligne droite simple entre les nœuds
-        const positions = new Float32Array([
-          sourceNode.x,
-          sourceNode.y,
-          sourceNode.z,
-          targetNode.x,
-          targetNode.y,
-          targetNode.z,
-        ]);
-
-        return (
-          <line key={`${link.source}-${link.target}`}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach="attributes-position"
-                count={2}
-                array={positions}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial
-              color="#ffffff"
-              opacity={0.5}
-              transparent
-              linewidth={1}
-            />
-          </line>
-        );
-      })}
-
-      {/* Rendu des nœuds */}
-      {graphData.nodes.map((node) => {
-        if (!node.x || !node.y || !node.z) return null;
-
-        // Calculer la taille du nœud en fonction de sa profondeur
-        const nodeSize = NODE_SIZE_BASE * Math.pow(NODE_SIZE_DECAY, node.depth);
-        const color = NODE_COLORS[node.rootId % NODE_COLORS.length];
-        const intensity = Math.max(0.4, 1 - node.depth / maxDepth);
-
-        return (
-          <group key={node.id}>
-            <mesh
-              position={[node.x, node.y, node.z]}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (onNodeClick) onNodeClick(node);
-              }}
-            >
-              <sphereGeometry args={[nodeSize, 32, 32]} />
-              <meshStandardMaterial
-                color={color}
-                emissive={color}
-                emissiveIntensity={intensity}
-                metalness={0.7}
-                roughness={0.2}
-              />
-            </mesh>
-            {!node.isLeaf && (
-              <Text
-                position={[node.x, node.y + nodeSize * 2, node.z]}
-                fontSize={nodeSize * 2}
-                color={color}
-                anchorX="center"
-                anchorY="middle"
-                outlineWidth={0.2}
-                outlineColor="#000000"
-              >
-                {node.name}
-              </Text>
-            )}
-          </group>
-        );
-      })}
-    </group>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, posts.length]}
+      onClick={(e) => {
+        if (onNodeClick && e.instanceId !== undefined) {
+          onNodeClick(posts[e.instanceId]);
+        }
+      }}
+    >
+      <sphereGeometry args={[1, 16, 16]} />
+      <meshStandardMaterial
+        vertexColors
+        emissive="#ffffff"
+        emissiveIntensity={2}
+        metalness={0.2}
+        roughness={0.1}
+      />
+    </instancedMesh>
   );
 });
