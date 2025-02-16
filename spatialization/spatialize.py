@@ -8,6 +8,12 @@ from tqdm import tqdm
 from time import time
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.sparse import hstack
+import os
+from pathlib import Path
+
+# Chemins des fichiers
+INPUT_PATH = Path("../client/public/data/posts.json")
+OUTPUT_DIR = Path("../client/public/data")
 
 # Configuration
 UMAP_PARAMS = {
@@ -159,7 +165,12 @@ def save_results(posts, coordinates, output_file):
         results.append(spatialized_post)
     
     # Création du nom de fichier avec les paramètres
-    output_path = f"spatialized_posts_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
+    output_filename = f"spatialized_posts_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
+    output_path = OUTPUT_DIR / output_filename
+    
+    # Créer le dossier de sortie s'il n'existe pas
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2)
     
@@ -170,8 +181,12 @@ def save_results(posts, coordinates, output_file):
 def main():
     total_start_time = time()
     
+    # Vérifier que le fichier d'entrée existe
+    if not INPUT_PATH.exists():
+        raise FileNotFoundError(f"Le fichier d'entrée n'existe pas : {INPUT_PATH}")
+    
     # Charge les données
-    posts = load_data('posts.json')
+    posts = load_data(INPUT_PATH)
     
     # Vectorise les features
     vectors = vectorize_features(posts)
