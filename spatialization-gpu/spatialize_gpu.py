@@ -1,13 +1,13 @@
 import json
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
-from umap import UMAP
+from cudf import DataFrame
+from cuml.preprocessing import OneHotEncoder
+from cuml.manifold import UMAP
 from datetime import datetime
 from tqdm import tqdm
 from time import time
-from sklearn.metrics.pairwise import cosine_similarity
-from scipy.sparse import hstack
+from cuml.metrics import pairwise_distances
 import os
 from pathlib import Path
 
@@ -15,16 +15,16 @@ from pathlib import Path
 INPUT_PATH = Path("../client/public/data/posts.json")
 OUTPUT_DIR = Path("../client/public/data")
 
-# Configuration
+# Configuration optimisée pour GPU
 UMAP_PARAMS = {
-    'n_neighbors': 15,    # encore plus de voisins pour une meilleure connexion globale
-    'min_dist': 0.05,     # un peu plus proche mais pas trop
-    'spread': 0.05,        # distribution plus étalée pour faciliter la navigation
-    'n_components': 3,
+    'n_neighbors': 1000,    # Plus de voisins pour une meilleure connexion globale
+    'min_dist': 0.05,       # Distance minimale entre les points
+    'spread': 0.8,          # Distribution plus étalée
+    'n_components': 3,      # Dimensions de sortie
     'random_state': 42
 }
 
-# Poids des différentes composantes dans la vectorisation finale
+# Poids des différentes composantes
 WEIGHTS = {
     'sourceType': 0.33,
     'thematic': 0.33,
@@ -36,22 +36,14 @@ def print_time_estimate(start_time, current_step, total_steps):
     elapsed = time() - start_time
     estimated_total = (elapsed / current_step) * total_steps
     remaining = estimated_total - elapsed
-    print(f"Temps écoulé : {elapsed:.2f}s | Temps restant estimé : {remaining:.2f}s")
+    print(f"⏱️  Temps écoulé : {elapsed:.2f}s | Temps restant estimé : {remaining:.2f}s")
 
 def clean_text(text):
-    """Nettoie le texte en supprimant les URLs, les caractères spéciaux, etc."""
+    """Nettoie le texte."""
     if not isinstance(text, str):
         return ""
-    # Supprime les URLs
-    text = re.sub(r'http\S+', '', text)
-    # Supprime les références 4chan
-    text = re.sub(r'\/\w+\/', ' ', text)
-    text = re.sub(r'ID:\w+', ' ', text)
-    # Supprime les caractères spéciaux
-    text = re.sub(r'[^\w\s]', ' ', text)
-    # Normalise les espaces
-    text = ' '.join(text.split())
-    return text.lower()
+    text = text.lower()
+    return ' '.join(text.split())
 
 def load_data(file_path):
     """Charge et prépare les données des posts."""
@@ -61,7 +53,7 @@ def load_data(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         posts = json.load(f)
     
-    # Prépare les données pour la vectorisation
+    # Préparation des données
     processed_posts = []
     for post in tqdm(posts, desc="Traitement des posts"):
         processed_posts.append({
@@ -76,28 +68,32 @@ def load_data(file_path):
     print(f"⏱️  Temps de traitement : {time() - start_time:.2f}s")
     return processed_posts
 
-def vectorize_features(posts):
-    """Vectorise les métadonnées."""
-    print("\n🔤 Vectorisation des données...")
+def vectorize_features_gpu(posts):
+    """Vectorise les métadonnées avec accélération GPU."""
+    print("\n🔤 Vectorisation des données sur GPU...")
     start_time = time()
+    
+    # Création du DataFrame RAPIDS
+    df = DataFrame({
+        'sourceType': [post['sourceType'] for post in posts],
+        'thematic': [post['thematic'] for post in posts],
+        'character': [post['character'] for post in posts]
+    })
     
     # Encodage des métadonnées catégorielles
     print("   Encodage des métadonnées...")
-    categorical_encoders = {}
     categorical_vectors = {}
     
     for feature in ['sourceType', 'thematic', 'character']:
-        encoder = OneHotEncoder(sparse_output=True, handle_unknown='ignore')
-        feature_values = [[post[feature]] for post in posts]
-        feature_vectors = encoder.fit_transform(feature_values)
-        categorical_encoders[feature] = encoder
+        # Utilisation de get_dummies de cudf pour one-hot encoding
+        feature_vectors = DataFrame.get_dummies(df[feature], prefix=feature)
         categorical_vectors[feature] = feature_vectors
         
-        # Afficher les catégories uniques pour chaque feature
-        unique_values = encoder.categories_[0]
+        # Afficher les catégories uniques
+        unique_values = df[feature].unique().values_host
         print(f"\n📊 Catégories pour {feature}:")
         for val in unique_values:
-            count = sum(1 for post in posts if post[feature] == val)
+            count = (df[feature] == val).sum()
             print(f"   - {val}: {count} posts")
     
     # Combinaison des vecteurs avec les poids
@@ -106,17 +102,18 @@ def vectorize_features(posts):
     
     for feature in ['sourceType', 'thematic', 'character']:
         feature_vectors = categorical_vectors[feature]
-        if feature_vectors.shape[1] > 0:  # Si des catégories ont été trouvées
-            feature_vectors_normalized = feature_vectors / feature_vectors.max() if feature_vectors.max() > 0 else feature_vectors
+        if len(feature_vectors.columns) > 0:
+            feature_vectors_normalized = feature_vectors / feature_vectors.max() if feature_vectors.max().any() else feature_vectors
             weighted_vectors.append(WEIGHTS[feature] * feature_vectors_normalized)
     
     # Combiner tous les vecteurs
-    combined_vectors = hstack(weighted_vectors)
+    combined_vectors = pd.concat([v.to_pandas() for v in weighted_vectors], axis=1)
     
-    # Calcul de quelques statistiques
+    # Calcul de similarités sur un échantillon
     sample_size = min(1000, combined_vectors.shape[0])
-    similarities = cosine_similarity(combined_vectors[:sample_size], combined_vectors[:sample_size])
-    avg_similarity = np.mean(similarities[similarities != 1])
+    sample_vectors = combined_vectors.iloc[:sample_size]
+    similarities = pairwise_distances(sample_vectors, metric='cosine')
+    avg_similarity = float(np.mean(similarities[np.eye(sample_size, dtype=bool) == 0]))
     
     print(f"\n✅ Dimension des vecteurs finaux : {combined_vectors.shape}")
     print(f"📊 Similarité moyenne entre les posts : {avg_similarity:.3f}")
@@ -124,29 +121,31 @@ def vectorize_features(posts):
     
     return combined_vectors
 
-def apply_umap(vectors):
-    """Applique UMAP pour la réduction dimensionnelle."""
-    print("\n🌐 Application d'UMAP...")
+def apply_umap_gpu(vectors):
+    """Applique UMAP avec accélération GPU."""
+    print("\n🌐 Application d'UMAP sur GPU...")
     start_time = time()
     
+    # Initialisation de UMAP optimisé GPU
     umap_model = UMAP(**UMAP_PARAMS)
+    
     with tqdm(total=100, desc="Progression UMAP") as pbar:
         def update_progress(progress):
             increment = progress - pbar.n
             if increment > 0:
                 pbar.update(increment)
         
-        umap_model._handle_progress = update_progress
-        coordinates = umap_model.fit_transform(vectors.toarray())
+        coordinates = umap_model.fit_transform(vectors)
     
-    # Calcul de quelques statistiques sur les coordonnées
-    distances = np.sqrt(np.sum((coordinates[:, None] - coordinates) ** 2, axis=2))
-    avg_distance = np.mean(distances[distances > 0])
-    max_distance = np.max(distances)
+    # Calcul des statistiques
+    distances = pairwise_distances(coordinates, metric='euclidean')
+    avg_distance = float(np.mean(distances[distances > 0]))
+    max_distance = float(np.max(distances))
     
     print(f"📊 Distance moyenne entre les points : {avg_distance:.3f}")
     print(f"📊 Distance maximale entre les points : {max_distance:.3f}")
     print(f"⏱️  Temps de réduction dimensionnelle : {time() - start_time:.2f}s")
+    
     return coordinates
 
 def save_results(posts, coordinates, output_file):
@@ -165,7 +164,7 @@ def save_results(posts, coordinates, output_file):
         results.append(spatialized_post)
     
     # Création du nom de fichier avec les paramètres
-    output_filename = f"spatialized_posts_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
+    output_filename = f"spatialized_posts_gpu_n-{UMAP_PARAMS['n_neighbors']}_d-{UMAP_PARAMS['min_dist']}_s-{UMAP_PARAMS['spread']}.json"
     output_path = OUTPUT_DIR / output_filename
     
     # Créer le dossier de sortie s'il n'existe pas
@@ -188,17 +187,17 @@ def main():
     # Charge les données
     posts = load_data(INPUT_PATH)
     
-    # Vectorise les features
-    vectors = vectorize_features(posts)
+    # Vectorise les features sur GPU
+    vectors = vectorize_features_gpu(posts)
     
-    # Applique UMAP
-    coordinates = apply_umap(vectors)
+    # Applique UMAP sur GPU
+    coordinates = apply_umap_gpu(vectors)
     
     # Sauvegarde les résultats
     output_path = save_results(posts, coordinates, 'spatialized_posts.json')
     
     total_time = time() - total_start_time
-    print(f"\n🎉 Spatialisation terminée en {total_time:.2f} secondes !")
+    print(f"\n🎉 Spatialisation GPU terminée en {total_time:.2f} secondes !")
     print(f"📁 Résultats disponibles dans : {output_path}")
 
 if __name__ == "__main__":
