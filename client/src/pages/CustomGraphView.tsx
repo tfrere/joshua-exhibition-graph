@@ -19,10 +19,29 @@ export function CustomGraphView() {
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <Canvas
+        gl={(canvas) => {
+          const context = canvas.getContext('webgl2');
+          if (!context) {
+            console.warn('WebGL 2 n\'est pas disponible, certaines fonctionnalités seront désactivées');
+            return {
+              powerPreference: "high-performance",
+              antialias: true,
+              stencil: false,
+              depth: true
+            };
+          }
+          return {
+            context,
+            powerPreference: "high-performance",
+            antialias: true,
+            stencil: false,
+            depth: true
+          };
+        }}
         camera={{
           position: [400, 400, 400],
           fov: 75,
-          near: 1,
+          near: 0.1,
           far: 20000,
         }}
       >

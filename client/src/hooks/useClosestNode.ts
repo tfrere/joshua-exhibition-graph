@@ -12,6 +12,13 @@ interface Post {
     y: number;
     z: number;
   };
+  transformedCoordinates?: {
+    x: number;
+    y: number;
+    z: number;
+  };
+  character: string;
+  postCharacterRank: number;
 }
 
 const SOCKET_UPDATE_INTERVAL = 1000 / 30;
@@ -51,10 +58,11 @@ export function useClosestNode(posts: Post[], camera: Camera) {
 
     // D'abord, trouver le nœud réellement le plus proche
     for (const post of posts) {
+      const coords = post.transformedCoordinates || post.coordinates;
       tempVector.current.set(
-        post.coordinates.x,
-        post.coordinates.y,
-        post.coordinates.z
+        coords.x,
+        coords.y,
+        coords.z
       );
       const distance = tempVector.current.distanceTo(targetPosition.current);
 
@@ -68,10 +76,11 @@ export function useClosestNode(posts: Post[], camera: Camera) {
     if (closestPost) {
       // Si on a déjà un nœud actif, vérifier si le nouveau est significativement plus proche
       if (activePost) {
+        const activeCoords = activePost.transformedCoordinates || activePost.coordinates;
         tempVector.current.set(
-          activePost.coordinates.x,
-          activePost.coordinates.y,
-          activePost.coordinates.z
+          activeCoords.x,
+          activeCoords.y,
+          activeCoords.z
         );
         const activeDistance = tempVector.current.distanceTo(
           targetPosition.current
