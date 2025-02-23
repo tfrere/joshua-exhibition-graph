@@ -108,12 +108,12 @@ def calculate_coordinates_spiral(posts_data):
             post['coordinates'] = {}
             
         offset_stage = -40
-        radius = 20 + float(post.get('charId', 0))
+        radius = 20 + float(post.get('postDetails', {}).get('rankInDay', 1))
         stage = offset_stage + float(post.get('charId', 0)) * 2
         offset_theta = math.pi / 2
         
         # Calcul de theta basé sur la semaine et le jour
-        week_num = float(post.get('creationDateDetails', {}).get('weekNum', 0))
+        week_num = float(post.get('creationDateDetails', {}).get('yearDayNum', 0)) / 7
         weekday_num = float(post.get('creationDateDetails', {}).get('weekDayNum', 0))
         year_weeks_num = float(post.get('creationDateDetails', {}).get('yearWeeksNum', 52))
         
@@ -175,8 +175,7 @@ def calculate_coordinates_characters_spheres(posts_data, character_id_map):
     # Traiter chaque groupe
     for character_id, group_posts in id_groups.items():
         nb_particles = len(group_posts)
-        task_stage = 2
-        stage = float(character_id) * 100
+        charRadius = 50
         
         for i, post in enumerate(group_posts):
             if 'coordinates' not in post:
@@ -186,9 +185,9 @@ def calculate_coordinates_characters_spheres(posts_data, character_id_map):
             theta = math.sqrt(nb_particles * math.pi) * phi
             
             post['coordinates']['charactersSpheres'] = {
-                'x': popX[post.get('charId', 0)] + float(f"{stage * math.cos(theta) * math.sin(phi):.6f}"),
-                'y': popY[post.get('charId', 0)] + float(f"{stage * math.sin(theta) * math.sin(phi):.6f}"),
-                'z': popZ[post.get('charId', 0)] + float(f"{stage * math.cos(phi):.6f}")
+                'x': popX[post.get('charId', 0)] + float(f"{charRadius * math.cos(theta) * math.sin(phi):.6f}"),
+                'y': popY[post.get('charId', 0)] + float(f"{charRadius * math.sin(theta) * math.sin(phi):.6f}"),
+                'z': popZ[post.get('charId', 0)] + float(f"{charRadius * math.cos(phi):.6f}")
             }
     return posts_data
 
@@ -244,7 +243,7 @@ def calculate_coordinates_calendar_staged(posts_data):
         col = offset_col + (month_num * month_stage) + weekday_num
         month_week = math.ceil((month_day_num - 1 - weekday_num) / 7)
         row = offset_row + task_stage - month_week + (offset_row + character_id) * task_stage
-        stage = rank_in_day * 2 + (year - 2000) * 30
+        stage = rank_in_day + (year - 2000) * 200
         
         post['coordinates']['calendarStaged'] = {
             'x': float(f"{col:.6f}"),
@@ -320,7 +319,7 @@ def main():
     spatialized_posts = posts_data  # Initialisation de spatialized_posts
     # spatialized_posts = calculate_coordinates_origin(spatialized_posts)
     spatialized_posts = calculate_coordinates_exploded(spatialized_posts)
-    # spatialized_posts = calculate_coordinates_spiral(spatialized_posts)
+    spatialized_posts = calculate_coordinates_spiral(spatialized_posts)
     spatialized_posts = calculate_coordinates_sphere(spatialized_posts, character_id_map)
     spatialized_posts = calculate_coordinates_calendar(spatialized_posts)
     spatialized_posts = calculate_coordinates_calendar_staged(spatialized_posts)
@@ -331,7 +330,7 @@ def main():
     
 
     # Sauvegarder le résultat
-    output_file = "./data/6_posts_spatialized.json"
+    output_file = "./data/spatialized_posts.json"
     save_json_file(spatialized_posts, output_file)
     print(f"Fichier {output_file} mis à jour avec les coordonnées des posts pour tous les layouts")
 
