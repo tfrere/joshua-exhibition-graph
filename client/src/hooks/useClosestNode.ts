@@ -2,29 +2,49 @@ import { useRef, useState, useEffect } from "react";
 import { Vector3, Camera } from "three";
 import { io, Socket } from "socket.io-client";
 import { SOCKET_SERVER_URL } from "../config";
+import { useDebugMode } from "./useDebugMode";
+import { CoordinateType } from "../types/coordinates";
+
+interface Coordinates {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface CoordinateTypes {
+  origin: Coordinates;
+  originUp: Coordinates;
+  exploded: Coordinates;
+  spiral: Coordinates;
+  sphere: Coordinates;
+  calendar: Coordinates;
+  calendarStaged: Coordinates;
+  tree: Coordinates;
+  treeDiffuse: Coordinates;
+  map: Coordinates;
+  mapDiffuse: Coordinates;
+  mapLevel: Coordinates;
+}
 
 interface Post {
   creationDate: number;
   thematic: string;
   uid: string;
-  coordinates: {
-    x: number;
-    y: number;
-    z: number;
-  };
+  coordinates: CoordinateTypes;
 }
 
 const SOCKET_UPDATE_INTERVAL = 1000 / 30;
 const HYSTERESIS_DISTANCE = 1;
 const TARGET_DISTANCE = 20; // Distance du point cible devant la caméra
 
-export function useClosestNode(posts: Post[], camera: Camera) {
+export function useClosestNode(posts: Post[], camera: Camera, coordinateType: CoordinateType) {
   const [activePost, setActivePost] = useState<Post | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const tempVector = useRef(new Vector3());
   const targetPosition = useRef(new Vector3());
   const direction = useRef(new Vector3());
   const lastUpdateTime = useRef(0);
+  const { debugLog } = useDebugMode();
 
   // Initialiser la connexion socket
   useEffect(() => {
@@ -52,9 +72,9 @@ export function useClosestNode(posts: Post[], camera: Camera) {
     // D'abord, trouver le nœud réellement le plus proche
     for (const post of posts) {
       tempVector.current.set(
-        post.coordinates.x,
-        post.coordinates.y,
-        post.coordinates.z
+        post.coordinates[coordinateType].x,
+        post.coordinates[coordinateType].y,
+        post.coordinates[coordinateType].z
       );
       const distance = tempVector.current.distanceTo(targetPosition.current);
 
@@ -69,13 +89,11 @@ export function useClosestNode(posts: Post[], camera: Camera) {
       // Si on a déjà un nœud actif, vérifier si le nouveau est significativement plus proche
       if (activePost) {
         tempVector.current.set(
-          activePost.coordinates.x,
-          activePost.coordinates.y,
-          activePost.coordinates.z
+          activePost.coordinates[coordinateType].x,
+          activePost.coordinates[coordinateType].y,
+          activePost.coordinates[coordinateType].z
         );
-        const activeDistance = tempVector.current.distanceTo(
-          targetPosition.current
-        );
+        const activeDistance = tempVector.current.distanceTo(targetPosition.current);
 
         // Garder l'ancien nœud sauf si le nouveau est significativement plus proche
         if (minDistance > activeDistance - HYSTERESIS_DISTANCE) {
@@ -86,7 +104,7 @@ export function useClosestNode(posts: Post[], camera: Camera) {
 
       // Mettre à jour le post actif si nécessaire
       if (closestPost.creationDate !== activePost?.creationDate) {
-        console.log("Changement de nœud actif:", {
+        debugLog("Changement de nœud actif:", {
           de: activePost?.creationDate,
           vers: closestPost.creationDate,
           distance: minDistance,
@@ -109,11 +127,7 @@ export function useClosestNode(posts: Post[], camera: Camera) {
       lastUpdateTime.current = currentTime;
 
       socketRef.current.emit("updateState", {
-        cameraPosition: [
-          camera.position.x,
-          camera.position.y,
-          camera.position.z,
-        ],
+        cameraPosition: [camera.position.x, camera.position.y, camera.position.z],
         cameraRotation: [
           camera.quaternion.x,
           camera.quaternion.y,
@@ -123,9 +137,9 @@ export function useClosestNode(posts: Post[], camera: Camera) {
         closestNodeId: activePost.creationDate,
         closestNodeName: activePost.thematic,
         closestNodePosition: [
-          activePost.coordinates.x,
-          activePost.coordinates.y,
-          activePost.coordinates.z,
+          activePost.coordinates[coordinateType].x,
+          activePost.coordinates[coordinateType].y,
+          activePost.coordinates[coordinateType].z,
         ],
         targetPosition: [
           targetPosition.current.x,

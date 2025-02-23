@@ -1,20 +1,25 @@
 import { useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
-import { Vector3, Quaternion, Euler } from "three";
+import { Vector3, Euler } from "three";
 
-const DEADZONE = 0.15;
-const MAX_SPEED = 1400; // Vitesse maximale
-const ACCELERATION = 800; // Force d'accélération
-const DECELERATION = 0.95; // Facteur de décélération (friction)
-const ROTATION_SPEED = 4.2;
+interface ControllerConfig {
+  maxSpeed: number;
+  acceleration: number;
+  deceleration: number;
+  rotationSpeed: number;
+  deadzone: number;
+}
 
-export function GamepadControls() {
+interface GamepadControlsProps {
+  config: ControllerConfig;
+}
+
+export function GamepadControls({ config }: GamepadControlsProps) {
   const { camera } = useThree();
   const gamepadIndex = useRef<number | null>(null);
-  const velocity = useRef(new Vector3()); // Vélocité actuelle
+  const velocity = useRef(new Vector3());
   const tempVector = useRef(new Vector3());
   const euler = useRef(new Euler(0, 0, 0, "YXZ"));
-  const rotationQuaternion = useRef(new Quaternion());
 
   useEffect(() => {
     const handleGamepadConnected = (e: GamepadEvent) => {
@@ -49,7 +54,7 @@ export function GamepadControls() {
     if (!gamepad) return;
 
     // Mouvement avant/arrière (Left stick Y)
-    const thrust = Math.abs(gamepad.axes[1]) > DEADZONE ? -gamepad.axes[1] : 0;
+    const thrust = Math.abs(gamepad.axes[1]) > config.deadzone ? -gamepad.axes[1] : 0;
 
     // Mouvement vertical (Boutons)
     const upDown =
@@ -58,9 +63,9 @@ export function GamepadControls() {
 
     // Rotation vue (Right stick)
     const viewYawInput =
-      Math.abs(gamepad.axes[2]) > DEADZONE ? gamepad.axes[2] : 0;
+      Math.abs(gamepad.axes[2]) > config.deadzone ? gamepad.axes[2] : 0;
     const pitchInput =
-      Math.abs(gamepad.axes[3]) > DEADZONE ? gamepad.axes[3] : 0;
+      Math.abs(gamepad.axes[3]) > config.deadzone ? gamepad.axes[3] : 0;
 
     // Roll (Triggers)
     const rollInput =
@@ -71,7 +76,7 @@ export function GamepadControls() {
       tempVector.current
         .set(0, 0, -1)
         .applyQuaternion(camera.quaternion)
-        .multiplyScalar(thrust * ACCELERATION * delta);
+        .multiplyScalar(thrust * config.acceleration * delta);
       velocity.current.add(tempVector.current);
     }
 
@@ -79,17 +84,17 @@ export function GamepadControls() {
     if (upDown !== 0) {
       tempVector.current
         .set(0, 1, 0)
-        .multiplyScalar(upDown * ACCELERATION * delta);
+        .multiplyScalar(upDown * config.acceleration * delta);
       velocity.current.add(tempVector.current);
     }
 
     // Appliquer la décélération
-    velocity.current.multiplyScalar(DECELERATION);
+    velocity.current.multiplyScalar(config.deceleration);
 
     // Limiter la vitesse maximale
     const currentSpeed = velocity.current.length();
-    if (currentSpeed > MAX_SPEED) {
-      velocity.current.multiplyScalar(MAX_SPEED / currentSpeed);
+    if (currentSpeed > config.maxSpeed) {
+      velocity.current.multiplyScalar(config.maxSpeed / currentSpeed);
     }
 
     // Appliquer le mouvement
@@ -100,14 +105,14 @@ export function GamepadControls() {
 
     // Vue libre avec le stick droit
     if (viewYawInput !== 0) {
-      euler.current.y -= viewYawInput * ROTATION_SPEED * delta;
+      euler.current.y -= viewYawInput * config.rotationSpeed * delta;
     }
     if (pitchInput !== 0) {
       euler.current.x = Math.max(
         -Math.PI / 2,
         Math.min(
           Math.PI / 2,
-          euler.current.x + pitchInput * ROTATION_SPEED * delta
+          euler.current.x + pitchInput * config.rotationSpeed * delta
         )
       );
     }
@@ -116,7 +121,7 @@ export function GamepadControls() {
         -Math.PI / 2,
         Math.min(
           Math.PI / 2,
-          euler.current.z + rollInput * ROTATION_SPEED * delta
+          euler.current.z + rollInput * config.rotationSpeed * delta
         )
       );
     }

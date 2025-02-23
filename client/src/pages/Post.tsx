@@ -94,6 +94,7 @@ export function Post() {
 
   // Si nous n'avons jamais reçu de nœud, afficher le message de chargement
   if (!cameraState.closestNodeId) {
+    
     return (
       <div style={containerStyle}>
         <div
@@ -173,6 +174,7 @@ export function Post() {
                 <div style={{ marginBottom: "1.5rem", opacity: 0.7 }}>
                   <p>{currentPost.sourceType}</p>
                   <p>
+                    timestamp: {currentPost.creationDate}
                     Le{" "}
                     {new Date(
                       currentPost.creationDate * 1000

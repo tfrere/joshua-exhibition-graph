@@ -5,7 +5,15 @@ import CustomGraph from "../components/CustomGraph";
 import { GamepadControls } from "../components/GamepadControls";
 import { useSocketSync } from "../hooks/useSocketSync";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useRef } from "react";
+import { useRef, useState } from "react";
+
+interface ControllerConfig {
+  maxSpeed: number;
+  acceleration: number;
+  deceleration: number;
+  rotationSpeed: number;
+  deadzone: number;
+}
 
 function CameraSync() {
   const { camera } = useThree();
@@ -14,7 +22,18 @@ function CameraSync() {
 }
 
 export function CustomGraphView() {
-  const graphRef = useRef<any>(null);
+  const graphRef = useRef<unknown>(null);
+  const [controllerConfig, setControllerConfig] = useState<ControllerConfig>({
+    maxSpeed: 1400,
+    acceleration: 800,
+    deceleration: 0.95,
+    rotationSpeed: 4.2,
+    deadzone: 0.15
+  });
+
+  const handleControllerChange = (key: string, value: number) => {
+    setControllerConfig(prev => ({ ...prev, [key]: value }));
+  };
 
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
@@ -36,9 +55,11 @@ export function CustomGraphView() {
           onNodeClick={(post) => {
             console.log("Post cliqué:", post);
           }}
+          onControllerChange={handleControllerChange}
+          controllerConfig={controllerConfig}
         />
         <FlyControls movementSpeed={1000} rollSpeed={0.5} dragToLook={true} />
-        <GamepadControls />
+        <GamepadControls config={controllerConfig} />
         <CameraSync />
         <EffectComposer>
           <Bloom
