@@ -14,11 +14,15 @@
     "start": "serve -s dist --config serve.json"
   },
   "dependencies": {
+    "@react-spring/three": "^9.7.5",
     "@react-three/drei": "^9.121.5",
     "@react-three/fiber": "^8.17.14",
     "@react-three/postprocessing": "^2.19.1",
+    "@types/d3": "^7.4.3",
     "@types/react-router-dom": "^5.3.3",
     "@types/three": "^0.173.0",
+    "d3": "^7.9.0",
+    "gsap": "^3.12.7",
     "r3f-forcegraph": "^1.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
