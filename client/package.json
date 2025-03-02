@@ -7,8 +7,9 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "build:wasm": "emcc src/wasm/force-calculations.cpp -o public/wasm/force-calculations.js --bind -s WASM=1 -O3 -s ALLOW_MEMORY_GROWTH=1 -s \"EXPORTED_RUNTIME_METHODS=['getValue','setValue','ccall','cwrap']\" -s EXPORTED_FUNCTIONS=['_malloc','_free'] -s WASM_BIGINT=1 -s ASSERTIONS=1 -s MODULARIZE=1 -s EXPORT_NAME=createModule -s NO_DYNAMIC_EXECUTION=1 -s ENVIRONMENT=web -s SINGLE_FILE=1 -std=c++11",
     "dev": "vite",
-    "build": "vite build",
+    "build": "yarn build:wasm && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "serve -s dist --config serve.json"
@@ -43,6 +44,8 @@
     "globals": "^15.14.0",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.22.0",
-    "vite": "^6.1.0"
+    "vite": "^6.2.0",
+    "vite-plugin-top-level-await": "^1.5.0",
+    "vite-plugin-wasm": "^3.4.1"
   }
 }

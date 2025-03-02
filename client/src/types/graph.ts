@@ -3,22 +3,15 @@ export interface Node {
   name: string;
   val: number;
   color?: string;
-  type: "character" | "contact" | "source";
-  isJoshua?: boolean;
-  thematic?: string;
-  career?: string;
-  genre?: string;
-  polarisation?: string;
-  sources?: string[];
+  type: "character" | "contact" | "source" | "post";
+  platform?: string;
+  date?: string;
+  url?: string;
 }
 
 export interface Link {
   source: string;
   target: string;
-  isDirect: string;
-  relationType: string;
-  mediaImpact: string;
-  virality: string;
-  mediaCoverage: string;
-  linkType: string;
+  type: string;
+  value: number;
 }
