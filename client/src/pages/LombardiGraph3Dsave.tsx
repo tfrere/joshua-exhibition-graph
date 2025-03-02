@@ -2,11 +2,10 @@ import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import ForceGraph from "r3f-forcegraph";
 import { OrbitControls, Stats } from "@react-three/drei";
-import * as THREE from "three";
 import { generateGraphData } from "../utils/generateGraphNodesAndLinks";
 import { Node, Link } from "../types/graph";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import { Pixelation } from "@react-three/postprocessing";
+import { EffectComposer } from "@react-three/postprocessing";
+// Import des composants créés
 import { createNodeObject, COLORS } from "../utils/createNodeObject";
 
 function ForceGraphWrapper({
@@ -85,7 +84,7 @@ export function LombardiGraph3D() {
     links: [],
   });
   const dataLoadedRef = useRef(false);
-  const [showCentralJoshua, setShowCentralJoshua] = useState(false); // Booléen pour contrôler l'affichage du nœud central
+  const [showCentralJoshua, setShowCentralJoshua] = useState(true); // Booléen pour contrôler l'affichage du nœud central
 
   useEffect(() => {
     if (dataLoadedRef.current) return;
@@ -94,7 +93,7 @@ export function LombardiGraph3D() {
     fetch("/data/characters.json")
       .then((res) => res.json())
       .then((characters) => {
-        let data = generateGraphData(characters);
+        const data = generateGraphData(characters);
 
         // Si showCentralJoshua est activé, ajouter le nœud central et ses liens
         if (showCentralJoshua) {
@@ -164,18 +163,7 @@ export function LombardiGraph3D() {
           dampingFactor={0.3}
           rotateSpeed={0.8}
         />
-        <EffectComposer>
-          {/* <Bloom
-            intensity={1.5}
-            luminanceThreshold={0.1}
-            luminanceSmoothing={0.9}
-            mipmapBlur
-          /> */}
-
-          {/* <Pixelation
-            granularity={10} // pixel granularity
-          /> */}
-        </EffectComposer>
+        <EffectComposer></EffectComposer>
       </Canvas>
     </div>
   );
