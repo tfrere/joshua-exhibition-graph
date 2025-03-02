@@ -1,15 +1,12 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import ForceGraph, { GraphMethods, GraphData } from "r3f-forcegraph";
+import ForceGraph, { GraphMethods } from "r3f-forcegraph";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { generateGraphData } from "../utils/generatePostsNodesAndLinks";
 import { Node, Link } from "../types/graph";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { StatsDisplay } from "../components/StatsDisplay";
-import { initForceCalculations, calculateForces } from '../wasm/force-calculations';
-import { GPUForceSimulation } from "../utils/GPUForceSimulation";
-import { NodeType } from '../types/graph';
 
 // Définir les couleurs pour les différents éléments
 const COLORS = {
@@ -44,7 +41,6 @@ interface GraphNode {
 // Interface pour les liens du graphe
 interface GraphLink extends Omit<Link, 'type'> {
     level: number;
-    type: string;
 }
 
 // Ajouter ces interfaces juste après les interfaces existantes
@@ -68,9 +64,6 @@ interface D3Link {
     value: number;
     level: number;
 }
-
-// Ajouter une Map pour le cache des indices
-const nodeIndexCache = new Map<string, number>();
 
 // Fonction pour obtenir la couleur d'un nœud
 const getNodeColor = (node: GraphNode): string => {
@@ -102,23 +95,7 @@ const convertNodeType = (type: Node["type"]): NodeType => {
     }
 };
 
-// Fonction pour obtenir la taille d'un point selon son type
-const getNodeSize = (type: NodeType): number => {
-    switch (type) {
-        case "central":
-            return 15;
-        case "displayName":
-            return 10;
-        case "pair":
-            return 7;
-        case "post":
-            return 4;
-        default:
-            return 5;
-    }
-};
-
-// Optimiser le NodeRenderer avec des Points
+// Composant pour rendre les nœuds avec InstancedMesh
 function NodeRenderer({
     nodes,
     lodLevel
@@ -127,9 +104,64 @@ function NodeRenderer({
     lodLevel: 'high' | 'medium' | 'low';
 }) {
     const { scene } = useThree();
-    const pointsRef = useRef<THREE.Points[]>([]);
-    
-    // Créer les objets Three.js une seule fois
+    const meshRefs = useRef<THREE.InstancedMesh[]>([]);
+
+    // Fonction simplifiée pour obtenir la résolution des géométries
+    const getGeometryResolution = useCallback((type: string): number => {
+        switch (type) {
+            case 'post':
+                return lodLevel === 'high' ? 8 : 6;
+            case 'displayName':
+                return lodLevel === 'high' ? 12 : 8;
+            case 'pair':
+                return lodLevel === 'high' ? 10 : 7;
+            case 'central':
+                return lodLevel === 'high' ? 16 : 12;
+            default:
+                return 6;
+        }
+    }, [lodLevel]);
+
+    // Créer des géométries et matériaux partagés
+    const sharedResources = useMemo(() => {
+        const geometries: Record<string, THREE.SphereGeometry> = {
+            post: new THREE.SphereGeometry(1, getGeometryResolution('post'), getGeometryResolution('post')),
+            displayName: new THREE.SphereGeometry(1, getGeometryResolution('displayName'), getGeometryResolution('displayName')),
+            pair: new THREE.SphereGeometry(1, getGeometryResolution('pair'), getGeometryResolution('pair')),
+            central: new THREE.SphereGeometry(1, getGeometryResolution('central'), getGeometryResolution('central'))
+        };
+
+        const materials: Record<string, THREE.MeshStandardMaterial> = {
+            post: new THREE.MeshStandardMaterial({
+                color: new THREE.Color(COLORS.post),
+                emissive: new THREE.Color(COLORS.post),
+                emissiveIntensity: 0.3,
+                toneMapped: false
+            }),
+            displayName: new THREE.MeshStandardMaterial({
+                color: new THREE.Color(COLORS.displayName),
+                emissive: new THREE.Color(COLORS.displayName),
+                emissiveIntensity: 0.3,
+                toneMapped: false
+            }),
+            pair: new THREE.MeshStandardMaterial({
+                color: new THREE.Color(COLORS.pair),
+                emissive: new THREE.Color(COLORS.pair),
+                emissiveIntensity: 0.3,
+                toneMapped: false
+            }),
+            central: new THREE.MeshStandardMaterial({
+                color: new THREE.Color(COLORS.central),
+                emissive: new THREE.Color(COLORS.central),
+                emissiveIntensity: 0.3,
+                toneMapped: false
+            })
+        };
+
+        return { geometries, materials };
+    }, [getGeometryResolution]);
+
+    // Compter les nœuds par type
     const nodesByType = useMemo(() => {
         const nodeGroups: Record<string, GraphNode[]> = {
             post: [],
@@ -147,106 +179,83 @@ function NodeRenderer({
         return nodeGroups;
     }, [nodes]);
 
-    // Créer ou mettre à jour les Points
+    // Créer ou mettre à jour les InstancedMesh
     useEffect(() => {
-        // Nettoyer les anciens points
-        pointsRef.current.forEach(points => {
-            if (points) {
-                scene.remove(points);
-                points.geometry.dispose();
-                (points.material as THREE.PointsMaterial).dispose();
+        // Nettoyer les anciennes instances
+        meshRefs.current.forEach(mesh => {
+            if (mesh) {
+                scene.remove(mesh);
+                mesh.dispose();
             }
         });
 
         // Réinitialiser les références
-        pointsRef.current = [];
+        meshRefs.current = [];
 
-        // Créer de nouveaux points pour chaque type
+        // Créer de nouvelles instances pour chaque type
         Object.entries(nodesByType).forEach(([type, typeNodes]) => {
             if (typeNodes.length > 0) {
-                // Créer la géométrie avec les positions
-                const geometry = new THREE.BufferGeometry();
-                const positions = new Float32Array(typeNodes.length * 3);
-                const colors = new Float32Array(typeNodes.length * 3);
-                const color = new THREE.Color(getNodeColor({ type: type as NodeType } as GraphNode));
+                // Créer l'InstancedMesh
+                const mesh = new THREE.InstancedMesh(
+                    sharedResources.geometries[type],
+                    sharedResources.materials[type],
+                    typeNodes.length
+                );
 
-                typeNodes.forEach((node, i) => {
-                    if (node.__threeObj) {
-                        const idx = i * 3;
-                        positions[idx] = node.__threeObj.position.x;
-                        positions[idx + 1] = node.__threeObj.position.y;
-                        positions[idx + 2] = node.__threeObj.position.z;
-                        colors[idx] = color.r;
-                        colors[idx + 1] = color.g;
-                        colors[idx + 2] = color.b;
-                    }
-                });
+                mesh.frustumCulled = true;
+                mesh.castShadow = false;
+                mesh.receiveShadow = false;
 
-                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-                // Créer le matériau pour les points
-                const material = new THREE.PointsMaterial({
-                    size: getNodeSize(type as NodeType) * (lodLevel === 'high' ? 1.2 : lodLevel === 'medium' ? 1 : 0.8),
-                    sizeAttenuation: true,
-                    vertexColors: true,
-                    transparent: true,
-                    opacity: 0.8,
-                    color: color,
-                    toneMapped: false
-                });
-
-                // Créer les points
-                const points = new THREE.Points(geometry, material);
-                points.frustumCulled = true;
-
-                // Ajouter à la scène et stocker la référence
-                scene.add(points);
-                pointsRef.current.push(points);
+                // Ajouter au scene et stocker la référence
+                scene.add(mesh);
+                meshRefs.current.push(mesh);
             }
         });
 
         return () => {
             // Nettoyage lors du démontage
-            pointsRef.current.forEach(points => {
-                if (points) {
-                    scene.remove(points);
-                    points.geometry.dispose();
-                    (points.material as THREE.PointsMaterial).dispose();
+            meshRefs.current.forEach(mesh => {
+                if (mesh) {
+                    scene.remove(mesh);
+                    mesh.dispose();
                 }
             });
         };
-    }, [scene, nodesByType, lodLevel]);
+    }, [scene, sharedResources, nodesByType]);
 
-    // Optimiser la mise à jour des positions
+    // Mettre à jour les positions des instances à chaque frame
     useFrame(() => {
+        const dummy = new THREE.Object3D();
+
+        // Mettre à jour chaque type de nœud
         Object.entries(nodesByType).forEach(([type, typeNodes], typeIndex) => {
-            const points = pointsRef.current[typeIndex];
-            if (!points || typeNodes.length === 0) return;
+            const mesh = meshRefs.current[typeIndex];
+            if (!mesh || typeNodes.length === 0) return;
 
-            const positions = points.geometry.attributes.position.array as Float32Array;
-            let needsUpdate = false;
-
+            // Mettre à jour chaque instance
             typeNodes.forEach((node, i) => {
                 if (node.__threeObj) {
-                    const idx = i * 3;
                     const position = node.__threeObj.position;
 
-                    if (positions[idx] !== position.x || 
-                        positions[idx + 1] !== position.y || 
-                        positions[idx + 2] !== position.z) {
-                        
-                        positions[idx] = position.x;
-                        positions[idx + 1] = position.y;
-                        positions[idx + 2] = position.z;
-                        needsUpdate = true;
-                    }
+                    // Calculer la taille en fonction du type
+                    let scale = 1;
+                    if (type === "post") scale = Math.min((node.val || 5) * 0.5, 5);
+                    else if (type === "displayName") scale = 10;
+                    else if (type === "pair") scale = 7;
+                    else if (type === "central") scale = 15;
+
+                    // Mettre à jour la matrice de transformation
+                    dummy.position.set(position.x, position.y, position.z);
+                    dummy.scale.set(scale, scale, scale);
+                    dummy.updateMatrix();
+
+                    // Appliquer la matrice à l'instance
+                    mesh.setMatrixAt(i, dummy.matrix);
                 }
             });
 
-            if (needsUpdate) {
-                points.geometry.attributes.position.needsUpdate = true;
-            }
+            // Marquer la matrice comme nécessitant une mise à jour
+            mesh.instanceMatrix.needsUpdate = true;
         });
     });
 
@@ -261,21 +270,6 @@ function ForceGraphWrapper({
     lodLevel: 'high' | 'medium' | 'low';
 }) {
     const fgRef = useRef<GraphMethods>();
-    const gpuSimRef = useRef<GPUForceSimulation>();
-    const nodesRef = useRef<GraphNode[]>([]);
-    const linksRef = useRef<GraphLink[]>([]);
-    const { gl } = useThree();
-
-    // Initialiser la simulation GPU
-    useEffect(() => {
-        if (!gpuSimRef.current) {
-            gpuSimRef.current = new GPUForceSimulation(gl);
-        }
-
-        return () => {
-            gpuSimRef.current?.dispose();
-        };
-    }, [gl]);
 
     const createNodeObject = useCallback((node: Node): GraphNode => {
         const graphNode: GraphNode = {
@@ -296,90 +290,70 @@ function ForceGraphWrapper({
             target: link.target,
             value: link.value,
             level: link.type === "primary" ? 1 : 2,
-            type: link.type,
         };
     }, []);
 
-    const graphDataMemo = useMemo(() => {
-        const nodes = graphData.nodes.map(createNodeObject);
-        const links = graphData.links.map(createLinkObject);
-        nodesRef.current = nodes;
-        linksRef.current = links;
-        return { nodes, links };
-    }, [graphData, createNodeObject, createLinkObject]);
+    const graphDataMemo = useMemo(() => ({
+        nodes: graphData.nodes.map(createNodeObject),
+        links: graphData.links.map(createLinkObject),
+    }), [graphData, createNodeObject, createLinkObject]);
 
-    // Pré-calculer les indices une seule fois
-    useEffect(() => {
-        nodeIndexCache.clear();
-        nodesRef.current.forEach((node, index) => {
-            nodeIndexCache.set(node.id, index);
-        });
-    }, [graphData]);
+    // Fonction pour déterminer la couleur des liens
+    const getLinkColor = (link: D3Link) => {
+        if (link.type === "character-source") {
+            return COLORS.linkLevel1;
+        } else {
+            return COLORS.linkLevel2;
+        }
+    };
 
-    // Optimiser le calcul des forces avec GPU
-    const frameCount = useRef(0);
+    // Forcer le rafraîchissement de la simulation en cas de modification des données
   useFrame(() => {
-        frameCount.current++;
-        
-        // Limiter les mises à jour à 30 FPS
-        if (frameCount.current % 2 !== 0) return;
-
-        if (!fgRef.current || !gpuSimRef.current || nodesRef.current.length === 0) return;
-
-        try {
-            // Préparer les données pour la simulation GPU
-            const nodes = nodesRef.current.map(node => ({
-                position: new THREE.Vector3(
-                    node.__threeObj?.position.x || 0,
-                    node.__threeObj?.position.y || 0,
-                    node.__threeObj?.position.z || 0
-                ),
-                velocity: new THREE.Vector3(0, 0, 0),
-                charge: -50
-            }));
-
-            const links = linksRef.current.map(link => ({
-                source: nodeIndexCache.get(link.source as string) || 0,
-                target: nodeIndexCache.get(link.target as string) || 0,
-                distance: 100,
-                strength: link.level === 1 ? 0.8 : 0.4
-            }));
-
-            // Mettre à jour les données de la simulation
-            gpuSimRef.current.updateNodes(nodes);
-            gpuSimRef.current.updateLinks(links);
-
-            // Exécuter une étape de simulation
-            gpuSimRef.current.step();
-
-            // Récupérer les nouvelles positions
-            const positions = gpuSimRef.current.getPositions();
-            
-            // Mettre à jour les positions des nœuds
-            nodesRef.current.forEach((node, i) => {
-                if (node.__threeObj) {
-                    const idx = i * 4;
-                    node.__threeObj.position.set(
-                        positions[idx],
-                        positions[idx + 1],
-                        positions[idx + 2]
-                    );
-                }
-            });
-
-            fgRef.current.tickFrame();
-        } catch (error) {
-            console.error('Error in GPU force calculation:', error);
+        if (fgRef.current && graphDataMemo.nodes.length > 0) {
+      fgRef.current.tickFrame();
         }
     });
 
   return (
         <>
     <ForceGraph
-      ref={fgRef}
+                ref={fgRef as any}
                 graphData={graphDataMemo}
+                nodeResolution={1}
+                warmupTicks={0}
+                // cooldownTicks={-1}
+                // cooldownTime={0}
+                d3AlphaMin={0}
+                d3AlphaDecay={0.02}
+                d3VelocityDecay={0.1}
+      linkColor={getLinkColor}
+                linkWidth={(link: D3Link) => link.type === 'character-source' ? 2 : 1}
+                linkOpacity={0.6}
+                linkResolution={6}
+                nodeVal={(node: GraphNode) => {
+                    if (node.type === "post") return Math.min((node.val || 5) * 0.5, 5);
+                    if (node.type === "displayName") return 10;
+                    if (node.type === "pair") return 7;
+                    if (node.type === "central") return 15;
+                    return 5;
+                }}
                 nodeThreeObject={() => new THREE.Object3D()}
-                nodeThreeObjectExtend={false}
+                d3ChargeStrength={(node: D3Node) => {
+                    if (node.type === 'central') return -100;
+                    if (node.type === 'displayName') return -50;
+                    if (node.type === 'pair') return -50;
+                    return -10;
+                }}
+                d3ChargeDistanceMax={100}
+                d3LinkDistance={(link: D3Link) => {
+                    if (link.type === 'character-source') return 500;
+                    return 100;
+                }}
+                d3LinkStrength={(link: D3Link) => {
+                    if (link.type === 'character-source') return 0.8;
+                    return 0.8;
+                }}
+                d3CenterStrength={0.1}
             />
             <NodeRenderer nodes={graphDataMemo.nodes} lodLevel={lodLevel} />
         </>
@@ -424,7 +398,7 @@ export function LombardiGraph3DPosts() {
         <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
             <StatsDisplay />
       <Canvas 
-        camera={{ position: [0, 0, 2000], near: 1, far: 20000 }}
+        camera={{ position: [0, 0, 500], near: 0.1, far: 10000 }}
                 gl={{ 
                     antialias: false,
                     powerPreference: 'high-performance',
