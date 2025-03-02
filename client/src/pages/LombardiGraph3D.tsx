@@ -183,7 +183,7 @@ export function LombardiGraph3D() {
     links: [],
   });
   const dataLoadedRef = useRef(false);
-  const [showCentralJoshua, setShowCentralJoshua] = useState(true); // Booléen pour contrôler l'affichage du nœud central
+  const [showCentralJoshua, setShowCentralJoshua] = useState(false); // Booléen pour contrôler l'affichage du nœud central
 
   useEffect(() => {
     if (dataLoadedRef.current) return;
