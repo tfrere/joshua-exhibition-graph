@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "stats.js": "^0.17.0",
-    "tweakpane": "^4.0.5"
-  },
-  "devDependencies": {
-    "@types/node": "^22.13.5"
-  }
-}
