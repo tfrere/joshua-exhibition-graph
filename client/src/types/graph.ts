@@ -1,6 +1,7 @@
 export interface Node {
   id: string;
   name: string;
+  slug: string;
   val: number;
   color?: string;
   type: "character" | "contact" | "source" | "post";

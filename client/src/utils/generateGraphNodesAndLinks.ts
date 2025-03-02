@@ -90,6 +90,7 @@ export function generateGraphData(
     }
     return {
       id: `node-${character.slug}`,
+      slug: character.slug,
       name: character.displayName || character.slug,
       type: "character",
       val: 20,

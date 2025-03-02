@@ -21,15 +21,14 @@ export const COLORS = {
 export const createNodeObject = (node: Node) => {
   const group = new THREE.Group();
 
-  let geometry;
-  let material;
-  let mesh;
+  let geometry: THREE.BufferGeometry;
+  let material: THREE.Material;
+  let mesh: THREE.Mesh;
 
   if (node.type === "source") {
     geometry = new THREE.PlaneGeometry(15, 15);
 
     // Création d'un matériau avec texture pour les sources
-    console.log("node.name", node.name);
     if (node.name) {
       // Création d'un loader de texture
       const textureLoader = new THREE.TextureLoader();
@@ -49,7 +48,7 @@ export const createNodeObject = (node: Node) => {
 
         // Callback de succès
         (texture) => {
-          console.log(`Texture chargée pour ${node.name}`);
+          // console.log(`Texture chargée pour ${node.name}`);
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
 
@@ -63,10 +62,10 @@ export const createNodeObject = (node: Node) => {
         undefined,
 
         // Callback d'erreur - charger l'image par défaut
-        (error) => {
-          console.error(
-            `Erreur de chargement pour ${node.name}, utilisation de platform-notfound.png`
-          );
+        (_error) => {
+          // console.error(
+          //   `Erreur de chargement pour ${node.name}, utilisation de platform-notfound.png`
+          // );
 
           // Charger l'image par défaut
           textureLoader.load(
@@ -81,10 +80,10 @@ export const createNodeObject = (node: Node) => {
               material.color.set(0xffffff);
             },
             undefined,
-            (defaultError) => {
-              console.error(
-                "Impossible de charger l'image par défaut _notfound.png"
-              );
+            (_defaultError) => {
+              // console.error(
+              //   "Impossible de charger l'image par défaut platform-notfound.png"
+              // );
             }
           );
         }
@@ -121,32 +120,103 @@ export const createNodeObject = (node: Node) => {
       emissiveIntensity: 0.6,
     });
     mesh = new THREE.Mesh(geometry, material);
+  } else if (node.type === "character") {
+    console.log("Character", node.slug);
+    // Pour les personnages, on utilise aussi des images
+    geometry = new THREE.PlaneGeometry(10, 10);
+    
+    if (node.name) {
+      const textureLoader = new THREE.TextureLoader();
+      
+      // Matériau temporaire pendant le chargement
+      material = new THREE.MeshBasicMaterial({
+        color: node.isJoshua ? COLORS.joshua : COLORS.character,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide,
+      });
+      
+      // Chargement de l'image du personnage
+      textureLoader.load(
+        // URL de l'image du personnage
+        `/img/characters/character-${node.slug}.png`,
+        
+        // Callback de succès
+        (texture) => {
+          console.log(`Texture personnage chargée pour ${node.slug}`);
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          
+          // Mettre à jour le matériau avec la texture chargée
+          material.map = texture;
+          material.needsUpdate = true;
+          material.color.set(0xffffff);
+        },
+        
+        // Callback de progression (optionnel)
+        undefined,
+        
+        // Callback d'erreur - utiliser une forme 3D standard au lieu d'une image
+        (_error) => {
+          // console.error(`Image personnage non trouvée pour ${node.name}, utilisation d'une forme 3D`);
+          
+          // Si l'image n'est pas trouvée, on revient à une forme 3D standard
+          // Il faut enlever le mesh actuel du groupe
+          group.remove(mesh);
+          
+          // Créer une nouvelle géométrie 3D en fonction du type de personnage
+          const newGeometry = node.isJoshua 
+            ? new THREE.BoxGeometry(8, 8, 8)
+            : new THREE.SphereGeometry(5);
+            
+          const newMaterial = new THREE.MeshPhongMaterial({
+            color: node.isJoshua ? COLORS.joshua : COLORS.character,
+            opacity: 0.9,
+            transparent: true,
+            emissive: node.isJoshua ? COLORS.joshua : COLORS.character,
+            emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
+          });
+          
+          // Créer un nouveau mesh et l'ajouter au groupe
+          const newMesh = new THREE.Mesh(newGeometry, newMaterial);
+          group.add(newMesh);
+        }
+      );
+    } else {
+      // Fallback si node.name n'est pas défini
+      material = new THREE.MeshPhongMaterial({
+        color: node.isJoshua ? COLORS.joshua : COLORS.character,
+        opacity: 0.9,
+        transparent: true,
+        emissive: node.isJoshua ? COLORS.joshua : COLORS.character,
+        emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
+      });
+    }
+    
+    mesh = new THREE.Mesh(geometry, material);
+    
+    // Configuration pour que le plan soit toujours orienté face à la caméra
+    mesh.onBeforeRender = function (
+      renderer: THREE.WebGLRenderer,
+      scene: THREE.Scene,
+      camera: THREE.Camera
+    ) {
+      mesh.quaternion.copy(camera.quaternion);
+    };
   } else {
-    const isJoshuaNode = node.type === "character" && node.isJoshua === true;
-    geometry = isJoshuaNode
-      ? new THREE.BoxGeometry(8, 8, 8)
-      : new THREE.SphereGeometry(node.type === "character" ? 5 : 3);
-
+    // Pour les autres types de nœuds (contact, etc.)
+    geometry = new THREE.SphereGeometry(3);
+    
     material = new THREE.MeshPhongMaterial({
-      color:
-        node.type === "character"
-          ? node.isJoshua
-            ? COLORS.joshua
-            : COLORS.character
-          : COLORS.contact,
+      color: COLORS.contact,
       opacity: 0.9,
       transparent: true,
-      emissive:
-        node.type === "character"
-          ? node.isJoshua
-            ? COLORS.joshua
-            : COLORS.character
-          : COLORS.contact,
-      emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
+      emissive: COLORS.contact,
+      emissiveIntensity: 0.3,
     });
     mesh = new THREE.Mesh(geometry, material);
   }
-
+  
   group.add(mesh);
 
   const textGeometry = new THREE.PlaneGeometry(1, 1);
