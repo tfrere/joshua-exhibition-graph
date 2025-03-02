@@ -58,8 +58,8 @@ function ForceGraphWrapper({
           ? 3
           : 2
       }
-      cooldownTicks={1500}
-      cooldownTime={1500}
+      cooldownTicks={3000}
+      cooldownTime={3000}
       linkDirectionalArrowLength={0}
       linkDirectionalArrowRelPos={1}
       linkDirectionalArrowColor={(link: any) =>
