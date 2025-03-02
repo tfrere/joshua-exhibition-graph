@@ -28,6 +28,7 @@ export const createNodeObject = (node: Node) => {
   if (node.type === "source") {
     geometry = new THREE.PlaneGeometry(15, 15);
 
+    console.log("name", node.name);
     // Création d'un matériau avec texture pour les sources
     if (node.name) {
       // Création d'un loader de texture
@@ -62,10 +63,10 @@ export const createNodeObject = (node: Node) => {
         undefined,
 
         // Callback d'erreur - charger l'image par défaut
-        (_error) => {
-          // console.error(
-          //   `Erreur de chargement pour ${node.name}, utilisation de platform-notfound.png`
-          // );
+        () => {
+          console.error(
+            `Erreur de chargement pour ${node.name}, utilisation de platform-notfound.png`
+          );
 
           // Charger l'image par défaut
           textureLoader.load(
@@ -80,10 +81,10 @@ export const createNodeObject = (node: Node) => {
               material.color.set(0xffffff);
             },
             undefined,
-            (_defaultError) => {
-              // console.error(
-              //   "Impossible de charger l'image par défaut platform-notfound.png"
-              // );
+            () => {
+              console.error(
+                "Impossible de charger l'image par défaut platform-notfound.png"
+              );
             }
           );
         }
@@ -121,7 +122,6 @@ export const createNodeObject = (node: Node) => {
     });
     mesh = new THREE.Mesh(geometry, material);
   } else if (node.type === "character") {
-    console.log("Character", node.slug);
     // Pour les personnages, on utilise aussi des images
     geometry = new THREE.PlaneGeometry(10, 10);
     
@@ -157,7 +157,7 @@ export const createNodeObject = (node: Node) => {
         undefined,
         
         // Callback d'erreur - utiliser une forme 3D standard au lieu d'une image
-        (_error) => {
+        () => {
           // console.error(`Image personnage non trouvée pour ${node.name}, utilisation d'une forme 3D`);
           
           // Si l'image n'est pas trouvée, on revient à une forme 3D standard
