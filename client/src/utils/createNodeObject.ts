@@ -38,14 +38,14 @@ export const createNodeObject = (node: Node) => {
       material = new THREE.MeshBasicMaterial({
         color: COLORS.source,
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.9,
         side: THREE.DoubleSide,
       });
 
       // Chargement de l'image basée sur node.name
       textureLoader.load(
         // URL de l'image principale
-        `/img/platforms/${node.name}.png`,
+        `/img/platforms/platform-${node.name}.png`,
 
         // Callback de succès
         (texture) => {
@@ -65,12 +65,12 @@ export const createNodeObject = (node: Node) => {
         // Callback d'erreur - charger l'image par défaut
         (error) => {
           console.error(
-            `Erreur de chargement pour ${node.name}, utilisation de _notfound.png`
+            `Erreur de chargement pour ${node.name}, utilisation de platform-notfound.png`
           );
 
           // Charger l'image par défaut
           textureLoader.load(
-            `/img/platforms/_notfound.png`,
+            `/img/platforms/platform-notfound.png`,
             (defaultTexture) => {
               defaultTexture.minFilter = THREE.LinearFilter;
               defaultTexture.magFilter = THREE.LinearFilter;
