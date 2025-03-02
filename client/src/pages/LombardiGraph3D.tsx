@@ -1,13 +1,30 @@
 import { useRef, useEffect, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import ForceGraph from "r3f-forcegraph";
 import { OrbitControls, Stats } from "@react-three/drei";
 import * as THREE from "three";
+import { useSocketSync } from "../hooks/useSocketSync";
 import { generateGraphData } from "../utils/generateGraphNodesAndLinks";
 import { Node, Link } from "../types/graph";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { Pixelation } from "@react-three/postprocessing";
 import { createNodeObject, COLORS } from "../utils/createNodeObject";
+import { GamepadControls } from "../components/GamepadControls";
+import { FlyControls } from "@react-three/drei";
+
+function CameraSync() {
+  const { camera } = useThree();
+  useSocketSync(true, camera);
+  return null;
+}
+
+interface ControllerConfig {
+  maxSpeed: number;
+  acceleration: number;
+  deceleration: number;
+  rotationSpeed: number;
+  deadzone: number;
+}
 
 function ForceGraphWrapper({
   graphData,
@@ -87,6 +104,18 @@ export function LombardiGraph3D() {
   const dataLoadedRef = useRef(false);
   const [showCentralJoshua, setShowCentralJoshua] = useState(true); // Booléen pour contrôler l'affichage du nœud central
 
+  const [controllerConfig, setControllerConfig] = useState<ControllerConfig>({
+    maxSpeed: 1400,
+    acceleration: 800,
+    deceleration: 0.95,
+    rotationSpeed: 4.2,
+    deadzone: 0.15,
+  });
+
+  const handleControllerChange = (key: string, value: number) => {
+    setControllerConfig((prev) => ({ ...prev, [key]: value }));
+  };
+
   useEffect(() => {
     if (dataLoadedRef.current) return;
     dataLoadedRef.current = true;
@@ -154,7 +183,7 @@ export function LombardiGraph3D() {
           graphData={graphData}
           showCentralJoshua={showCentralJoshua}
         />
-        <OrbitControls
+        {/* <OrbitControls
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
@@ -163,7 +192,10 @@ export function LombardiGraph3D() {
           zoomSpeed={1.5}
           dampingFactor={0.3}
           rotateSpeed={0.8}
-        />
+        /> */}
+        <FlyControls movementSpeed={1000} rollSpeed={0.5} dragToLook={true} />
+        <GamepadControls config={controllerConfig} />
+        <CameraSync />
         <EffectComposer>
           {/* <Bloom
             intensity={1.5}
@@ -173,7 +205,7 @@ export function LombardiGraph3D() {
           /> */}
 
           {/* <Pixelation
-            granularity={10} // pixel granularity
+            granularity={5} // pixel granularity
           /> */}
         </EffectComposer>
       </Canvas>
