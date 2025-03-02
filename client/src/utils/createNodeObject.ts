@@ -24,55 +24,57 @@ export const createNodeObject = (node: Node) => {
   let geometry;
   let material;
   let mesh;
-  
+
   if (node.type === "source") {
-    geometry = new THREE.PlaneGeometry(4, 4);
-    
+    geometry = new THREE.PlaneGeometry(15, 15);
+
     // Création d'un matériau avec texture pour les sources
     console.log("node.name", node.name);
     if (node.name) {
       // Création d'un loader de texture
       const textureLoader = new THREE.TextureLoader();
-      
+
       // Matériau temporaire pendant le chargement
-      material = new THREE.MeshBasicMaterial({ 
+      material = new THREE.MeshBasicMaterial({
         color: COLORS.source,
         transparent: true,
         opacity: 0.7,
         side: THREE.DoubleSide,
       });
-      
+
       // Chargement de l'image basée sur node.name
       textureLoader.load(
         // URL de l'image principale
         `/img/platforms/${node.name}.png`,
-        
+
         // Callback de succès
         (texture) => {
           console.log(`Texture chargée pour ${node.name}`);
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
-          
+
           // Mettre à jour le matériau avec la texture chargée
           material.map = texture;
           material.needsUpdate = true;
           material.color.set(0xffffff); // Blanc pour ne pas affecter la couleur de l'image
         },
-        
+
         // Callback de progression (optionnel)
         undefined,
-        
+
         // Callback d'erreur - charger l'image par défaut
         (error) => {
-          console.error(`Erreur de chargement pour ${node.name}, utilisation de _notfound.png`);
-          
+          console.error(
+            `Erreur de chargement pour ${node.name}, utilisation de _notfound.png`
+          );
+
           // Charger l'image par défaut
           textureLoader.load(
             `/img/platforms/_notfound.png`,
             (defaultTexture) => {
               defaultTexture.minFilter = THREE.LinearFilter;
               defaultTexture.magFilter = THREE.LinearFilter;
-              
+
               // Mettre à jour le matériau avec la texture par défaut
               material.map = defaultTexture;
               material.needsUpdate = true;
@@ -80,7 +82,9 @@ export const createNodeObject = (node: Node) => {
             },
             undefined,
             (defaultError) => {
-              console.error("Impossible de charger l'image par défaut _notfound.png");
+              console.error(
+                "Impossible de charger l'image par défaut _notfound.png"
+              );
             }
           );
         }
@@ -96,14 +100,17 @@ export const createNodeObject = (node: Node) => {
         side: THREE.DoubleSide,
       });
     }
-    
+
     mesh = new THREE.Mesh(geometry, material);
-    
+
     // Configuration pour que le plan soit toujours orienté face à la caméra
-    mesh.onBeforeRender = function(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
+    mesh.onBeforeRender = function (
+      renderer: THREE.WebGLRenderer,
+      scene: THREE.Scene,
+      camera: THREE.Camera
+    ) {
       mesh.quaternion.copy(camera.quaternion);
     };
-    
   } else if (node.id === "central-joshua") {
     geometry = new THREE.IcosahedronGeometry(10); // Forme spéciale pour le nœud central
     material = new THREE.MeshPhongMaterial({
@@ -119,21 +126,27 @@ export const createNodeObject = (node: Node) => {
     geometry = isJoshuaNode
       ? new THREE.BoxGeometry(8, 8, 8)
       : new THREE.SphereGeometry(node.type === "character" ? 5 : 3);
-    
+
     material = new THREE.MeshPhongMaterial({
-      color: node.type === "character"
-        ? node.isJoshua ? COLORS.joshua : COLORS.character
-        : COLORS.contact,
+      color:
+        node.type === "character"
+          ? node.isJoshua
+            ? COLORS.joshua
+            : COLORS.character
+          : COLORS.contact,
       opacity: 0.9,
       transparent: true,
-      emissive: node.type === "character"
-        ? node.isJoshua ? COLORS.joshua : COLORS.character
-        : COLORS.contact,
+      emissive:
+        node.type === "character"
+          ? node.isJoshua
+            ? COLORS.joshua
+            : COLORS.character
+          : COLORS.contact,
       emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
     });
     mesh = new THREE.Mesh(geometry, material);
   }
-  
+
   group.add(mesh);
 
   const textGeometry = new THREE.PlaneGeometry(1, 1);
@@ -145,7 +158,7 @@ export const createNodeObject = (node: Node) => {
     context.fillStyle = "rgba(0,0,0,0)";
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.font =
-      node.type === "source" ? "bold 24px Arial" : "bold 32px Arial";
+      node.type === "source" ? "bold 20px Arial" : "bold 24px Arial";
     context.textAlign = "center";
     context.fillStyle = "#FFFFFF";
     context.fillText(node.name, canvas.width / 2, 40);
@@ -171,7 +184,11 @@ export const createNodeObject = (node: Node) => {
     text.position.set(0, textHeight, 0);
     text.renderOrder = 1;
 
-    text.onBeforeRender = function (renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
+    text.onBeforeRender = function (
+      renderer: THREE.WebGLRenderer,
+      scene: THREE.Scene,
+      camera: THREE.Camera
+    ) {
       text.quaternion.copy(camera.quaternion);
     };
 
