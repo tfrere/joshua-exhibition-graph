@@ -33,6 +33,14 @@ interface CharacterLink {
   linkType: string;
 }
 
+interface Post {
+  id: string;
+  content: string;
+  source: string;
+  date?: string;
+  // Add any other relevant post properties
+}
+
 export function generateGraphData(rawData: any) {
   // Vérifier que nous avons bien reçu un tableau
   if (!Array.isArray(rawData)) {
@@ -75,11 +83,11 @@ export function generateGraphData(rawData: any) {
       val: 20,
       color: "#333333",
       isJoshua: character.isJoshua,
-      thematic: character.thematic,
-      career: character.career,
-      genre: character.genre,
-      polarisation: character.polarisation,
-      sources: Array.isArray(character.sources) ? character.sources : [],
+      _thematic: character.thematic,
+      _career: character.career,
+      _genre: character.genre,
+      _polarisation: character.polarisation,
+      _sources: Array.isArray(character.sources) ? character.sources : [],
     };
   });
 
@@ -92,8 +100,61 @@ export function generateGraphData(rawData: any) {
     color: "#996633",
   }));
 
+  // Créer les nœuds pour les posts (décimés - 1 nœud pour 10 posts)
+  const postNodes: Node[] = [];
+  const postLinks: Link[] = [];
+
+  characters.forEach((character) => {
+    if (Array.isArray(character.posts) && character.posts.length > 0) {
+      // Regrouper les posts par source
+      const postsBySource: Record<string, Post[]> = {};
+
+      character.posts.forEach((post) => {
+        if (post.source) {
+          if (!postsBySource[post.source]) {
+            postsBySource[post.source] = [];
+          }
+          postsBySource[post.source].push(post);
+        }
+      });
+
+      // Pour chaque source, décimer les posts (1 nœud pour 10 posts)
+      Object.entries(postsBySource).forEach(([source, posts]) => {
+        // Vérifier que la source existe dans notre ensemble de sources uniques
+        if (!uniqueSources.has(source)) {
+          return;
+        }
+
+        // Décimer les posts - prendre 1 post sur 30
+        for (let i = 0; i < posts.length; i += 30) {
+          const post = posts[i];
+          const postId = `post-${character.slug}-${source}-${i}`;
+
+          // Créer un nœud pour ce post
+          postNodes.push({
+            id: postId,
+            name: "", // Pas de texte associé aux posts
+            type: "post",
+            val: 5, // Taille plus petite que les personnages et les sources
+            color: "#6699CC", // Couleur différente pour les posts
+            date: post.date,
+            platform: source, // Ajouter la plateforme (source) au nœud
+          });
+
+          // Créer un lien entre ce post et son personnage (au lieu de sa source)
+          postLinks.push({
+            source: postId,
+            target: `node-${character.slug}`,
+            type: "post",
+            value: 1,
+          });
+        }
+      });
+    }
+  });
+
   // Combiner tous les nœuds
-  const nodes = [...characterNodes, ...sourceNodes];
+  const nodes = [...characterNodes, ...sourceNodes, ...postNodes];
 
   // Créer les liens entre les personnages
   const characterLinks: Link[] = characters.flatMap((character) => {
@@ -122,12 +183,15 @@ export function generateGraphData(rawData: any) {
           link.type === "outgoing"
             ? `node-${link.target}`
             : `node-${link.source}`,
-        isDirect: link.isDirect,
-        relationType: link.relationType,
-        mediaImpact: link.mediaImpact,
-        virality: link.virality,
-        mediaCoverage: link.mediaCoverage,
-        linkType: link.linkType,
+        type: link.relationType || "character",
+        value: 1,
+        // Propriétés supplémentaires qui peuvent être utilisées dans l'application mais ne font pas partie du type Link
+        _isDirect: link.isDirect,
+        _relationType: link.relationType,
+        _mediaImpact: link.mediaImpact,
+        _virality: link.virality,
+        _mediaCoverage: link.mediaCoverage,
+        _linkType: link.linkType,
       }));
   });
 
@@ -141,23 +205,25 @@ export function generateGraphData(rawData: any) {
       .map((source) => ({
         source: `node-${character.slug}`,
         target: `source-${source}`,
-        isDirect: "Direct",
-        relationType: "Source",
-        mediaImpact: "",
-        virality: "",
-        mediaCoverage: "",
-        linkType: "source",
+        type: "source",
+        value: 1,
+        // Propriétés supplémentaires
+        _isDirect: "Direct",
+        _relationType: "Source",
       }));
   });
 
-  // Combiner tous les liens
-  const links = [...characterLinks, ...sourceLinks];
+  // Combiner tous les liens - uniquement les liens entre personnages et sources, et entre posts et sources
+  // Les posts ne sont liés qu'à leur plateforme (source)
+  const links = [...characterLinks, ...sourceLinks, ...postLinks];
 
   console.log("Résumé de la génération:", {
     personnages: characterNodes.length,
     sources: sourceNodes.length,
+    posts: postNodes.length,
     liensPersonnages: characterLinks.length,
     liensSources: sourceLinks.length,
+    liensPosts: postLinks.length,
   });
 
   return {

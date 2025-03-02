@@ -51,15 +51,15 @@ function ForceGraphWrapper({
       }
       nodeResolution={16}
       warmupTicks={0}
-      linkDirectionalParticles={1}
+      linkDirectionalParticles={0}
       linkDirectionalParticleWidth={(link: any) =>
         link.source.id === "central-joshua" ||
         link.target.id === "central-joshua"
           ? 3
           : 2
       }
-      cooldownTicks={100}
-      cooldownTime={1000}
+      cooldownTicks={1500}
+      cooldownTime={1500}
       linkDirectionalArrowLength={0}
       linkDirectionalArrowRelPos={1}
       linkDirectionalArrowColor={(link: any) =>
