@@ -7,6 +7,7 @@ export interface Node {
   platform?: string;
   date?: string;
   url?: string;
+  isJoshua?: boolean;
 }
 
 export interface Link {
