@@ -34,20 +34,57 @@ export const createNodeObject = (node: Node) => {
       // Création d'un loader de texture
       const textureLoader = new THREE.TextureLoader();
       
-      // Chargement de l'image basée sur node.name
-      const texture = textureLoader.load(`/img/platforms/${node.name}.png`);
-      console.log(texture);
-      
-      // Configuration de la texture
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      
-      // Création du matériau avec la texture
-      material = new THREE.MeshBasicMaterial({
-        map: texture,
+      // Matériau temporaire pendant le chargement
+      material = new THREE.MeshBasicMaterial({ 
+        color: COLORS.source,
         transparent: true,
+        opacity: 0.7,
         side: THREE.DoubleSide,
       });
+      
+      // Chargement de l'image basée sur node.name
+      textureLoader.load(
+        // URL de l'image principale
+        `/img/platforms/${node.name}.png`,
+        
+        // Callback de succès
+        (texture) => {
+          console.log(`Texture chargée pour ${node.name}`);
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+          
+          // Mettre à jour le matériau avec la texture chargée
+          material.map = texture;
+          material.needsUpdate = true;
+          material.color.set(0xffffff); // Blanc pour ne pas affecter la couleur de l'image
+        },
+        
+        // Callback de progression (optionnel)
+        undefined,
+        
+        // Callback d'erreur - charger l'image par défaut
+        (error) => {
+          console.error(`Erreur de chargement pour ${node.name}, utilisation de _notfound.png`);
+          
+          // Charger l'image par défaut
+          textureLoader.load(
+            `/img/platforms/_notfound.png`,
+            (defaultTexture) => {
+              defaultTexture.minFilter = THREE.LinearFilter;
+              defaultTexture.magFilter = THREE.LinearFilter;
+              
+              // Mettre à jour le matériau avec la texture par défaut
+              material.map = defaultTexture;
+              material.needsUpdate = true;
+              material.color.set(0xffffff);
+            },
+            undefined,
+            (defaultError) => {
+              console.error("Impossible de charger l'image par défaut _notfound.png");
+            }
+          );
+        }
+      );
     } else {
       // Fallback si node.name n'est pas défini
       material = new THREE.MeshPhongMaterial({
@@ -63,7 +100,7 @@ export const createNodeObject = (node: Node) => {
     mesh = new THREE.Mesh(geometry, material);
     
     // Configuration pour que le plan soit toujours orienté face à la caméra
-    mesh.onBeforeRender = function(renderer, scene, camera) {
+    mesh.onBeforeRender = function(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
       mesh.quaternion.copy(camera.quaternion);
     };
     
@@ -134,7 +171,7 @@ export const createNodeObject = (node: Node) => {
     text.position.set(0, textHeight, 0);
     text.renderOrder = 1;
 
-    text.onBeforeRender = function (renderer, scene, camera) {
+    text.onBeforeRender = function (renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) {
       text.quaternion.copy(camera.quaternion);
     };
 
