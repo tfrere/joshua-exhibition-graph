@@ -108,6 +108,7 @@ export function generateGraphData(
   const sourceNodes: Node[] = Array.from(uniqueSources).map((source) => ({
     id: `source-${source}`,
     name: source,
+    slug: source,
     type: "source",
     val: 15,
     color: "#996633",
@@ -149,6 +150,7 @@ export function generateGraphData(
             postNodes.push({
               id: postId,
               name: "", // Pas de texte associé aux posts
+              slug: `post-${character.slug}-${source}-${i}`,
               type: "post",
               val: 5, // Taille plus petite que les personnages et les sources
               color: "#6699CC", // Couleur différente pour les posts

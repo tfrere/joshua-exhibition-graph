@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import ForceGraph from "r3f-forcegraph";
 import { OrbitControls, Stats } from "@react-three/drei";
@@ -26,29 +26,92 @@ interface ControllerConfig {
   deadzone: number;
 }
 
+// Interface pour stocker les positions des nœuds
+interface NodePosition {
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
 function ForceGraphWrapper({
   graphData,
   showCentralJoshua,
+  onStabilized,
 }: {
   graphData: { nodes: Node[]; links: Link[] };
   showCentralJoshua: boolean;
+  onStabilized?: (nodePositions: NodePosition[]) => void;
 }) {
   const fgRef = useRef<any>();
   const isTickingRef = useRef(false);
+  const stabilizedRef = useRef(false);
+  const nodePositionsRef = useRef<Record<string, NodePosition>>({});
+
+  // Fonction pour capturer les positions des nœuds
+  const captureNodePositions = useCallback(() => {
+    if (!fgRef.current || !onStabilized) return;
+
+    const nodePositions: NodePosition[] = [];
+
+    // Parcourir tous les nœuds et capturer leurs positions
+    fgRef.current.graphData().nodes.forEach((node: any) => {
+      if (
+        node.x !== undefined &&
+        node.y !== undefined &&
+        node.z !== undefined
+      ) {
+        nodePositions.push({
+          name: node.name,
+          x: node.x,
+          y: node.y,
+          z: node.z,
+        });
+      }
+    });
+
+    onStabilized(nodePositions);
+  }, [onStabilized]);
 
   useFrame(() => {
     if (fgRef.current && !isTickingRef.current) {
       isTickingRef.current = true;
       fgRef.current.tickFrame();
       isTickingRef.current = false;
+
+      // Vérifier si le graphe est stabilisé
+      if (!stabilizedRef.current && fgRef.current._animationCycle === null) {
+        stabilizedRef.current = true;
+        captureNodePositions();
+      }
     }
   });
+
+  // Fonction personnalisée pour mettre à jour les positions des nœuds
+  const nodePositionUpdate = useCallback(
+    (nodeObj: any, coords: any, node: any) => {
+      // Stocker la position du nœud
+      if (node && node.name) {
+        nodePositionsRef.current[node.id] = {
+          name: node.name,
+          x: coords.x,
+          y: coords.y,
+          z: coords.z,
+        };
+      }
+
+      // Retourner false pour permettre la mise à jour normale de la position
+      return false;
+    },
+    []
+  );
 
   return (
     <ForceGraph
       ref={fgRef}
       graphData={graphData}
       nodeThreeObject={createNodeObject}
+      nodePositionUpdate={nodePositionUpdate}
       linkColor={(link: any) =>
         link.source.id === "central-joshua" ||
         link.target.id === "central-joshua"
@@ -103,6 +166,8 @@ export function LombardiGraph3D() {
   });
   const dataLoadedRef = useRef(false);
   const [showCentralJoshua, setShowCentralJoshua] = useState(true); // Booléen pour contrôler l'affichage du nœud central
+  const [nodePositions, setNodePositions] = useState<NodePosition[]>([]);
+  const [isStabilized, setIsStabilized] = useState(false);
 
   const [controllerConfig, setControllerConfig] = useState<ControllerConfig>({
     maxSpeed: 1400,
@@ -115,6 +180,79 @@ export function LombardiGraph3D() {
   const handleControllerChange = (key: string, value: number) => {
     setControllerConfig((prev) => ({ ...prev, [key]: value }));
   };
+
+  // Fonction pour gérer la stabilisation du graphe
+  const handleStabilized = useCallback((positions: NodePosition[]) => {
+    setNodePositions(positions);
+    setIsStabilized(true);
+    console.log(
+      "Graphe stabilisé, positions des nœuds capturées:",
+      positions.length
+    );
+  }, []);
+
+  // Fonction pour exporter les positions des nœuds en JSON
+  const exportNodePositions = useCallback(() => {
+    if (nodePositions.length === 0) {
+      // Même si le graphe n'est pas encore stabilisé, on peut exporter les positions actuelles
+      const currentPositions: NodePosition[] = [];
+
+      if (graphData && graphData.nodes) {
+        graphData.nodes.forEach((node: any) => {
+          if (
+            node.x !== undefined &&
+            node.y !== undefined &&
+            node.z !== undefined
+          ) {
+            currentPositions.push({
+              name: node.name,
+              x: node.x,
+              y: node.y,
+              z: node.z,
+            });
+          }
+        });
+      }
+
+      if (currentPositions.length === 0) {
+        alert(
+          "Aucune position de nœud disponible à exporter. Attendez que le graphe commence à se déployer."
+        );
+        return;
+      }
+
+      // Utiliser les positions actuelles
+      exportPositionsToFile(currentPositions);
+    } else {
+      // Utiliser les positions stabilisées
+      exportPositionsToFile(nodePositions);
+    }
+  }, [nodePositions, graphData]);
+
+  // Fonction utilitaire pour exporter les positions vers un fichier
+  const exportPositionsToFile = useCallback((positions: NodePosition[]) => {
+    // Créer un objet Blob avec les données JSON
+    const data = JSON.stringify(positions, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+
+    // Créer une URL pour le Blob
+    const url = URL.createObjectURL(blob);
+
+    // Créer un lien de téléchargement et cliquer dessus
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "node-positions.json";
+    document.body.appendChild(link);
+    link.click();
+
+    // Nettoyer
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log(
+      `Exportation de ${positions.length} positions de nœuds terminée.`
+    );
+  }, []);
 
   useEffect(() => {
     if (dataLoadedRef.current) return;
@@ -131,6 +269,7 @@ export function LombardiGraph3D() {
           const centralJoshuaNode: Node = {
             id: "central-joshua",
             name: "JOSHUA",
+            slug: "central-joshua", // Ajout de la propriété slug requise
             type: "character",
             val: 30,
             color: COLORS.centralJoshua,
@@ -173,6 +312,32 @@ export function LombardiGraph3D() {
     <div
       style={{ width: "100vw", height: "100vh", background: COLORS.background }}
     >
+      {/* Bouton d'exportation des positions des nœuds */}
+      <div
+        style={{
+          position: "absolute",
+          top: "20px",
+          right: "20px",
+          zIndex: 1000,
+        }}
+      >
+        <button
+          onClick={exportNodePositions}
+          style={{
+            padding: "10px 15px",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Exporter les positions des nœuds{" "}
+          {isStabilized ? "(stabilisé)" : "(en cours)"}
+        </button>
+      </div>
+
       <Canvas camera={{ position: [0, 0, 500], near: 0.1, far: 10000 }}>
         <Stats className="stats" showPanel={0} />
         <color attach="background" args={[COLORS.background]} />
@@ -182,8 +347,9 @@ export function LombardiGraph3D() {
         <ForceGraphWrapper
           graphData={graphData}
           showCentralJoshua={showCentralJoshua}
+          onStabilized={handleStabilized}
         />
-        {/* <OrbitControls
+        <OrbitControls
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
@@ -192,18 +358,16 @@ export function LombardiGraph3D() {
           zoomSpeed={1.5}
           dampingFactor={0.3}
           rotateSpeed={0.8}
-        /> */}
-        <FlyControls movementSpeed={1000} rollSpeed={0.5} dragToLook={true} />
+        />
+        {/* <FlyControls movementSpeed={1000} rollSpeed={0.5} dragToLook={true} />
         <GamepadControls config={controllerConfig} />
-        <CameraSync />
+        <CameraSync /> */}
         <EffectComposer>
-          {/* <Bloom
-            intensity={1.5}
-            luminanceThreshold={0.1}
+          <Bloom
+            intensity={0.1}
+            luminanceThreshold={0.9}
             luminanceSmoothing={0.9}
-            mipmapBlur
-          /> */}
-
+          />
           {/* <Pixelation
             granularity={5} // pixel granularity
           /> */}

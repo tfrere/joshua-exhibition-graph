@@ -54,9 +54,9 @@ export const createNodeObject = (node: Node) => {
           texture.magFilter = THREE.LinearFilter;
 
           // Mettre à jour le matériau avec la texture chargée
-          material.map = texture;
+          (material as THREE.MeshBasicMaterial).map = texture;
           material.needsUpdate = true;
-          material.color.set(0xffffff); // Blanc pour ne pas affecter la couleur de l'image
+          (material as THREE.MeshBasicMaterial).color.set(0xffffff); // Blanc pour ne pas affecter la couleur de l'image
         },
 
         // Callback de progression (optionnel)
@@ -76,9 +76,9 @@ export const createNodeObject = (node: Node) => {
               defaultTexture.magFilter = THREE.LinearFilter;
 
               // Mettre à jour le matériau avec la texture par défaut
-              material.map = defaultTexture;
+              (material as THREE.MeshBasicMaterial).map = defaultTexture;
               material.needsUpdate = true;
-              material.color.set(0xffffff);
+              (material as THREE.MeshBasicMaterial).color.set(0xffffff);
             },
             undefined,
             () => {
@@ -124,10 +124,10 @@ export const createNodeObject = (node: Node) => {
   } else if (node.type === "character") {
     // Pour les personnages, on utilise aussi des images
     geometry = new THREE.PlaneGeometry(10, 10);
-    
+
     if (node.name) {
       const textureLoader = new THREE.TextureLoader();
-      
+
       // Matériau temporaire pendant le chargement
       material = new THREE.MeshBasicMaterial({
         color: node.isJoshua ? COLORS.joshua : COLORS.character,
@@ -135,40 +135,40 @@ export const createNodeObject = (node: Node) => {
         opacity: 0.9,
         side: THREE.DoubleSide,
       });
-      
+
       // Chargement de l'image du personnage
       textureLoader.load(
         // URL de l'image du personnage
         `/img/characters/character-${node.slug}.png`,
-        
+
         // Callback de succès
         (texture) => {
           console.log(`Texture personnage chargée pour ${node.slug}`);
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
-          
+
           // Mettre à jour le matériau avec la texture chargée
-          material.map = texture;
+          (material as THREE.MeshBasicMaterial).map = texture;
           material.needsUpdate = true;
-          material.color.set(0xffffff);
+          (material as THREE.MeshBasicMaterial).color.set(0xffffff);
         },
-        
+
         // Callback de progression (optionnel)
         undefined,
-        
+
         // Callback d'erreur - utiliser une forme 3D standard au lieu d'une image
         () => {
           // console.error(`Image personnage non trouvée pour ${node.name}, utilisation d'une forme 3D`);
-          
+
           // Si l'image n'est pas trouvée, on revient à une forme 3D standard
           // Il faut enlever le mesh actuel du groupe
           group.remove(mesh);
-          
+
           // Créer une nouvelle géométrie 3D en fonction du type de personnage
-          const newGeometry = node.isJoshua 
+          const newGeometry = node.isJoshua
             ? new THREE.BoxGeometry(8, 8, 8)
             : new THREE.SphereGeometry(5);
-            
+
           const newMaterial = new THREE.MeshPhongMaterial({
             color: node.isJoshua ? COLORS.joshua : COLORS.character,
             opacity: 0.9,
@@ -176,7 +176,7 @@ export const createNodeObject = (node: Node) => {
             emissive: node.isJoshua ? COLORS.joshua : COLORS.character,
             emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
           });
-          
+
           // Créer un nouveau mesh et l'ajouter au groupe
           const newMesh = new THREE.Mesh(newGeometry, newMaterial);
           group.add(newMesh);
@@ -192,9 +192,9 @@ export const createNodeObject = (node: Node) => {
         emissiveIntensity: node.isJoshua ? 0.4 : 0.3,
       });
     }
-    
+
     mesh = new THREE.Mesh(geometry, material);
-    
+
     // Configuration pour que le plan soit toujours orienté face à la caméra
     mesh.onBeforeRender = function (
       renderer: THREE.WebGLRenderer,
@@ -206,7 +206,7 @@ export const createNodeObject = (node: Node) => {
   } else {
     // Pour les autres types de nœuds (contact, etc.)
     geometry = new THREE.SphereGeometry(3);
-    
+
     material = new THREE.MeshPhongMaterial({
       color: COLORS.contact,
       opacity: 0.9,
@@ -216,21 +216,24 @@ export const createNodeObject = (node: Node) => {
     });
     mesh = new THREE.Mesh(geometry, material);
   }
-  
+
   group.add(mesh);
 
+  // Create text mesh for displaying coordinates
   const textGeometry = new THREE.PlaneGeometry(1, 1);
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   if (context) {
     canvas.width = 256;
-    canvas.height = 64;
+    canvas.height = 90; // Augmenté pour accommoder le nom + coordonnées
     context.fillStyle = "rgba(0,0,0,0)";
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.font =
       node.type === "source" ? "bold 20px Arial" : "bold 24px Arial";
     context.textAlign = "center";
     context.fillStyle = "#FFFFFF";
+
+    // Initial placeholder text (will be updated in render loop)
     context.fillText(node.name, canvas.width / 2, 40);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -242,7 +245,7 @@ export const createNodeObject = (node: Node) => {
     });
 
     const text = new THREE.Mesh(textGeometry, textMaterial);
-    text.scale.set(20, 5, 1);
+    text.scale.set(20, 7, 1); // Augmenté la hauteur pour accommoder plus de texte
     const textHeight =
       node.id === "central-joshua"
         ? 12
@@ -254,12 +257,58 @@ export const createNodeObject = (node: Node) => {
     text.position.set(0, textHeight, 0);
     text.renderOrder = 1;
 
+    // Store canvas and context in user data for updates
+    text.userData = {
+      canvas,
+      context,
+      texture,
+      lastUpdate: 0,
+      nodeId: node.id,
+      nodeName: node.name,
+    };
+
+    // Update text to show coordinates on each render
     text.onBeforeRender = function (
       renderer: THREE.WebGLRenderer,
       scene: THREE.Scene,
       camera: THREE.Camera
     ) {
+      // Make text face camera
       text.quaternion.copy(camera.quaternion);
+
+      // Only update every 10 frames to improve performance
+      const now = Date.now();
+      if (now - text.userData.lastUpdate > 100) {
+        // Update every 100ms
+        text.userData.lastUpdate = now;
+
+        // Get parent position (node position)
+        const position = group.position;
+
+        // Clear canvas
+        const ctx = text.userData.context;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "rgba(0,0,0,0)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw node name at the top
+        ctx.font =
+          node.type === "source" ? "bold 20px Arial" : "bold 18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillText(text.userData.nodeName, canvas.width / 2, 25);
+
+        // Draw coordinates below the name
+        ctx.font = "bold 16px Arial";
+
+        // Format coordinates with 2 decimal places
+        ctx.fillText(`X: ${position.x.toFixed(2)}`, canvas.width / 2, 45);
+        ctx.fillText(`Y: ${position.y.toFixed(2)}`, canvas.width / 2, 65);
+        ctx.fillText(`Z: ${position.z.toFixed(2)}`, canvas.width / 2, 85);
+
+        // Update texture
+        text.userData.texture.needsUpdate = true;
+      }
     };
 
     group.add(text);

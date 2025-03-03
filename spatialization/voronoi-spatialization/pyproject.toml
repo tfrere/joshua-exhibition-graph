@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "voronoi-spatialization"
+version = "0.1.0"
+description = "Script pour distribuer des posts dans l'espace 3D en utilisant une approche Voronoï basée sur les characters"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.20.0"
+scipy = "^1.7.0"
+matplotlib = "^3.4.0"
+scikit-learn = "^1.0.0"
+tqdm = "^4.60.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api" 
