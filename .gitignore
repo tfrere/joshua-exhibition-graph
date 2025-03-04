@@ -30,3 +30,4 @@ dist-ssr
 *.sw?
 
 spatialized_posts_*.json
+posts-flatlist.json
