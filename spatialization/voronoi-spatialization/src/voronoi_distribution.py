@@ -14,6 +14,9 @@ from tqdm import tqdm
 import random
 # import noise  # Remplacé par numpy pour éviter les problèmes d'installation
 import time
+import os
+from collections import defaultdict
+import matplotlib
 
 def prepare_node_positions(nodes_data, space_scale):
     """Extract and normalize node positions."""
@@ -32,7 +35,7 @@ def prepare_node_positions(nodes_data, space_scale):
     
     return node_positions, node_name_to_index
 
-def visualize_3d_points(points, title="3D Points Distribution", colors=None, character_names=None):
+def visualize_3d_points(points, title="3D Points Distribution", colors=None, character_names=None, node_names=None, output_path=None, only_hires=False):
     """Visualize points in 3D space."""
     fig = plt.figure(figsize=(14, 12))
     ax = fig.add_subplot(111, projection='3d')
@@ -49,6 +52,12 @@ def visualize_3d_points(points, title="3D Points Distribution", colors=None, cha
     ax.set_ylabel('Y', fontsize=12)
     ax.set_zlabel('Z', fontsize=12)
     ax.set_title(title, fontsize=14, fontweight='bold')
+    
+    # Add node names if provided
+    if node_names is not None:
+        for i, name in enumerate(node_names):
+            if i < len(points):  # Ensure we don't exceed the number of points
+                ax.text(points[i, 0], points[i, 1], points[i, 2], name, fontsize=8, ha='center', va='bottom')
     
     # Add a legend if colors represent characters
     if colors is not None and character_names is not None:
@@ -87,10 +96,32 @@ def visualize_3d_points(points, title="3D Points Distribution", colors=None, cha
     ax.zaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
     
     plt.tight_layout()
-    plt.savefig(f"{title.replace(' ', '_').lower()}.png", dpi=300)
     
-    # Sauvegarder également une version avec une meilleure résolution
-    plt.savefig(f"{title.replace(' ', '_').lower()}_hires.png", dpi=600)
+    # Définir le chemin de sortie pour les images
+    filename_base = title.replace(' ', '_').lower()
+    
+    # Si output_path est fourni, l'utiliser pour sauvegarder les images
+    if output_path:
+        # Créer le répertoire de sortie s'il n'existe pas
+        os.makedirs(output_path, exist_ok=True)
+        
+        # Chemins complets pour les fichiers de sortie
+        output_hires = os.path.join(output_path, f"{filename_base}_hires.png")
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            output_std = os.path.join(output_path, f"{filename_base}.png")
+            plt.savefig(output_std, dpi=300)
+    else:
+        # Chemins relatifs
+        output_hires = f"{filename_base}_hires.png"
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            plt.savefig(f"{filename_base}.png", dpi=300)
+    
+    # Toujours sauvegarder la version haute résolution
+    plt.savefig(output_hires, dpi=600)
     
     plt.close()
 
@@ -271,89 +302,53 @@ def map_characters_to_nodes(posts_data, node_positions):
     
     return character_to_node
 
-def visualize_character_nodes(node_positions, character_to_node, color_map, space_scale):
+def visualize_character_nodes(node_positions, character_to_node, color_map, space_scale, output_path=None, only_hires=False):
     """Visualizer les positions des personnages dans l'espace 3D."""
     # Créer un tableau de positions uniques pour les personnages
-    unique_character_nodes = {}
-    character_colors = {}
+    character_positions = {}
+    node_to_characters = defaultdict(list)
     
-    # Pour chaque personnage, récupérer son nœud et sa couleur
+    # Inverser le mapping personnage -> nœud pour obtenir nœud -> personnages
     for character, node_idx in character_to_node.items():
-        if character in color_map:
-            node_pos = node_positions[node_idx]
-            unique_character_nodes[character] = node_pos
-            character_colors[character] = color_map[character]
+        node_to_characters[node_idx].append(character)
     
-    # Convertir en arrays numpy pour la visualisation
-    characters = list(unique_character_nodes.keys())
-    character_positions = np.array([unique_character_nodes[char] for char in characters])
-    node_colors = [character_colors[char] for char in characters]
+    # Extraire la position unique pour chaque personnage
+    for node_idx, characters in node_to_characters.items():
+        node_pos = node_positions[node_idx]
+        
+        # S'il y a plusieurs personnages pour ce nœud, les espacer légèrement
+        if len(characters) > 1:
+            radius = space_scale * 0.01  # Petit rayon pour séparer les personnages
+            for i, character in enumerate(characters):
+                # Générer une position légèrement décalée
+                angle = 2 * np.pi * i / len(characters)
+                offset = np.array([radius * np.cos(angle), radius * np.sin(angle), 0])
+                character_positions[character] = node_pos + offset
+        else:
+            # Un seul personnage pour ce nœud, utiliser la position du nœud
+            character_positions[characters[0]] = node_pos
     
-    # Création de la figure
-    fig = plt.figure(figsize=(14, 12))
-    ax = fig.add_subplot(111, projection='3d')
+    # Convertir en format pour visualisation
+    characters = list(character_positions.keys())
+    positions = np.array([character_positions[char] for char in characters])
+    colors = [color_map.get(char, "#cccccc") for char in characters]
     
-    # Afficher les nœuds avec des points plus grands
-    scatter = ax.scatter(
-        character_positions[:, 0], 
-        character_positions[:, 1], 
-        character_positions[:, 2],
-        s=100,  # Points plus grands
-        c=node_colors,
-        edgecolors='black',  # Contour noir pour plus de visibilité
-        alpha=1.0  # Opacité complète
+    # Créer un mapping couleur -> personnage pour la légende
+    color_to_character = {color_map.get(char, "#cccccc"): char for char in characters}
+    
+    # Visualiser
+    visualize_3d_points(
+        positions, 
+        "Character Positions", 
+        colors, 
+        color_to_character,
+        output_path=output_path,
+        only_hires=only_hires
     )
-    
-    # Ajouter des étiquettes de texte pour chaque personnage
-    for i, char in enumerate(characters):
-        pos = character_positions[i]
-        ax.text(pos[0], pos[1], pos[2], char, fontsize=8, ha='center', va='bottom')
-    
-    # Configurer les axes
-    ax.set_xlabel('X', fontsize=12)
-    ax.set_ylabel('Y', fontsize=12)
-    ax.set_zlabel('Z', fontsize=12)
-    ax.set_title("Distribution des Personnages dans l'Espace 3D", fontsize=14, fontweight='bold')
-    
-    # Définir les limites des axes
-    margin = space_scale * 0.1  # Marge de 10%
-    ax.set_xlim(-space_scale/2 - margin, space_scale/2 + margin)
-    ax.set_ylim(-space_scale/2 - margin, space_scale/2 + margin)
-    ax.set_zlim(-space_scale/2 - margin, space_scale/2 + margin)
-    
-    # Ajouter une légende
-    from matplotlib.lines import Line2D
-    legend_elements = []
-    
-    # Créer la légende
-    for character, color in sorted(character_colors.items()):
-        legend_elements.append(
-            Line2D([0], [0], marker='o', color='w', 
-                  label=character,
-                  markerfacecolor=color, 
-                  markeredgecolor='black',
-                  markersize=8)
-        )
-    
-    # Légende sur plusieurs colonnes
-    num_columns = min(3, max(1, len(legend_elements) // 10))
-    ax.legend(handles=legend_elements, loc='upper right', 
-             fontsize=9, ncol=num_columns, 
-             bbox_to_anchor=(1.02, 1.02))
-    
-    # Ajouter une grille
-    ax.xaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
-    ax.yaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
-    ax.zaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
-    
-    plt.tight_layout()
-    plt.savefig("character_nodes_distribution.png", dpi=300)
-    plt.savefig("character_nodes_distribution_hires.png", dpi=600)
-    plt.close()
     
     print(f"Visualisation des {len(characters)} personnages sauvegardée.")
 
-def position_posts(posts_data, node_positions, config):
+def position_posts(posts_data, node_positions, config, output_path=None):
     """Position posts in 3D space influenced by node positions."""
     start_time = time.time()
     
@@ -381,9 +376,11 @@ def position_posts(posts_data, node_positions, config):
     color_map = generate_color_map(posts_data) if config['use_color_mapping'] else {}
     
     # Visualiser les nœuds des personnages avant de positionner les posts
-    if config['use_color_mapping']:
+    # Seulement si les visualisations sont activées
+    generate_visualizations = config.get('generate_visualizations', True)
+    if config['use_color_mapping'] and generate_visualizations:
         print("Création d'une visualisation des positions des personnages...")
-        visualize_character_nodes(node_positions, character_to_node, color_map, config['space_scale'])
+        visualize_character_nodes(node_positions, character_to_node, color_map, config['space_scale'], output_path=output_path)
     
     # Liste pour stocker tous les posts spatialisés
     all_positioned_posts = []
@@ -447,52 +444,451 @@ def position_posts(posts_data, node_positions, config):
             # Ajouter à la liste de tous les posts
             all_positioned_posts.append(post)
     
-    # Visualize a sample of the result
-    # S'assurer que nous avons une répartition équilibrée des personnages pour la visualisation
-    # Plutôt que de prendre les 10000 premiers posts, prendre un nombre limité de posts par personnage
+    # Visualize a sample of the result (seulement si les visualisations sont activées)
+    if generate_visualizations:
+        # S'assurer que nous avons une répartition équilibrée des personnages pour la visualisation
+        # Plutôt que de prendre les 10000 premiers posts, prendre un nombre limité de posts par personnage
+        
+        # Calculer le nombre maximum de posts à visualiser par personnage
+        max_posts_per_character_for_viz = 300  # Limiter pour la visualisation
+        max_total_sample = 10000  # Maximum total pour la visualisation
+        
+        # Préparer un échantillon équilibré
+        sample_posts = []
+        for character, posts in posts_by_character.items():
+            # Prendre un échantillon limité pour chaque personnage
+            character_sample = posts[:min(len(posts), max_posts_per_character_for_viz)]
+            sample_posts.extend(character_sample)
+        
+        # Limiter l'échantillon total si nécessaire
+        if len(sample_posts) > max_total_sample:
+            np.random.shuffle(sample_posts)  # Mélanger pour avoir un échantillon représentatif
+            sample_posts = sample_posts[:max_total_sample]
+        
+        print(f"Visualisation d'un échantillon de {len(sample_posts)} posts sur {len(all_positioned_posts)}")
+        
+        visualize_sample = np.array([
+            [post["coordinates"]["x"], post["coordinates"]["y"], post["coordinates"]["z"]]
+            for post in sample_posts
+        ])
+        
+        # Extract colors for visualization
+        if config['use_color_mapping']:
+            visualize_colors = [post["color"] for post in sample_posts]
+            
+            # Créer un mapping de couleurs vers noms de personnages pour la légende
+            color_to_character = {}
+            for post in sample_posts:
+                color = post["color"]
+                character = post.get("character", "unknown")
+                color_to_character[color] = character
+            
+            visualize_3d_points(
+                visualize_sample, 
+                "Posts Distribution by Character", 
+                visualize_colors,
+                color_to_character,
+                output_path=output_path
+            )
+        else:
+            visualize_3d_points(visualize_sample, "Posts Distribution", output_path=output_path)
     
-    # Calculer le nombre maximum de posts à visualiser par personnage
-    max_posts_per_character_for_viz = 300  # Limiter pour la visualisation
-    max_total_sample = 10000  # Maximum total pour la visualisation
+    end_time = time.time()
+    print(f"Positionnement terminé en {end_time - start_time:.2f} secondes.")
     
-    # Préparer un échantillon équilibré
-    sample_posts = []
-    for character, posts in posts_by_character.items():
-        # Prendre un échantillon limité pour chaque personnage
-        character_sample = posts[:min(len(posts), max_posts_per_character_for_viz)]
-        sample_posts.extend(character_sample)
+    return all_positioned_posts 
+
+def create_combined_visualization(node_positions, node_names, posts_data, character_to_node, color_map, space_scale, output_path=None, only_hires=False):
+    """
+    Crée une visualisation combinée montrant à la fois les nœuds des personnages et les posts spatialisés.
     
-    # Limiter l'échantillon total si nécessaire
-    if len(sample_posts) > max_total_sample:
-        np.random.shuffle(sample_posts)  # Mélanger pour avoir un échantillon représentatif
-        sample_posts = sample_posts[:max_total_sample]
+    Args:
+        node_positions: Positions des nœuds dans l'espace 3D
+        node_names: Noms des nœuds
+        posts_data: Données des posts spatialisés
+        character_to_node: Dictionnaire mappant les personnages aux indices des nœuds
+        color_map: Dictionnaire des couleurs par personnage
+        space_scale: Échelle de l'espace 3D
+        output_path: Chemin où sauvegarder l'image
+        only_hires: Si True, ne génère que la version haute résolution
+    """
+    print("Création d'une visualisation combinée des nœuds et des posts...")
     
-    print(f"Visualisation d'un échantillon de {len(sample_posts)} posts sur {len(all_positioned_posts)}")
+    # Initialiser la figure 3D
+    fig = plt.figure(figsize=(16, 14))
+    ax = fig.add_subplot(111, projection='3d')
     
-    visualize_sample = np.array([
+    # --- ÉTAPE 1: Afficher les posts en petits points ---
+    posts_positions = np.array([
         [post["coordinates"]["x"], post["coordinates"]["y"], post["coordinates"]["z"]]
-        for post in sample_posts
+        for post in posts_data
     ])
     
-    # Extract colors for visualization
-    if config['use_color_mapping']:
-        visualize_colors = [post["color"] for post in sample_posts]
-        
-        # Créer un mapping de couleurs vers noms de personnages pour la légende
-        color_to_character = {}
-        for post in sample_posts:
-            color = post["color"]
-            character = post.get("character", "unknown")
-            color_to_character[color] = character
-        
-        visualize_3d_points(
-            visualize_sample, 
-            "Posts Distribution by Character", 
-            visualize_colors,
-            color_to_character
-        )
+    # Limiter le nombre de posts si trop nombreux pour la visualisation
+    max_posts_for_viz = 10000
+    if len(posts_positions) > max_posts_for_viz:
+        # Échantillonner de façon aléatoire
+        indices = np.random.choice(len(posts_positions), max_posts_for_viz, replace=False)
+        posts_positions = posts_positions[indices]
+        # Extraire les couleurs correspondantes si disponibles
+        if "color" in posts_data[0]:
+            post_colors = [posts_data[i]["color"] for i in indices if i < len(posts_data)]
+        else:
+            post_colors = 'lightgray'  # Couleur par défaut
     else:
-        visualize_3d_points(visualize_sample, "Posts Distribution")
+        # Utiliser tous les posts
+        if "color" in posts_data[0]:
+            post_colors = [post.get("color", "lightgray") for post in posts_data]
+        else:
+            post_colors = 'lightgray'  # Couleur par défaut
     
-    print(f"Positioned {len(all_positioned_posts)} posts in {time.time() - start_time:.2f} seconds")
-    return all_positioned_posts 
+    # Tracer les posts en petits points
+    ax.scatter(
+        posts_positions[:, 0], 
+        posts_positions[:, 1], 
+        posts_positions[:, 2],
+        s=1,  # Points très petits
+        c=post_colors,
+        alpha=0.3,  # Transparents
+        marker='.'
+    )
+    
+    # --- ÉTAPE 2: Afficher les nœuds des personnages ---
+    
+    # Préparer une cartographie des personnages aux nœuds
+    character_positions = {}
+    node_to_characters = defaultdict(list)
+    
+    # Associer les personnages aux nœuds
+    for character, node_idx in character_to_node.items():
+        node_to_characters[node_idx].append(character)
+    
+    # Extraire la position unique pour chaque personnage avec léger offset si plusieurs par nœud
+    for node_idx, characters in node_to_characters.items():
+        node_pos = node_positions[node_idx]
+        
+        # S'il y a plusieurs personnages pour ce nœud, les espacer
+        if len(characters) > 1:
+            radius = space_scale * 0.02  # Rayon pour séparer les personnages
+            for i, character in enumerate(characters):
+                angle = 2 * np.pi * i / len(characters)
+                offset = np.array([radius * np.cos(angle), radius * np.sin(angle), 0])
+                character_positions[character] = node_pos + offset
+        else:
+            # Un seul personnage pour ce nœud
+            character_positions[characters[0]] = node_pos
+    
+    # Tracer les nœuds des personnages
+    characters = list(character_positions.keys())
+    char_positions = np.array([character_positions[char] for char in characters])
+    char_colors = [color_map.get(char, "#cccccc") for char in characters]
+    
+    # Afficher les nœuds avec des points plus grands
+    ax.scatter(
+        char_positions[:, 0], 
+        char_positions[:, 1], 
+        char_positions[:, 2],
+        s=100,  # Points plus grands
+        c=char_colors,
+        edgecolors='black',  # Contour noir
+        alpha=1.0,  # Opacité complète
+        marker='o',
+        zorder=10  # S'assurer qu'ils sont au-dessus des posts
+    )
+    
+    # Ajouter les étiquettes de texte pour chaque personnage
+    for i, character in enumerate(characters):
+        pos = char_positions[i]
+        ax.text(
+            pos[0], pos[1], pos[2] + space_scale * 0.01,  # Légèrement au-dessus
+            character,
+            fontsize=8,
+            ha='center', va='bottom',
+            fontweight='bold',
+            zorder=11  # Au-dessus de tout
+        )
+    
+    # --- ÉTAPE 3: Ajouter une légende des personnages ---
+    from matplotlib.lines import Line2D
+    legend_elements = []
+    
+    # Créer une légende pour un sous-ensemble des personnages (pour éviter d'être trop encombré)
+    # Limiter à 20 personnages maximum pour la légende
+    sorted_characters = sorted(character_positions.keys())
+    legend_characters = sorted_characters[:min(20, len(sorted_characters))]
+    
+    for character in legend_characters:
+        legend_elements.append(
+            Line2D([0], [0], marker='o', color='w', 
+                  label=character,
+                  markerfacecolor=color_map.get(character, "#cccccc"), 
+                  markeredgecolor='black',
+                  markersize=8)
+        )
+    
+    # Afficher le nombre total si on a limité
+    if len(sorted_characters) > 20:
+        legend_title = f"Personnages (20 sur {len(sorted_characters)} affichés)"
+    else:
+        legend_title = "Personnages"
+    
+    # Créer une légende à plusieurs colonnes
+    num_columns = min(3, max(1, len(legend_elements) // 7))
+    legend = ax.legend(
+        handles=legend_elements, 
+        loc='upper right',
+        title=legend_title,
+        fontsize=8, 
+        ncol=num_columns,
+        bbox_to_anchor=(1.05, 1.05)
+    )
+    legend.get_title().set_fontweight('bold')
+    
+    # --- ÉTAPE 4: Configurer la figure ---
+    ax.set_xlabel('X', fontsize=12)
+    ax.set_ylabel('Y', fontsize=12)
+    ax.set_zlabel('Z', fontsize=12)
+    ax.set_title("Distribution des Personnages et des Posts dans l'Espace 3D", fontsize=14, fontweight='bold')
+    
+    # Ajuster les limites des axes
+    all_positions = np.vstack([posts_positions, char_positions])
+    x_min, y_min, z_min = all_positions.min(axis=0) - space_scale * 0.05
+    x_max, y_max, z_max = all_positions.max(axis=0) + space_scale * 0.05
+    
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_zlim(z_min, z_max)
+    
+    # Ajouter une grille pour mieux visualiser la profondeur
+    ax.xaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
+    ax.yaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
+    ax.zaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.4)
+    
+    # Ajuster la position de la caméra pour une meilleure vue
+    ax.view_init(elev=30, azim=45)
+    
+    plt.tight_layout()
+    
+    # Définir le chemin de sortie pour l'image
+    if output_path:
+        # Créer le répertoire de sortie s'il n'existe pas
+        os.makedirs(output_path, exist_ok=True)
+        output_file_hires = os.path.join(output_path, "distribution_combinee_hires.png")
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            output_file = os.path.join(output_path, "distribution_combinee.png")
+            plt.savefig(output_file, dpi=300, bbox_inches='tight')
+            print(f"Visualisation combinée (standard) sauvegardée dans {output_file}")
+    else:
+        output_file_hires = "distribution_combinee_hires.png"
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            plt.savefig("distribution_combinee.png", dpi=300, bbox_inches='tight')
+    
+    # Toujours sauvegarder la version haute résolution
+    plt.savefig(output_file_hires, dpi=600, bbox_inches='tight')
+    print(f"Visualisation combinée (haute résolution) sauvegardée dans {output_file_hires}")
+    
+    plt.close()
+    
+    return output_file_hires 
+
+def create_top_characters_visualization(posts_data, character_to_node, node_positions, space_scale, output_path=None, only_hires=False, num_top_characters=5):
+    """
+    Crée une visualisation des posts appartenant uniquement aux personnages les plus actifs.
+    
+    Args:
+        posts_data: Données des posts spatialisés
+        character_to_node: Dictionnaire mappant les personnages aux indices des nœuds
+        node_positions: Positions des nœuds dans l'espace 3D
+        space_scale: Échelle de l'espace 3D
+        output_path: Chemin où sauvegarder l'image
+        only_hires: Si True, ne génère que la version haute résolution
+        num_top_characters: Nombre de personnages principaux à afficher
+    """
+    print(f"Création d'une visualisation des {num_top_characters} personnages les plus actifs...")
+    
+    # Compter les posts par personnage
+    character_post_counts = {}
+    for post in posts_data:
+        character = post.get("character", "unknown")
+        if character not in character_post_counts:
+            character_post_counts[character] = 0
+        character_post_counts[character] += 1
+    
+    # Sélectionner les personnages avec le plus de posts
+    top_characters = sorted(character_post_counts.items(), key=lambda x: x[1], reverse=True)[:num_top_characters]
+    top_character_names = [char[0] for char in top_characters]
+    
+    print(f"Top {num_top_characters} personnages: {', '.join([f'{char} ({count} posts)' for char, count in top_characters])}")
+    
+    # Filtrer les posts pour ne garder que ceux des personnages principaux
+    filtered_posts = [post for post in posts_data if post.get("character", "unknown") in top_character_names]
+    
+    # Créer une palette de couleurs distinctes pour les personnages principaux
+    distinct_colors = [
+        "#E41A1C",  # Rouge vif
+        "#377EB8",  # Bleu
+        "#4DAF4A",  # Vert
+        "#984EA3",  # Violet
+        "#FF7F00",  # Orange
+        "#FFFF33",  # Jaune
+        "#A65628",  # Marron
+        "#F781BF",  # Rose
+    ]
+    
+    # Assurer que nous avons assez de couleurs
+    if num_top_characters > len(distinct_colors):
+        # Ajouter des couleurs supplémentaires si nécessaire
+        from matplotlib import cm
+        additional_colors = cm.rainbow(np.linspace(0, 1, num_top_characters - len(distinct_colors)))
+        distinct_colors.extend([matplotlib.colors.rgb2hex(c) for c in additional_colors[:, :3]])
+    
+    # Créer un nouveau mapping de couleurs pour les personnages principaux
+    top_color_map = {char: distinct_colors[i] for i, char in enumerate(top_character_names)}
+    
+    # Initialiser la figure 3D
+    fig = plt.figure(figsize=(20, 16))
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Tracer les points pour chaque personnage séparément (pour la légende)
+    handles = []
+    labels = []
+    
+    # Tracer les posts par personnage
+    for char_idx, character in enumerate(top_character_names):
+        # Filtrer les posts pour ce personnage
+        char_posts = [post for post in filtered_posts if post.get("character", "unknown") == character]
+        
+        # Extraire les positions
+        positions = np.array([
+            [post["coordinates"]["x"], post["coordinates"]["y"], post["coordinates"]["z"]]
+            for post in char_posts
+        ])
+        
+        # Couleur pour ce personnage
+        color = top_color_map[character]
+        
+        # Tracer les points
+        scatter = ax.scatter(
+            positions[:, 0], 
+            positions[:, 1], 
+            positions[:, 2],
+            s=3,  # Points légèrement plus grands que dans la vue complète
+            c=color,
+            alpha=0.7,  # Moins transparent pour cette vue
+            marker='.',
+            label=f"{character} ({len(char_posts)} posts)"
+        )
+        
+        # Stocker le scatter plot pour la légende
+        handles.append(scatter)
+        labels.append(f"{character} ({len(char_posts)} posts)")
+        
+        # Trouver la position du nœud pour ce personnage
+        if character in character_to_node:
+            node_idx = character_to_node[character]
+            node_pos = node_positions[node_idx]
+            
+            # Tracer le nœud avec un point plus grand
+            ax.scatter(
+                node_pos[0], node_pos[1], node_pos[2],
+                s=200,  # Encore plus grand que dans la vue complète
+                c=color,
+                edgecolors='black',
+                linewidths=2,
+                alpha=1.0,
+                marker='o',
+                zorder=10
+            )
+            
+            # Ajouter le nom du personnage
+            ax.text(
+                node_pos[0], node_pos[1], node_pos[2] + space_scale * 0.02,
+                character,
+                fontsize=12,
+                ha='center', va='bottom',
+                fontweight='bold',
+                bbox=dict(facecolor='white', alpha=0.8, edgecolor='none', pad=3),
+                zorder=11
+            )
+    
+    # Configurer les axes
+    ax.set_xlabel('X', fontsize=12)
+    ax.set_ylabel('Y', fontsize=12)
+    ax.set_zlabel('Z', fontsize=12)
+    ax.set_title(f"Distribution des {num_top_characters} Personnages les Plus Actifs", fontsize=16, fontweight='bold')
+    
+    # Ajuster les limites des axes
+    all_positions = np.array([
+        [post["coordinates"]["x"], post["coordinates"]["y"], post["coordinates"]["z"]]
+        for post in filtered_posts
+    ])
+    
+    # Trouver les positions des nœuds pour ces personnages
+    node_positions_filtered = []
+    for character in top_character_names:
+        if character in character_to_node:
+            node_idx = character_to_node[character]
+            node_positions_filtered.append(node_positions[node_idx])
+    
+    # Combiner les positions des posts et des nœuds
+    if node_positions_filtered:
+        all_positions = np.vstack([all_positions, node_positions_filtered])
+    
+    # Définir les limites avec un peu de marge
+    x_min, y_min, z_min = all_positions.min(axis=0) - space_scale * 0.1
+    x_max, y_max, z_max = all_positions.max(axis=0) + space_scale * 0.1
+    
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.set_zlim(z_min, z_max)
+    
+    # Ajouter une grille pour mieux visualiser la profondeur
+    ax.xaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.3)
+    ax.yaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.3)
+    ax.zaxis._axinfo["grid"]['color'] = (0.9, 0.9, 0.9, 0.3)
+    
+    # Ajouter la légende
+    ax.legend(
+        handles=handles,
+        labels=labels,
+        title="Personnages",
+        loc='upper right',
+        fontsize=10,
+        title_fontsize=12,
+        framealpha=0.8
+    )
+    
+    # Ajuster la position de la caméra pour une meilleure vue
+    ax.view_init(elev=25, azim=40)
+    
+    plt.tight_layout()
+    
+    # Définir le chemin de sortie pour l'image
+    if output_path:
+        # Créer le répertoire de sortie s'il n'existe pas
+        os.makedirs(output_path, exist_ok=True)
+        output_file_hires = os.path.join(output_path, "top_characters_hires.png")
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            output_file = os.path.join(output_path, "top_characters.png")
+            plt.savefig(output_file, dpi=300, bbox_inches='tight')
+            print(f"Visualisation des personnages principaux (standard) sauvegardée dans {output_file}")
+    else:
+        output_file_hires = "top_characters_hires.png"
+        
+        # Version standard uniquement si on ne demande pas que la version haute résolution
+        if not only_hires:
+            plt.savefig("top_characters.png", dpi=300, bbox_inches='tight')
+    
+    # Toujours sauvegarder la version haute résolution
+    plt.savefig(output_file_hires, dpi=600, bbox_inches='tight')
+    print(f"Visualisation des personnages principaux (haute résolution) sauvegardée dans {output_file_hires}")
+    
+    plt.close()
+    
+    return output_file_hires 

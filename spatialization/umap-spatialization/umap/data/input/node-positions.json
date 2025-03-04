@@ -1,0 +1,985 @@
+[
+  {
+    "slug": "24-129-100-84",
+    "type": "character",
+    "isJoshua": true,
+    "x": 144.15536217087717,
+    "y": -25.373423942522997,
+    "z": -62.50765512031296
+  },
+  {
+    "slug": "4krapsucks",
+    "type": "character",
+    "isJoshua": true,
+    "x": 94.99243843096221,
+    "y": 47.82123165750917,
+    "z": -97.97015987364766
+  },
+  {
+    "slug": "66-177-73-91",
+    "type": "character",
+    "isJoshua": true,
+    "x": 140.35850771360583,
+    "y": -8.565890881012308,
+    "z": -38.638890417580704
+  },
+  {
+    "slug": "76-106-245-93",
+    "type": "character",
+    "isJoshua": true,
+    "x": 136.12765289706687,
+    "y": 10.028238079075038,
+    "z": -62.17497989131697
+  },
+  {
+    "slug": "amina-blackberry",
+    "type": "character",
+    "isJoshua": true,
+    "x": -28.88405948774121,
+    "y": -17.616510616355864,
+    "z": 19.429786984102456
+  },
+  {
+    "slug": "aryan-heights",
+    "type": "character",
+    "isJoshua": true,
+    "x": 94.10911746930144,
+    "y": 14.737981224222166,
+    "z": -130.45577097752673
+  },
+  {
+    "slug": "australi-witness",
+    "type": "character",
+    "isJoshua": true,
+    "x": -28.42947196650835,
+    "y": -68.49837446586716,
+    "z": 107.52219671704272
+  },
+  {
+    "slug": "blaze-it-flaggot",
+    "type": "character",
+    "isJoshua": true,
+    "x": 18.75336927855918,
+    "y": -19.966203148876225,
+    "z": -89.64982464562941
+  },
+  {
+    "slug": "bw-anime-fan",
+    "type": "character",
+    "isJoshua": true,
+    "x": 131.41044246935357,
+    "y": 9.397842034868304,
+    "z": -39.982929877910955
+  },
+  {
+    "slug": "chuck-e-jesus",
+    "type": "character",
+    "isJoshua": true,
+    "x": 30.278089201510756,
+    "y": -30.861412741703834,
+    "z": -122.35879316688053
+  },
+  {
+    "slug": "death-to-sjws",
+    "type": "character",
+    "isJoshua": true,
+    "x": -29.88237612083728,
+    "y": 36.18795203345841,
+    "z": -43.16843050078361
+  },
+  {
+    "slug": "dinah-silverstein",
+    "type": "character",
+    "isJoshua": true,
+    "x": 27.050781604189847,
+    "y": -84.62256674505532,
+    "z": -14.91684361437128
+  },
+  {
+    "slug": "dr-shlomo-goldstein",
+    "type": "character",
+    "isJoshua": true,
+    "x": 13.082342581507998,
+    "y": 14.553943109661736,
+    "z": -112.63687695192836
+  },
+  {
+    "slug": "ryoko-tamada",
+    "type": "character",
+    "isJoshua": true,
+    "x": -47.15808383458865,
+    "y": 33.79040352069104,
+    "z": -8.410096291566239
+  },
+  {
+    "slug": "emily-americana",
+    "type": "character",
+    "isJoshua": true,
+    "x": -25.555787991652384,
+    "y": -14.487675340240552,
+    "z": -22.924793531194023
+  },
+  {
+    "slug": "emily-goldstein",
+    "type": "character",
+    "isJoshua": true,
+    "x": -42.718101180419445,
+    "y": -114.54928741616955,
+    "z": -54.884906489439764
+  },
+  {
+    "slug": "europe-hates-niggers",
+    "type": "character",
+    "isJoshua": true,
+    "x": 30.556800091526647,
+    "y": 13.506358927595935,
+    "z": -119.58836470982247
+  },
+  {
+    "slug": "european-88",
+    "type": "character",
+    "isJoshua": true,
+    "x": 6.330542493964387,
+    "y": -94.36153300576423,
+    "z": -58.45095766033498
+  },
+  {
+    "slug": "flappy-brd",
+    "type": "character",
+    "isJoshua": true,
+    "x": 36.01243827994261,
+    "y": 4.711689379066445,
+    "z": -99.05655011491665
+  },
+  {
+    "slug": "gas-the-kikes",
+    "type": "character",
+    "isJoshua": true,
+    "x": 43.25922988879967,
+    "y": -8.303887025059558,
+    "z": -121.7785341066495
+  },
+  {
+    "slug": "hadiyo-elmi",
+    "type": "character",
+    "isJoshua": true,
+    "x": 0.3127162211638327,
+    "y": -125.7106361612772,
+    "z": -32.3843866725974
+  },
+  {
+    "slug": "id-c9uafs7u",
+    "type": "character",
+    "isJoshua": true,
+    "x": 125.00981335045891,
+    "y": -16.238081928192837,
+    "z": -111.766530591603
+  },
+  {
+    "slug": "island-angel",
+    "type": "character",
+    "isJoshua": true,
+    "x": 44.689725821715314,
+    "y": -43.14737694995692,
+    "z": -106.74058321888866
+  },
+  {
+    "slug": "real-joshua-goldberg",
+    "type": "character",
+    "isJoshua": true,
+    "x": 101.46513650115162,
+    "y": -3.0213704157994847,
+    "z": 156.12069104435562
+  },
+  {
+    "slug": "fake-joshua-goldberg",
+    "type": "character",
+    "isJoshua": true,
+    "x": 5.715137868193144,
+    "y": -63.940214986967355,
+    "z": -79.1793472354157
+  },
+  {
+    "slug": "kill-all-pakis",
+    "type": "character",
+    "isJoshua": true,
+    "x": 45.27379064442454,
+    "y": -18.751594727972744,
+    "z": -102.6141160420608
+  },
+  {
+    "slug": "kill-all-sjws",
+    "type": "character",
+    "isJoshua": true,
+    "x": 23.995055011924112,
+    "y": 22.792408944686386,
+    "z": -94.51420718742843
+  },
+  {
+    "slug": "le-cancer-kin",
+    "type": "character",
+    "isJoshua": true,
+    "x": 20.417087273386365,
+    "y": -47.259606798723034,
+    "z": -113.38414337243933
+  },
+  {
+    "slug": "madotsuki-the-dreamer",
+    "type": "character",
+    "isJoshua": true,
+    "x": 97.33515648020487,
+    "y": 89.97739065150022,
+    "z": -40.70898982036284
+  },
+  {
+    "slug": "may-may-poster",
+    "type": "character",
+    "isJoshua": true,
+    "x": 45.117720602041516,
+    "y": -42.51151817275,
+    "z": -146.2266359578212
+  },
+  {
+    "slug": "metacanadian-420",
+    "type": "character",
+    "isJoshua": true,
+    "x": 12.953182499891813,
+    "y": 3.1020500395592174,
+    "z": -83.08689658527527
+  },
+  {
+    "slug": "metropolis-forever",
+    "type": "character",
+    "isJoshua": true,
+    "x": -96.39121086796658,
+    "y": 65.88706581504822,
+    "z": -46.609291893291015
+  },
+  {
+    "slug": "michael-slay",
+    "type": "character",
+    "isJoshua": true,
+    "x": -26.6382861545188,
+    "y": -96.67415104376987,
+    "z": 5.361318954712588
+  },
+  {
+    "slug": "micronesia-gal",
+    "type": "character",
+    "isJoshua": true,
+    "x": 27.045026877850997,
+    "y": -43.85389533239709,
+    "z": -94.1683275533042
+  },
+  {
+    "slug": "moon-metropolis",
+    "type": "character",
+    "isJoshua": true,
+    "x": -8.82655635987847,
+    "y": 39.52602962316953,
+    "z": 40.60549726783564
+  },
+  {
+    "slug": "mouthful-of-grandpa",
+    "type": "character",
+    "isJoshua": true,
+    "x": 20.800400992919815,
+    "y": -11.140526842504883,
+    "z": -127.04260035565696
+  },
+  {
+    "slug": "naruto-2-0",
+    "type": "character",
+    "isJoshua": true,
+    "x": 132.9940188313959,
+    "y": -23.163358629651917,
+    "z": -44.92484325886027
+  },
+  {
+    "slug": "nuke-europe",
+    "type": "character",
+    "isJoshua": true,
+    "x": 2.0225565049430245,
+    "y": -66.04197195804312,
+    "z": -47.109657871196156
+  },
+  {
+    "slug": "pineapple-10",
+    "type": "character",
+    "isJoshua": true,
+    "x": 117.44232291236465,
+    "y": 34.0450993479504,
+    "z": -81.98306388759332
+  },
+  {
+    "slug": "the-old-jacobite-2",
+    "type": "character",
+    "isJoshua": true,
+    "x": 134.79587825500926,
+    "y": -9.657885607124657,
+    "z": -70.94260091404841
+  },
+  {
+    "slug": "wake-up-white-man",
+    "type": "character",
+    "isJoshua": true,
+    "x": 46.31205595415316,
+    "y": 16.031972768256672,
+    "z": -164.49638158147326
+  },
+  {
+    "slug": "tanya-cohen",
+    "type": "character",
+    "isJoshua": true,
+    "x": -79.97060143598138,
+    "y": -45.43466276175531,
+    "z": -2.8408005748286955
+  },
+  {
+    "slug": "alice-pooley",
+    "type": "character",
+    "isJoshua": false,
+    "x": -24.171638213562133,
+    "y": 93.09609343756529,
+    "z": 54.304511081426135
+  },
+  {
+    "slug": "andrew-anglin",
+    "type": "character",
+    "isJoshua": false,
+    "x": -64.05794169565614,
+    "y": -162.5611688138362,
+    "z": 9.357412705970052
+  },
+  {
+    "slug": "ben-garrison",
+    "type": "character",
+    "isJoshua": false,
+    "x": 146.34799705705404,
+    "y": -2.615906746286258,
+    "z": 170.76861182717005
+  },
+  {
+    "slug": "bindi-cole",
+    "type": "character",
+    "isJoshua": false,
+    "x": -67.40057421150411,
+    "y": -95.34905693289258,
+    "z": 121.59286568906184
+  },
+  {
+    "slug": "bill-leak",
+    "type": "character",
+    "isJoshua": false,
+    "x": -49.841655895542054,
+    "y": -112.27524336446406,
+    "z": 115.70997331290813
+  },
+  {
+    "slug": "caitlin-roper",
+    "type": "character",
+    "isJoshua": false,
+    "x": 123.1631984624214,
+    "y": 16.110568069341763,
+    "z": 193.87252716284834
+  },
+  {
+    "slug": "chiara-zaffino",
+    "type": "character",
+    "isJoshua": false,
+    "x": 25.555401702489686,
+    "y": 62.55291541707384,
+    "z": 73.36136201783421
+  },
+  {
+    "slug": "cyndi-lavrenci",
+    "type": "character",
+    "isJoshua": false,
+    "x": -134.767209388529,
+    "y": 86.4075203530169,
+    "z": -17.94900977867795
+  },
+  {
+    "slug": "elise-potaka",
+    "type": "character",
+    "isJoshua": false,
+    "x": 46.09488265211572,
+    "y": -5.164925272599688,
+    "z": 124.21585936315893
+  },
+  {
+    "slug": "elton-simpson",
+    "type": "character",
+    "isJoshua": false,
+    "x": -52.65277404470266,
+    "y": -88.53444156157462,
+    "z": 150.7612672245372
+  },
+  {
+    "slug": "grant-taylor",
+    "type": "character",
+    "isJoshua": false,
+    "x": -115.78001615292203,
+    "y": 117.06478446634708,
+    "z": -42.47043885434786
+  },
+  {
+    "slug": "jilian-c-york",
+    "type": "character",
+    "isJoshua": false,
+    "x": -54.395629135014524,
+    "y": 76.68483840091477,
+    "z": -32.94819521928778
+  },
+  {
+    "slug": "jim-berry-fbi",
+    "type": "character",
+    "isJoshua": false,
+    "x": -27.248153164778092,
+    "y": -87.11885243005725,
+    "z": 156.87544186448497
+  },
+  {
+    "slug": "junaid-thorne",
+    "type": "character",
+    "isJoshua": false,
+    "x": -39.89193149166321,
+    "y": -43.58164204761428,
+    "z": 147.2226186639628
+  },
+  {
+    "slug": "josh-bornstein",
+    "type": "character",
+    "isJoshua": false,
+    "x": 22.777900165484336,
+    "y": -37.88021420057652,
+    "z": 77.26748950915864
+  },
+  {
+    "slug": "lindsay-campbell-fbi",
+    "type": "character",
+    "isJoshua": false,
+    "x": 119.14209126661466,
+    "y": -8.63526215465323,
+    "z": 198.79341842910654
+  },
+  {
+    "slug": "larry-pickering",
+    "type": "character",
+    "isJoshua": false,
+    "x": -43.29027123826684,
+    "y": -65.98051075994535,
+    "z": 158.00324402351922
+  },
+  {
+    "slug": "luke-mcmahon",
+    "type": "character",
+    "isJoshua": false,
+    "x": 30.3990912413234,
+    "y": 5.803575924166579,
+    "z": 141.7060309105835
+  },
+  {
+    "slug": "mariam-veiszadeh",
+    "type": "character",
+    "isJoshua": false,
+    "x": -39.45255913361579,
+    "y": -51.52787355256794,
+    "z": -10.00608910082561
+  },
+  {
+    "slug": "mike-wendling",
+    "type": "character",
+    "isJoshua": false,
+    "x": -39.846366152411555,
+    "y": 80.20975357055441,
+    "z": 61.41123830544573
+  },
+  {
+    "slug": "milo-yiannopoulos",
+    "type": "character",
+    "isJoshua": false,
+    "x": -40.1995381836254,
+    "y": 46.71914361407588,
+    "z": 79.11015316333742
+  },
+  {
+    "slug": "nadir-soofi",
+    "type": "character",
+    "isJoshua": false,
+    "x": -63.17240528135689,
+    "y": -55.8449742209425,
+    "z": 141.4422064851955
+  },
+  {
+    "slug": "nikki",
+    "type": "character",
+    "isJoshua": false,
+    "x": 28.56755160506328,
+    "y": 69.35885349360827,
+    "z": 32.723420141963544
+  },
+  {
+    "slug": "pamela-geller",
+    "type": "character",
+    "isJoshua": false,
+    "x": -76.04725750612786,
+    "y": -67.12665467485006,
+    "z": 62.787270375831
+  },
+  {
+    "slug": "peter-wallace",
+    "type": "character",
+    "isJoshua": false,
+    "x": -43.59555484453826,
+    "y": 79.71415072623294,
+    "z": 16.872263567161323
+  },
+  {
+    "slug": "rita-katz",
+    "type": "character",
+    "isJoshua": false,
+    "x": -71.69619656601823,
+    "y": -74.4149388320753,
+    "z": 132.09803256960652
+  },
+  {
+    "slug": "rita-panahi",
+    "type": "character",
+    "isJoshua": false,
+    "x": 23.270564508998522,
+    "y": 81.7741940356671,
+    "z": 56.60228952519245
+  },
+  {
+    "slug": "shaun-king",
+    "type": "character",
+    "isJoshua": false,
+    "x": 37.005261987002605,
+    "y": 53.62201043501587,
+    "z": 49.14971041868297
+  },
+  {
+    "slug": "tom-minear",
+    "type": "character",
+    "isJoshua": false,
+    "x": -118.53232965565103,
+    "y": 81.66813423047272,
+    "z": -89.98004946493808
+  },
+  {
+    "slug": "weev-andrew-auernheimer",
+    "type": "character",
+    "isJoshua": false,
+    "x": 5.654965831827977,
+    "y": 94.03911564975064,
+    "z": 44.76491876425309
+  },
+  {
+    "slug": "elon-musk",
+    "type": "character",
+    "isJoshua": false,
+    "x": -56.06814694069279,
+    "y": -150.14664326796643,
+    "z": -84.07626018407743
+  },
+  {
+    "slug": "sean-dexton",
+    "type": "character",
+    "isJoshua": false,
+    "x": 136.6965054972018,
+    "y": 20.529042321385923,
+    "z": 174.66070333890985
+  },
+  {
+    "slug": "fbi-as-wilayaks",
+    "type": "character",
+    "isJoshua": false,
+    "x": -4.765797048517393,
+    "y": -86.81487222362384,
+    "z": 148.67969622329204
+  },
+  {
+    "slug": "afp-federal-agent-as-mohamadmo7",
+    "type": "character",
+    "isJoshua": false,
+    "x": -15.83821838052092,
+    "y": -109.66112209985955,
+    "z": 136.17619094691028
+  },
+  {
+    "slug": "nathan-sykes",
+    "type": "character",
+    "isJoshua": false,
+    "x": 73.25351573825131,
+    "y": 15.832846754638984,
+    "z": 190.79936947367273
+  },
+  {
+    "slug": "naomi-wolf",
+    "type": "character",
+    "isJoshua": false,
+    "x": 60.646893523785145,
+    "y": -60.50189565365453,
+    "z": 95.19552402213549
+  },
+  {
+    "slug": "blazing-catfur",
+    "type": "character",
+    "isJoshua": false,
+    "x": -15.511838101723026,
+    "y": 72.91660785600865,
+    "z": 1.2145311737477218
+  },
+  {
+    "slug": "feministing",
+    "type": "character",
+    "isJoshua": false,
+    "x": -116.12763999920553,
+    "y": -75.67232122229123,
+    "z": 1.4556183822943807
+  },
+  {
+    "slug": "national-wanguard",
+    "type": "character",
+    "isJoshua": false,
+    "x": -112.8649462081895,
+    "y": -70.96047082512945,
+    "z": -26.114737779261933
+  },
+  {
+    "slug": "the-right-stuff",
+    "type": "character",
+    "isJoshua": false,
+    "x": -14.100119673852733,
+    "y": 74.34140714515779,
+    "z": 82.20314648498264
+  },
+  {
+    "slug": "chris-lavergne",
+    "type": "character",
+    "isJoshua": false,
+    "x": 7.387821212281325,
+    "y": 47.871473416748785,
+    "z": 85.65269192827603
+  },
+  {
+    "slug": "mike-masnick",
+    "type": "character",
+    "isJoshua": false,
+    "x": -122.9056756739775,
+    "y": -48.98757856847566,
+    "z": 15.969842094938544
+  },
+  {
+    "slug": "breitbart",
+    "type": "character",
+    "isJoshua": false,
+    "x": 8.573545884949004,
+    "y": 77.34255970602605,
+    "z": 78.08933777592867
+  },
+  {
+    "slug": "daily-kos",
+    "type": "character",
+    "isJoshua": false,
+    "x": -128.21611475350988,
+    "y": -56.15738462892693,
+    "z": -11.727668546041528
+  },
+  {
+    "slug": "times-of-israel",
+    "type": "character",
+    "isJoshua": false,
+    "x": -32.93845665920183,
+    "y": 70.84779978431449,
+    "z": 80.36324314203323
+  },
+  {
+    "slug": "tanya-gersh",
+    "type": "character",
+    "isJoshua": false,
+    "x": -92.06696892132445,
+    "y": -201.59006548341657,
+    "z": 10.585833996001684
+  },
+  {
+    "slug": "steve-bannon",
+    "type": "character",
+    "isJoshua": false,
+    "x": -18.513949549711757,
+    "y": 45.60336017767,
+    "z": 88.84939278042404
+  },
+  {
+    "slug": "alec-baldwin",
+    "type": "character",
+    "isJoshua": false,
+    "x": -8.668836989085888,
+    "y": 90.57278332488686,
+    "z": 64.95179424284633
+  },
+  {
+    "slug": "nancy-goldstein",
+    "type": "character",
+    "isJoshua": false,
+    "x": 134.37587110472634,
+    "y": -21.034771264151853,
+    "z": 183.1411008546264
+  },
+  {
+    "slug": "australian-independent-media-network",
+    "type": "character",
+    "isJoshua": false,
+    "x": -126.4182399434851,
+    "y": -33.59225078722367,
+    "z": -6.03788836583993
+  },
+  {
+    "slug": "wikipedia",
+    "type": "character",
+    "isJoshua": false,
+    "x": -11.404268632510682,
+    "y": 98.8313235818368,
+    "z": -23.60673904328854
+  },
+  {
+    "slug": "wikipedia",
+    "type": "source",
+    "x": 185.34124473643405,
+    "y": 15.094988894838446,
+    "z": -50.942880010922856
+  },
+  {
+    "slug": "anime-news-network",
+    "type": "source",
+    "x": 121.22109693698052,
+    "y": 92.559784781342,
+    "z": -125.16482635589814
+  },
+  {
+    "slug": "twitter",
+    "type": "source",
+    "x": -61.25065261970996,
+    "y": -8.904332040553077,
+    "z": 54.07569567431681
+  },
+  {
+    "slug": "reddit",
+    "type": "source",
+    "x": -17.666253846457344,
+    "y": -15.29143817988766,
+    "z": -112.01685394474592
+  },
+  {
+    "slug": "stormfront",
+    "type": "source",
+    "x": 91.53375537062337,
+    "y": 40.00295292622403,
+    "z": -196.58749788840197
+  },
+  {
+    "slug": "JustPaste.it",
+    "type": "source",
+    "x": -42.57397920921492,
+    "y": -106.65456535553783,
+    "z": 137.4208808529786
+  },
+  {
+    "slug": "8chan",
+    "type": "source",
+    "x": -13.465988076066212,
+    "y": -60.755488982811144,
+    "z": 152.58885540519836
+  },
+  {
+    "slug": "facebook",
+    "type": "source",
+    "x": 5.525034191347056,
+    "y": -93.06681751381024,
+    "z": 127.1283704432378
+  },
+  {
+    "slug": "surespot",
+    "type": "source",
+    "x": -19.836983092285056,
+    "y": -114.27413396719426,
+    "z": 111.90685324016759
+  },
+  {
+    "slug": "thoughtcatalog",
+    "type": "source",
+    "x": -68.49867014065909,
+    "y": -81.81181128284105,
+    "z": -66.81614530393426
+  },
+  {
+    "slug": "4plebs",
+    "type": "source",
+    "x": 171.13695338736974,
+    "y": -5.3406716087095045,
+    "z": -143.6385613839854
+  },
+  {
+    "slug": "filmboards",
+    "type": "source",
+    "x": 124.6549387926309,
+    "y": 127.42754375176656,
+    "z": -24.636653544318577
+  },
+  {
+    "slug": "imdb",
+    "type": "source",
+    "x": 131.08356309929968,
+    "y": 126.15757061846458,
+    "z": -44.730820164413856
+  },
+  {
+    "slug": "Adult Swim",
+    "type": "source",
+    "x": 65.29439908940046,
+    "y": -61.49424272448001,
+    "z": -189.8362940987326
+  },
+  {
+    "slug": "digitpress",
+    "type": "source",
+    "x": -124.92504051092395,
+    "y": 106.51140327311793,
+    "z": -63.1346056891276
+  },
+  {
+    "slug": "badmovies",
+    "type": "source",
+    "x": -114.28809001514105,
+    "y": 105.90084077133272,
+    "z": -24.082055441278328
+  },
+  {
+    "slug": "Mail",
+    "type": "source",
+    "x": -141.88659756882174,
+    "y": 64.98534242651625,
+    "z": -31.29123791768422
+  },
+  {
+    "slug": "ytmnd",
+    "type": "source",
+    "x": -100.06937824485567,
+    "y": 113.81630716655997,
+    "z": -61.37874054377143
+  },
+  {
+    "slug": "tezukainenglish",
+    "type": "source",
+    "x": -135.3782498432674,
+    "y": 56.09578187359166,
+    "z": -72.16252972394783
+  },
+  {
+    "slug": "bluwiki",
+    "type": "source",
+    "x": -142.32233245641245,
+    "y": 92.19014732947521,
+    "z": -57.90698021285224
+  },
+  {
+    "slug": "animesuki",
+    "type": "source",
+    "x": -137.05017139932707,
+    "y": 98.67538513098117,
+    "z": -36.5761655099607
+  },
+  {
+    "slug": "criterion",
+    "type": "source",
+    "x": -147.04034923174038,
+    "y": 70.27352401089836,
+    "z": -52.37582089947263
+  },
+  {
+    "slug": "deviantart",
+    "type": "source",
+    "x": -108.62548563963674,
+    "y": 101.19523320701545,
+    "z": -80.58052606825554
+  },
+  {
+    "slug": "bluelight",
+    "type": "source",
+    "x": -136.3521545461144,
+    "y": 80.821588597607,
+    "z": -75.55021449211175
+  },
+  {
+    "slug": "medium",
+    "type": "source",
+    "x": -10.483702095007358,
+    "y": -32.59485464901731,
+    "z": 32.05405951545636
+  },
+  {
+    "slug": "dailystormer",
+    "type": "source",
+    "x": -29.77928318671421,
+    "y": -141.33677687316387,
+    "z": 8.515127733345196
+  },
+  {
+    "slug": "wrong-planet",
+    "type": "source",
+    "x": 26.54187557452179,
+    "y": 39.66493163703551,
+    "z": 67.66548253793344
+  },
+  {
+    "slug": "lastfm",
+    "type": "source",
+    "x": 15.296906418060368,
+    "y": 81.65285623778375,
+    "z": 26.676673304651256
+  },
+  {
+    "slug": "wordpress",
+    "type": "source",
+    "x": -15.087321466351666,
+    "y": 88.82033088280852,
+    "z": 35.11937830527541
+  },
+  {
+    "slug": "disqus",
+    "type": "source",
+    "x": -51.15527801330444,
+    "y": 58.90072596454406,
+    "z": 56.9434273317233
+  },
+  {
+    "slug": "youtube",
+    "type": "source",
+    "x": 159.5778779135326,
+    "y": 68.50179412832792,
+    "z": -98.89911937956771
+  },
+  {
+    "slug": "vnn",
+    "type": "source",
+    "x": 51.17773022515589,
+    "y": 31.90262446474417,
+    "z": -214.36931579820302
+  },
+  {
+    "slug": "dailykos",
+    "type": "source",
+    "x": -115.7514070801417,
+    "y": -44.62308343781375,
+    "z": -32.4037153928711
+  },
+  {
+    "slug": "central-joshua",
+    "type": "character",
+    "isJoshua": true,
+    "x": 58.9217972853138,
+    "y": -17.113946480823532,
+    "z": -57.353928847673735
+  }
+]

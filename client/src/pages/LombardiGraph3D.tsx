@@ -28,7 +28,9 @@ interface ControllerConfig {
 
 // Interface pour stocker les positions des nœuds
 interface NodePosition {
-  name: string;
+  slug: string;
+  type: string;
+  isJoshua?: boolean;
   x: number;
   y: number;
   z: number;
@@ -62,7 +64,9 @@ function ForceGraphWrapper({
         node.z !== undefined
       ) {
         nodePositions.push({
-          name: node.name,
+          slug: node.slug,
+          type: node.type,
+          isJoshua: node.isJoshua,
           x: node.x,
           y: node.y,
           z: node.z,
@@ -91,9 +95,11 @@ function ForceGraphWrapper({
   const nodePositionUpdate = useCallback(
     (nodeObj: any, coords: any, node: any) => {
       // Stocker la position du nœud
-      if (node && node.name) {
+      if (node && node.slug) {
         nodePositionsRef.current[node.id] = {
-          name: node.name,
+          slug: node.slug,
+          type: node.type,
+          isJoshua: node.isJoshua,
           x: coords.x,
           y: coords.y,
           z: coords.z,
@@ -205,7 +211,9 @@ export function LombardiGraph3D() {
             node.z !== undefined
           ) {
             currentPositions.push({
-              name: node.name,
+              slug: node.slug,
+              type: node.type,
+              isJoshua: node.isJoshua,
               x: node.x,
               y: node.y,
               z: node.z,
