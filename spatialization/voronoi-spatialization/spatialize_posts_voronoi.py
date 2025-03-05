@@ -38,7 +38,7 @@ os.makedirs(CLIENT_DATA_DIR, exist_ok=True)
 os.makedirs(VISUALIZATION_DIR, exist_ok=True)
 
 # Fichier d'entrée avec les positions pré-calculées
-POSTS_WITH_POSITIONS_FILE = os.path.join(INPUT_DIR, "posts-with-positions.json")
+POSTS_WITH_POSITIONS_FILE = os.path.join(INPUT_DIR, "decimated-posts-with-positions.json")
 
 # Fichiers de sortie
 LOCAL_OUTPUT_FILE = os.path.join(OUTPUT_DIR, "spatialized_posts.json")

@@ -180,7 +180,7 @@ const ForceGraphComponent = () => {
         };
         return createLinkObject(link, pos.source, pos.target);
       }}
-      linkPositionUpdate={(linkObj, { start, end }, link) => {
+      linkPositionUpdate={(linkObj, { start, end }) => {
         updateLinkPosition(linkObj, start, end);
         return true; // Indique que nous avons géré la mise à jour nous-mêmes
       }}

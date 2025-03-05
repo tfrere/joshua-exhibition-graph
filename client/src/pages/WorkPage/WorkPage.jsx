@@ -1,13 +1,15 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SpotLight, Stats } from "@react-three/drei";
-import { useState } from "react";
-import { useControls, folder } from "leva";
+import { useState, useEffect, useRef } from "react";
+import { useControls, folder, button } from "leva";
 import ForceGraphComponent from "./components/ForceGraph";
 import GamepadControls from "../../components/GamepadControls";
 import PostsRenderer from "../../components/PostsRenderer";
+import { useData } from "../../contexts/DataContext";
 
 const WorkPage = () => {
   const [gamepadEnabled, setGamepadEnabled] = useState(false);
+  const { isLoadingGraph, isLoadingPosts, updatePostsPositions } = useData();
 
   // Configurer tous les contrôles avec Leva
   const { debug, backgroundColor } = useControls({
@@ -31,6 +33,63 @@ const WorkPage = () => {
       }),
     }),
   });
+  
+  // Ajouter des contrôles pour les posts dans le panneau Leva
+  useControls({
+    "Contrôles des Posts": folder({
+      "Mettre à jour les positions": button(() => {
+        // Vérifier que les données ne sont pas en cours de chargement avant de mettre à jour
+        if (isLoadingGraph || isLoadingPosts) {
+          console.warn("Impossible de mettre à jour les positions : chargement des données en cours");
+          return;
+        }
+        
+        console.log("Mise à jour manuelle des positions des posts...");
+        updatePostsPositions({
+          joshuaOnly: true,
+          preserveOtherPositions: true,
+          radius: 20,
+          minDistance: 8,
+          verticalSpread: 1.2,
+          horizontalSpread: 1.5,
+          // Paramètres de l'algorithme Voronoi
+          perlinScale: 0.05,
+          perlinAmplitude: 7,
+          dilatationFactor: 1.3
+        });
+      }),
+    }),
+  });
+  
+  // Mettre à jour automatiquement les positions des posts après le chargement des données
+  const positionsUpdatedOnceRef = useRef(false);
+  
+  useEffect(() => {
+    // Vérifier que ni le graphe ni les posts ne sont en cours de chargement
+    if (!isLoadingGraph && !isLoadingPosts && !positionsUpdatedOnceRef.current) {
+      console.log("Données entièrement chargées, planification de la mise à jour des positions...");
+      
+      // Attendre que le rendu du graphe soit terminé avant de mettre à jour
+      const timer = setTimeout(() => {
+        console.log("Tentative de mise à jour des positions des posts...");
+        updatePostsPositions({
+          joshuaOnly: true,
+          preserveOtherPositions: true,
+          radius: 20,
+          minDistance: 8,
+          verticalSpread: 1.2,
+          horizontalSpread: 1.5,
+          // Paramètres de l'algorithme Voronoi
+          perlinScale: 0.05,
+          perlinAmplitude: 7,
+          dilatationFactor: 1.3
+        });
+        positionsUpdatedOnceRef.current = true;
+      }, 1500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingGraph, isLoadingPosts, updatePostsPositions]);
 
   return (
     <div className="canvas-container">
