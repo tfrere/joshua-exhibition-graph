@@ -2,32 +2,30 @@
 # -*- coding: utf-8 -*-
 
 """
-Script principal pour spatialiser les posts dans l'espace 3D en utilisant une approche Voronoï.
+Script pour traiter les posts déjà spatialisés et appliquer une transformation Voronoï par dilatation.
 """
 
 import json
 import os
-import time
-import random
-from collections import defaultdict
-import numpy as np
-from tqdm import tqdm
 import shutil
+import random
+import numpy as np
+from collections import defaultdict
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from tqdm import tqdm
+import time
+import colorsys
 
-# Import des fonctions du module
-from src.voronoi_distribution import (
-    prepare_node_positions,
-    visualize_3d_points,
-    position_posts,
-    create_combined_visualization,
-    create_top_characters_visualization
-)
+# Import des fonctions du module Voronoï
+from src.voronoi_distribution import apply_perlin_noise
 
 # Chemins des fichiers et dossiers
 # Utiliser le chemin relatif au script courant (et non à la racine du projet)
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 INPUT_DIR = os.path.join(SCRIPT_DIR, "data", "input")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "data", "output")
+VISUALIZATION_DIR = os.path.join(OUTPUT_DIR, "visualizations")
 
 # Chemin vers le dossier client/public/data
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -37,26 +35,32 @@ CLIENT_DATA_DIR = os.path.join(BASE_DIR, "client", "public", "data")
 os.makedirs(INPUT_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(CLIENT_DATA_DIR, exist_ok=True)
+os.makedirs(VISUALIZATION_DIR, exist_ok=True)
 
-# Fichiers d'entrée
-NODE_POSITIONS_FILE = os.path.join(INPUT_DIR, "node-positions.json")
-POSTS_FILE = os.path.join(INPUT_DIR, "posts.json")
+# Fichier d'entrée avec les positions pré-calculées
+POSTS_WITH_POSITIONS_FILE = os.path.join(INPUT_DIR, "posts-with-positions.json")
 
 # Fichiers de sortie
-LOCAL_OUTPUT_FILE = os.path.join(OUTPUT_DIR, "spatialized_posts_voronoi.json")
-CLIENT_OUTPUT_FILE = os.path.join(CLIENT_DATA_DIR, "spatialized_posts_voronoi.json")
+LOCAL_OUTPUT_FILE = os.path.join(OUTPUT_DIR, "spatialized_posts.json")
+CLIENT_OUTPUT_FILE = os.path.join(CLIENT_DATA_DIR, "spatialized_posts.json")
 
 # Configuration
 CONFIG = {
     'output_file': LOCAL_OUTPUT_FILE,
-    'max_posts_per_character': None,  # None pour tous les posts
-    'space_scale': 500,               # Augmenté pour plus d'espace entre les clusters
-    'perlin_scale': 0.06,             # Réduit pour des variations plus douces
-    'perlin_amplitude': 100,           # Augmenté significativement pour une meilleure dispersion
-    'density_falloff': 1.5,           # Réduit pour une distribution plus uniforme
-    'use_color_mapping': True,        # Coloration par personnage
-    'random_seed': 42,                # Graine aléatoire
-    'verbose': True                   # Afficher les étapes
+    'max_posts_per_character': None,   # None pour tous les posts
+    'space_scale': 100,                # Échelle de l'espace
+    'perlin_scale': 0.05,              # Échelle du bruit de Perlin (plus petit = plus lisse)
+    'perlin_amplitude':15,            # Amplitude du bruit de Perlin (plus grand = plus de variation)
+    'dilatation_factor': 1,           # Facteur de dilatation pour l'effet Voronoï (1.0 = pas de dilatation)
+    'random_seed': 42,                 # Graine aléatoire
+    'verbose': True,                   # Afficher les étapes
+    'visualization': {
+        'dpi': 300,                    # Résolution des images
+        'figsize': (12, 10),           # Taille des figures
+        'marker_size': 3,              # Taille des marqueurs (réduite)
+        'alpha': 0.7,                  # Transparence des marqueurs (légèrement augmentée)
+        'max_legend_items': 15         # Nombre maximum d'éléments dans la légende
+    }
 }
 
 # Fixer la graine aléatoire pour la reproductibilité
@@ -64,15 +68,11 @@ np.random.seed(CONFIG['random_seed'])
 random.seed(CONFIG['random_seed'])
 
 def load_data():
-    """Charger les positions des nœuds et les posts."""
-    print("Chargement des données...")
+    """Charger les posts avec leurs positions déjà définies."""
+    print("Chargement des données pré-spatialisées...")
     
-    # Charger les positions des nœuds
-    with open(NODE_POSITIONS_FILE, "r", encoding="utf-8") as f:
-        nodes_data = json.load(f)
-    
-    # Charger les posts
-    with open(POSTS_FILE, "r", encoding="utf-8") as f:
+    # Charger les posts avec leurs positions
+    with open(POSTS_WITH_POSITIONS_FILE, "r", encoding="utf-8") as f:
         posts_data = json.load(f)
     
     if CONFIG['max_posts_per_character']:
@@ -90,104 +90,232 @@ def load_data():
         
         posts_data = limited_posts
     
-    print(f"Chargement de {len(nodes_data)} nœuds et {len(posts_data)} posts")
-    return nodes_data, posts_data
+    print(f"Chargement de {len(posts_data)} posts avec leurs positions")
+    return posts_data
 
-def clean_post_data(spatialized_posts):
+def apply_voronoi_dilatation(posts_data):
+    """
+    Applique la transformation Voronoï par dilatation aux posts.
+    Cette fonction dilate l'espace autour des centres de clusters de personnages.
+    """
+    print("Application de la transformation Voronoï par dilatation...")
+    
+    # Extraire les positions initiales
+    positions = []
+    for post in posts_data:
+        positions.append([
+            post.get("x", 0),
+            post.get("y", 0),
+            post.get("z", 0)
+        ])
+    
+    positions = np.array(positions)
+    
+    # Calculer les centres des clusters par personnage
+    character_centers = defaultdict(list)
+    character_indices = defaultdict(list)
+    
+    for i, post in enumerate(posts_data):
+        character = post.get("character", "unknown")
+        character_centers[character].append(positions[i])
+        character_indices[character].append(i)
+    
+    # Calculer le centre moyen pour chaque personnage
+    avg_centers = {}
+    for character, positions_list in character_centers.items():
+        avg_centers[character] = np.mean(positions_list, axis=0)
+    
+    # Appliquer la dilatation par rapport aux centres de clusters
+    dilatated_positions = positions.copy()
+    
+    for character, indices in character_indices.items():
+        center = avg_centers[character]
+        for idx in indices:
+            # Vecteur de la position au centre
+            vec = positions[idx] - center
+            # Dilatation
+            dilatated_positions[idx] = center + vec * CONFIG['dilatation_factor']
+    
+    # Appliquer un bruit de Perlin pour ajouter de la variabilité
+    dilatated_positions = apply_perlin_noise(
+        dilatated_positions,
+        CONFIG['perlin_scale'],
+        CONFIG['perlin_amplitude']
+    )
+    
+    # Mettre à jour les positions dans les données des posts
+    spatialized_posts = []
+    for i, post in enumerate(posts_data):
+        new_post = post.copy()  # Copie pour ne pas modifier l'original
+        new_post["original_x"] = post.get("x", 0)
+        new_post["original_y"] = post.get("y", 0)
+        new_post["original_z"] = post.get("z", 0)
+        new_post["x"] = float(dilatated_positions[i][0])
+        new_post["y"] = float(dilatated_positions[i][1])
+        new_post["z"] = float(dilatated_positions[i][2])
+        spatialized_posts.append(new_post)
+    
+    print(f"Transformation appliquée à {len(spatialized_posts)} posts")
+    return spatialized_posts
+
+def generate_distinct_colors(n_colors):
+    """
+    Génère un ensemble de couleurs distinctes visuellement.
+    Utilise le modèle HSV pour assurer une distribution homogène des teintes.
+    """
+    colors = []
+    for i in range(n_colors):
+        # Répartir les teintes uniformément sur le cercle des couleurs
+        h = i / n_colors
+        # Saturation et luminosité fixes pour des couleurs vives mais pas trop agressives
+        s = 0.7
+        v = 0.9
+        # Conversion HSV en RGB
+        r, g, b = colorsys.hsv_to_rgb(h, s, v)
+        colors.append([r, g, b])
+    
+    # Mélanger les couleurs pour éviter que des personnages avec des IDs séquentiels
+    # aient des couleurs similaires
+    random.shuffle(colors)
+    return colors
+
+def clean_post_data(posts_with_positions):
     """
     Nettoie les données des posts pour ne garder que le nom du personnage,
     le timestamp et les coordonnées.
     """
-    print("Nettoyage des données des posts...")
+    print("Formattage des données des posts...")
     cleaned_posts = []
     
-    for post in spatialized_posts:
+    # Identifier tous les personnages uniques
+    unique_characters = set()
+    for post in posts_with_positions:
+        unique_characters.add(post.get("character", "unknown"))
+    
+    print(f"Nombre de personnages uniques: {len(unique_characters)}")
+    
+    # Générer des couleurs distinctes pour chaque personnage
+    distinct_colors = generate_distinct_colors(len(unique_characters))
+    character_colors = {}
+    
+    # Assigner une couleur à chaque personnage
+    for i, character in enumerate(sorted(unique_characters)):
+        character_colors[character] = distinct_colors[i % len(distinct_colors)]
+    
+    # Créer une palette de couleurs pour les personnages (pour la visualisation)
+    for post in posts_with_positions:
+        character = post.get("character", "unknown")
+        
         # Créer un nouveau dictionnaire avec seulement les champs nécessaires
         cleaned_post = {
-            "character": post.get("character", "unknown"),
-            "timestamp": post.get("timestamp", 0),
-            "coordinates": post.get("coordinates", {"x": 0, "y": 0, "z": 0})
+            "character": character,
+            "timestamp": post.get("creationDate", 0),  # Utiliser creationDate comme timestamp
+            "coordinates": {
+                "x": post.get("x", 0),
+                "y": post.get("y", 0),
+                "z": post.get("z", 0)
+            },
+            "color": character_colors[character]  # Ajouter la couleur pour la visualisation
         }
         
-        # Ajouter la couleur si présente (utile pour la visualisation)
-        if "color" in post:
-            cleaned_post["color"] = post["color"]
+        # Ajouter les coordonnées originales pour référence si disponibles
+        if "original_x" in post and "original_y" in post and "original_z" in post:
+            cleaned_post["original_coordinates"] = {
+                "x": post.get("original_x", 0),
+                "y": post.get("original_y", 0),
+                "z": post.get("original_z", 0)
+            }
+        
+        # Ajouter d'autres champs utiles si nécessaires
+        if "postUID" in post:
+            cleaned_post["id"] = post["postUID"]
         
         cleaned_posts.append(cleaned_post)
     
-    print(f"Données nettoyées : {len(cleaned_posts)} posts")
-    return cleaned_posts
+    print(f"Données formatées : {len(cleaned_posts)} posts")
+    return cleaned_posts, character_colors
+
+def create_3d_visualization(cleaned_posts, character_colors, filename="all_posts_3d"):
+    """Crée une visualisation 3D de tous les posts."""
+    print(f"Création de la visualisation 3D pour tous les posts...")
+    
+    fig = plt.figure(figsize=CONFIG['visualization']['figsize'], dpi=CONFIG['visualization']['dpi'])
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Extraire les coordonnées et les couleurs
+    x_coords = []
+    y_coords = []
+    z_coords = []
+    colors = []
+    
+    for post in cleaned_posts:
+        coords = post["coordinates"]
+        x_coords.append(coords["x"])
+        y_coords.append(coords["y"])
+        z_coords.append(coords["z"])
+        colors.append(post["color"])
+    
+    # Tracer les points
+    ax.scatter(
+        x_coords, y_coords, z_coords, 
+        c=colors, 
+        s=CONFIG['visualization']['marker_size'], 
+        alpha=CONFIG['visualization']['alpha'],
+        edgecolors='none'  # Supprimer les bordures
+    )
+    
+    # Ajouter une légende pour les personnages les plus fréquents
+    character_counts = {}
+    for post in cleaned_posts:
+        character = post["character"]
+        if character not in character_counts:
+            character_counts[character] = 0
+        character_counts[character] += 1
+    
+    # Trier les personnages par nombre de posts (descendant)
+    top_characters = sorted(character_counts.items(), key=lambda x: x[1], reverse=True)
+    
+    # Limiter le nombre d'éléments dans la légende
+    max_legend = min(len(top_characters), CONFIG['visualization']['max_legend_items'])
+    
+    # Ajouter des points de légende fictifs pour chaque personnage principal
+    for i in range(max_legend):
+        character, count = top_characters[i]
+        color = next((post["color"] for post in cleaned_posts if post["character"] == character), [0, 0, 0])
+        ax.scatter([], [], [], c=[color], s=30, label=f"{character} ({count})")
+    
+    # Configurer les axes
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_title('Distribution 3D des Posts')
+    
+    # Ajouter la légende
+    ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.0))
+    
+    # Sauvegarder l'image
+    output_path = os.path.join(VISUALIZATION_DIR, f"{filename}.png")
+    plt.savefig(output_path, dpi=CONFIG['visualization']['dpi'], bbox_inches='tight')
+    plt.close()
+    
+    print(f"✅ Visualisation 3D sauvegardée dans {output_path}")
 
 def main():
-    """Fonction principale pour exécuter le processus de spatialisation."""
-    print("Démarrage de la spatialisation des posts selon l'approche Voronoï...")
+    """Fonction principale pour traiter les posts déjà spatialisés."""
+    print("Démarrage du traitement des posts déjà spatialisés...")
     
-    # Charger les données
-    nodes_data, posts_data = load_data()
+    # Charger les données pré-spatialisées
+    posts_data = load_data()
     
-    # Préparer les positions des nœuds
-    node_positions, node_name_to_index = prepare_node_positions(nodes_data, CONFIG['space_scale'])
+    # Appliquer la transformation Voronoï par dilatation
+    spatialized_posts = apply_voronoi_dilatation(posts_data)
     
-    # Extraire les noms des nœuds dans le même ordre que les positions
-    node_names = [node["name"] for node in nodes_data]
+    # Nettoyer et formater les données des posts
+    cleaned_posts, character_colors = clean_post_data(spatialized_posts)
     
-    # Supprimer la visualisation des positions des nœuds (uniquement conserver la visualisation combinée)
-    # visualize_3d_points(node_positions, "Positions des Nœuds", node_names=node_names, output_path=OUTPUT_DIR)
-    
-    # Positionner les posts sans générer de visualisation
-    # Modifier CONFIG pour désactiver la visualisation intermédiaire des personnages
-    config_copy = CONFIG.copy()
-    config_copy['generate_visualizations'] = False
-    
-    # Positionner les posts sans générer de visualisations
-    spatialized_posts = position_posts(posts_data, node_positions, config_copy, output_path=OUTPUT_DIR)
-    
-    # Nettoyer les données des posts pour ne garder que les champs nécessaires
-    cleaned_posts = clean_post_data(spatialized_posts)
-    
-    # Créer une carte de correspondance personnage -> nœud
-    character_to_node = {}
-    for post in cleaned_posts:
-        character = post.get("character", "unknown")
-        if character not in character_to_node:
-            # Trouver le nœud le plus proche de ce post
-            coords = post["coordinates"]
-            post_pos = np.array([coords["x"], coords["y"], coords["z"]])
-            distances = np.sqrt(np.sum((node_positions - post_pos) ** 2, axis=1))
-            node_idx = np.argmin(distances)
-            character_to_node[character] = node_idx
-    
-    # Extraire les couleurs utilisées dans les posts spatialisés
-    color_map = {}
-    for post in cleaned_posts:
-        character = post.get("character", "unknown")
-        if "color" in post and character not in color_map:
-            color_map[character] = post["color"]
-    
-    # Créer uniquement la visualisation combinée en haute résolution
-    print("Création de la visualisation combinée en haute résolution...")
-    create_combined_visualization(
-        node_positions, 
-        node_names, 
-        cleaned_posts, 
-        character_to_node, 
-        color_map, 
-        CONFIG['space_scale'], 
-        output_path=OUTPUT_DIR,
-        only_hires=True  # Paramètre pour ne générer que la version haute résolution
-    )
-    
-    # Créer la visualisation des 5 personnages les plus actifs
-    print("Création de la visualisation des 5 personnages les plus actifs...")
-    create_top_characters_visualization(
-        cleaned_posts,
-        character_to_node,
-        node_positions,
-        CONFIG['space_scale'],
-        output_path=OUTPUT_DIR,
-        only_hires=True,  # Paramètre pour ne générer que la version haute résolution
-        num_top_characters=5  # Nombre de personnages principaux à afficher
-    )
+    # Créer les visualisations
+    print("Génération des visualisations...")
+    create_3d_visualization(cleaned_posts, character_colors)
     
     # Sauvegarder les résultats dans le dossier local
     print(f"Sauvegarde des résultats dans {CONFIG['output_file']}...")
