@@ -2,9 +2,8 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SpotLight, Stats } from "@react-three/drei";
 import { useState } from "react";
 import { useControls, folder } from "leva";
-import ForceGraphComponent from "../components/ForceGraph";
-import GamepadControls from "../components/GamepadControls";
-import PostsRenderer from "../components/PostsRenderer";
+import GamepadControls from "../../components/GamepadControls";
+import PostsRenderer from "../../components/PostsRenderer";
 
 const HomePage = () => {
   const [gamepadEnabled, setGamepadEnabled] = useState(false);
@@ -51,8 +50,6 @@ const HomePage = () => {
           distance={100}
         />
 
-        {/* Utiliser ForceGraphComponent au lieu de CustomForceGraph */}
-        <ForceGraphComponent />
         <PostsRenderer />
 
         {gamepadControls.enabled && (

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useThree } from "@react-three/fiber";
 import R3fForceGraph from "r3f-forcegraph";
-import { useData } from "../contexts/DataContext";
+import { useData } from "../../../contexts/DataContext";
 import {
   createNodeObject,
   createLinkObject,

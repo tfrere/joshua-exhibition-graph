@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { loadGraphData } from "../utils/graphDataUtils";
+import { loadGraphData } from "../pages/WorkPage/utils/graphDataUtils";
 
 // Création du contexte
 const DataContext = createContext(null);
