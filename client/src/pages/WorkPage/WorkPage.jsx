@@ -34,7 +34,7 @@ const WorkPage = () => {
 
   return (
     <div className="canvas-container">
-      <Canvas>
+      <Canvas camera={{ position: [0, 0, 500] }}>
         {debug && <Stats />}
         <color attach="background" args={[backgroundColor]} />
         {/* Éclairage amélioré */}

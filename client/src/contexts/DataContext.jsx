@@ -26,7 +26,7 @@ export function DataProvider({ children }) {
     const loadGraph = async () => {
       try {
         setIsLoadingGraph(true);
-        const data = await loadGraphData("/data/database.json", {
+        const data = await loadGraphData("/data/database.data.json", {
           includePosts: false,
         });
         console.log("Données du graphe chargées:", data);
@@ -52,7 +52,7 @@ export function DataProvider({ children }) {
     const loadPosts = async () => {
       try {
         setIsLoadingPosts(true);
-        const response = await fetch("/data/spatialized_posts.json");
+        const response = await fetch("/data/spatialized_posts.data.json");
 
         if (!response.ok) {
           throw new Error(`Erreur HTTP: ${response.status}`);

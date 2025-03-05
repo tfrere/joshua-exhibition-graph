@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 
 /public/data/*
+
+*.data.json
+**/*.data.json

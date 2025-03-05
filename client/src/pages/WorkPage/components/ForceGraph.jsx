@@ -88,35 +88,76 @@ const ForceGraphComponent = () => {
   const displayData =
     graphError || !graphData ? generateRandomGraph() : graphData;
 
-  useEffect(() => {
-    // Position camera to see the graph
-    camera.position.z = 200;
+  // Vérifier si les données sont vraiment disponibles et complètes
+  const dataIsReady =
+    !isLoadingGraph &&
+    displayData &&
+    displayData.nodes &&
+    displayData.links &&
+    displayData.nodes.length > 0 &&
+    displayData.links.length > 0;
 
+  useEffect(() => {
     // Add animation/rotation
+    let animationFrameId;
+
     const animate = () => {
-      if (fgRef.current) {
+      if (fgRef.current && dataIsReady) {
         fgRef.current.tickFrame();
       }
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
-    animate();
+
+    if (dataIsReady) {
+      animate();
+    }
 
     return () => {
       // Clean up animation
-      if (fgRef.current) {
-        fgRef.current.pauseAnimation();
-      }
+      cancelAnimationFrame(animationFrameId);
     };
-  }, [camera]);
+  }, [camera, dataIsReady]);
 
-  // Afficher le statut de chargement
-  if (isLoadingGraph && (!displayData || displayData.nodes.length === 0)) {
-    console.log("Chargement des données du graphe...");
+  // Afficher un message ou indicateur de chargement
+  if (!dataIsReady) {
+    console.log("En attente du chargement complet des nodes et links...");
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          color: "white",
+          fontSize: "18px",
+          textAlign: "center",
+          width: "100%",
+        }}
+      >
+        Chargement du graphe en cours...
+      </div>
+    );
   }
 
   // Afficher l'état d'erreur
   if (graphError) {
     console.error("Échec du chargement des données du graphe:", graphError);
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          color: "red",
+          fontSize: "18px",
+          textAlign: "center",
+          width: "100%",
+        }}
+      >
+        Erreur de chargement: {graphError}
+      </div>
+    );
   }
 
   return (
@@ -124,7 +165,6 @@ const ForceGraphComponent = () => {
       ref={fgRef}
       graphData={displayData}
       nodeLabel="name"
-      nodeRelSize={5}
       linkWidth={1}
       linkOpacity={0.5}
       showNavInfo={false}
@@ -144,11 +184,7 @@ const ForceGraphComponent = () => {
         updateLinkPosition(linkObj, start, end);
         return true; // Indique que nous avons géré la mise à jour nous-mêmes
       }}
-      d3VelocityDecay={0.3} // Légère réduction pour une animation plus fluide
-      d3AlphaDecay={0.02} // Réduction pour que le graphe trouve une position stable plus lentement
       linkDirectionalParticles={0}
-      linkDirectionalParticleWidth={1.5}
-      linkDirectionalParticleSpeed={0.008}
       onNodeClick={(node) => {
         // Zoom sur le nœud lorsqu'il est cliqué
         const distance = 50;
