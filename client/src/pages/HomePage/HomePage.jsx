@@ -2,7 +2,6 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SpotLight, Stats } from "@react-three/drei";
 import { useState } from "react";
 import { useControls, folder } from "leva";
-import GamepadControls from "../../components/GamepadControls";
 import PostsRenderer from "../../components/PostsRenderer";
 
 const HomePage = () => {
@@ -12,23 +11,6 @@ const HomePage = () => {
   const { debug, backgroundColor } = useControls({
     debug: true,
     backgroundColor: "#523e3e",
-  });
-
-  // Configurer les contrôles de la manette
-  const gamepadControls = useControls({
-    Manette: folder({
-      enabled: {
-        value: gamepadEnabled,
-        onChange: (v) => setGamepadEnabled(v),
-      },
-      config: folder({
-        maxSpeed: { value: 10, min: 1, max: 50 },
-        acceleration: { value: 15, min: 1, max: 30 },
-        deceleration: { value: 0.95, min: 0.5, max: 0.99 },
-        rotationSpeed: { value: 1.5, min: 0.1, max: 5 },
-        deadzone: { value: 0.1, min: 0.01, max: 0.5 },
-      }),
-    }),
   });
 
   return (
@@ -52,9 +34,6 @@ const HomePage = () => {
 
         <PostsRenderer />
 
-        {gamepadControls.enabled && (
-          <GamepadControls config={gamepadControls.config} />
-        )}
         <OrbitControls
           enablePan={true}
           enableZoom={true}
