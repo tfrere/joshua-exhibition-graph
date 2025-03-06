@@ -77,7 +77,7 @@ export const createNodeObject = (node) => {
       mesh.quaternion.copy(camera.quaternion);
     };
   } else if (node.id === "central-joshua") {
-    geometry = new THREE.IcosahedronGeometry(10); // Forme spéciale pour le nœud central
+    geometry = new THREE.SphereGeometry(5); // Forme spéciale pour le nœud central
     material = new THREE.MeshPhongMaterial({
       color: COLORS.centralJoshua,
       opacity: 0.9,
@@ -154,7 +154,7 @@ export const createNodeObject = (node) => {
       opacity: 0.9,
       transparent: true,
       emissive: COLORS.contact,
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0,
     });
     mesh = new THREE.Mesh(geometry, material);
   }
@@ -192,10 +192,10 @@ export const createNodeObject = (node) => {
       node.id === "central-joshua"
         ? 12
         : node.type === "source"
-        ? 6
+        ? 8
         : node.type === "character" && node.isJoshua === true
-        ? 6
-        : 8;
+        ? 3
+        : 3;
     text.position.set(0, textHeight, 0);
     text.renderOrder = 1;
 
@@ -242,10 +242,10 @@ export const createNodeObject = (node) => {
           // Draw coordinates below the name
           ctx.font = "bold 16px Arial";
 
-          // Format coordinates with 2 decimal places
-          ctx.fillText(`X: ${position.x.toFixed(1)}`, canvas.width / 2, 45);
-          ctx.fillText(`Y: ${position.y.toFixed(1)}`, canvas.width / 2, 65);
-          ctx.fillText(`Z: ${position.z.toFixed(1)}`, canvas.width / 2, 85);
+          // // Format coordinates with 2 decimal places
+          // ctx.fillText(`X: ${position.x.toFixed(1)}`, canvas.width / 2, 45);
+          // ctx.fillText(`Y: ${position.y.toFixed(1)}`, canvas.width / 2, 65);
+          // ctx.fillText(`Z: ${position.z.toFixed(1)}`, canvas.width / 2, 85);
 
           // Update texture
           text.userData.texture.needsUpdate = true;
@@ -266,13 +266,14 @@ export const createNodeObject = (node) => {
  * @param {Object} link - Les données du lien
  * @param {THREE.Vector3} source - Position du nœud source
  * @param {THREE.Vector3} target - Position du nœud cible
- * @returns {THREE.Line} Un objet THREE.js Line représentant le lien
+ * @returns {THREE.Object3D} Un objet THREE.js représentant le lien
  */
 export const createLinkObject = (link, source, target) => {
-  // Création de la géométrie du lien (une ligne entre deux points)
-  const geometry = new THREE.BufferGeometry();
+  // Création d'un groupe pour contenir le lien
+  const group = new THREE.Group();
 
-  // Définir les positions des points de la ligne
+  // Initialiser la géométrie avec des positions temporaires
+  const geometry = new THREE.BufferGeometry();
   const positions = new Float32Array([
     source.x,
     source.y,
@@ -281,50 +282,146 @@ export const createLinkObject = (link, source, target) => {
     target.y,
     target.z,
   ]);
-
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
-  // Créer un matériau pour la ligne
-  const material = new THREE.LineBasicMaterial({
+  // Pour les liens simples, utiliser une ligne basique
+  const lineMaterial = new THREE.LineBasicMaterial({
     color: 0xaaaaaa,
-    transparent: true,
-    opacity: 0.5,
-    linewidth: 1,
+    transparent: false,
+    opacity: 1,
+    linewidth: 10,
   });
 
-  // Créer la ligne
-  const line = new THREE.Line(geometry, material);
+  // Créer la ligne de base (toujours présente comme repère visuel)
+  const line = new THREE.Line(geometry, lineMaterial);
+  group.add(line);
 
-  // Si le lien a une valeur, on peut l'utiliser pour moduler l'opacité
-  if (link.value) {
-    material.opacity = Math.min(0.2 + link.value * 0.5, 0.8); // Moduler l'opacité en fonction de la valeur
+  // Stocker une référence à la ligne dans le groupe pour les mises à jour
+  group.userData = {
+    line: line,
+    positions: positions,
+  };
+
+  // Pour les liens Joshua ou certains types spécifiques, ajouter une texture sur un mesh
+  if (
+    link.type === "joshua-connection" ||
+    link._relationType === "Joshua Identity" ||
+    link.value > 1.5
+  ) {
+    // Création d'un plan pour la texture
+    const planeGeometry = new THREE.PlaneGeometry(1, 1);
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      color: 0xff5555,
+      transparent: true,
+      opacity: 1,
+      side: THREE.FrontSide, // Seulement visible du côté avant
+      depthWrite: false,
+    });
+
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    group.add(plane);
+
+    // Stocker une référence au plan dans le groupe
+    group.userData.plane = plane;
+
+    // Essayer de charger une texture si disponible
+    try {
+      const textureLoader = new THREE.TextureLoader();
+      const texturePath =
+        link.type === "joshua-connection"
+          ? "/img/links/joshua-link.png"
+          : "/img/links/strong-link.png";
+
+      textureLoader.load(
+        texturePath,
+        (texture) => {
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+
+          // Mettre à jour le matériau avec la texture
+          planeMaterial.map = texture;
+          planeMaterial.needsUpdate = true;
+        },
+        undefined,
+        (error) => {
+          console.warn("Impossible de charger la texture pour le lien:", error);
+        }
+      );
+    } catch (e) {
+      console.warn("Erreur lors du chargement de la texture:", e);
+    }
+
+    // Fonction pour mettre à jour la position et l'orientation du plan
+    group.userData.updatePlane = (source, target) => {
+      // Calculer le vecteur direction entre source et target
+      const direction = new THREE.Vector3()
+        .subVectors(target, source)
+        .normalize();
+
+      // Positionner le plan au milieu du lien
+      const mid = new THREE.Vector3()
+        .addVectors(source, target)
+        .multiplyScalar(0.5);
+      plane.position.copy(mid);
+
+      // Calculer la longueur du lien
+      const length = new THREE.Vector3().subVectors(target, source).length();
+
+      // Redimensionner le plan pour qu'il s'adapte à la longueur du lien
+      plane.scale.set(length * 0.8, length * 0.2, 1);
+
+      // Orienter le plan le long du lien
+      plane.lookAt(target);
+    };
+
+    // Initialiser la position et l'orientation du plan
+    group.userData.updatePlane(
+      new THREE.Vector3(source.x, source.y, source.z),
+      new THREE.Vector3(target.x, target.y, target.z)
+    );
   }
 
-  return line;
+  return group;
 };
 
 /**
  * Met à jour la position d'un lien entre deux nœuds
- * @param {THREE.Line} linkObject - L'objet THREE.js Line à mettre à jour
+ * @param {THREE.Object3D} linkObject - L'objet THREE.js à mettre à jour
  * @param {THREE.Vector3} source - Nouvelle position du nœud source
  * @param {THREE.Vector3} target - Nouvelle position du nœud cible
  */
 export const updateLinkPosition = (linkObject, source, target) => {
   try {
-    // Récupérer la géométrie de la ligne
-    const positions = linkObject.geometry.attributes.position.array;
+    // Vérifier si l'objet est un groupe avec userData
+    if (linkObject.userData && linkObject.userData.positions) {
+      // Mettre à jour les positions de la ligne
+      const positions = linkObject.userData.positions;
+      positions[0] = source.x;
+      positions[1] = source.y;
+      positions[2] = source.z;
+      positions[3] = target.x;
+      positions[4] = target.y;
+      positions[5] = target.z;
 
-    // Mettre à jour les positions
-    positions[0] = source.x;
-    positions[1] = source.y;
-    positions[2] = source.z;
-    positions[3] = target.x;
-    positions[4] = target.y;
-    positions[5] = target.z;
+      // Indiquer que les positions ont été mises à jour
+      linkObject.userData.line.geometry.attributes.position.needsUpdate = true;
 
-    // Indiquer que les positions ont été mises à jour
-    linkObject.geometry.attributes.position.needsUpdate = true;
+      // Si le lien a un plan avec texture, mettre à jour sa position et orientation
+      if (linkObject.userData.updatePlane) {
+        linkObject.userData.updatePlane(source, target);
+      }
+    } else {
+      // Ancienne méthode de mise à jour (pour compatibilité)
+      const positions = linkObject.geometry.attributes.position.array;
+      positions[0] = source.x;
+      positions[1] = source.y;
+      positions[2] = source.z;
+      positions[3] = target.x;
+      positions[4] = target.y;
+      positions[5] = target.z;
+      linkObject.geometry.attributes.position.needsUpdate = true;
+    }
   } catch (e) {
-    // Ignorer les erreurs potentielles
+    console.warn("Erreur lors de la mise à jour de la position du lien:", e);
   }
 };

@@ -41,14 +41,9 @@ function normalizeSourceName(source) {
  * Generate graph data from raw data
  * @param {Array} rawData - Raw data from the JSON file
  * @param {Object} options - Options for data generation
- * @param {boolean} options.includePosts - Whether to include posts as nodes
  * @returns {Object} Graph data with nodes and links
  */
 export function generateGraphData(rawData, options = {}) {
-  // Default value for includePosts option
-  const includePosts =
-    options.includePosts !== undefined ? options.includePosts : false;
-
   // Check if we received an array
   if (!Array.isArray(rawData)) {
     console.error("The received data is not an array:", rawData);
@@ -56,7 +51,6 @@ export function generateGraphData(rawData, options = {}) {
   }
 
   console.log("Raw data received:", rawData);
-  console.log("Options:", { includePosts });
 
   const characters = rawData;
   const uniqueSources = new Set();
@@ -122,10 +116,10 @@ export function generateGraphData(rawData, options = {}) {
   // Create a central Joshua node
   const centralJoshuaNode = {
     id: "central-joshua",
-    name: "Joshua Goldberg (Central)",
+    name: "Joshua Goldberg",
     slug: "real-joshua-goldberg",
     type: "central-joshua",
-    val: 30, // Bigger than other nodes
+    val: 50, // Bigger than other nodes
     color: "#FF0000", // Red color for central node
     isJoshua: true,
   };
@@ -133,70 +127,8 @@ export function generateGraphData(rawData, options = {}) {
   // Add the central node
   characterNodes.push(centralJoshuaNode);
 
-  // Create nodes for posts (decimated - 1 node for 10 posts)
-  const postNodes = [];
-  const postLinks = [];
-
-  // Only process posts if the option is enabled
-  if (includePosts) {
-    characters.forEach((character) => {
-      if (Array.isArray(character.posts) && character.posts.length > 0) {
-        // Group posts by source
-        const postsBySource = {};
-
-        character.posts.forEach((post) => {
-          if (post.source) {
-            // Utiliser le nom normalisé de la source
-            const normalizedSource =
-              sourceNormalizationMap.get(post.source) ||
-              normalizeSourceName(post.source);
-
-            if (!postsBySource[normalizedSource]) {
-              postsBySource[normalizedSource] = [];
-            }
-            postsBySource[normalizedSource].push(post);
-          }
-        });
-
-        // For each source, decimate the posts (1 node for 30 posts)
-        Object.entries(postsBySource).forEach(([source, posts]) => {
-          // Check if the source exists in our set of unique sources
-          if (!uniqueSources.has(source)) {
-            return;
-          }
-
-          // Decimate posts - take 1 post out of 30
-          for (let i = 0; i < posts.length; i += 30) {
-            const post = posts[i];
-            const postId = `post-${character.slug}-${source}-${i}`;
-
-            // Create a node for this post
-            postNodes.push({
-              id: postId,
-              name: "", // No text associated with posts
-              slug: `post-${character.slug}-${source}-${i}`,
-              type: "post",
-              val: 5, // Smaller size than characters and sources
-              color: "#6699CC", // Different color for posts
-              date: post.date,
-              platform: source, // Add the platform (source) to the node
-            });
-
-            // Create a link between this post and its character
-            postLinks.push({
-              source: postId,
-              target: `node-${character.slug}`,
-              type: "post",
-              value: 1,
-            });
-          }
-        });
-      }
-    });
-  }
-
   // Combine all nodes
-  const nodes = [...characterNodes, ...sourceNodes, ...postNodes];
+  const nodes = [...characterNodes, ...sourceNodes];
 
   // Create links between characters
   const characterLinks = characters.flatMap((character) => {
@@ -279,22 +211,15 @@ export function generateGraphData(rawData, options = {}) {
       _relationType: "Joshua Identity",
     }));
 
-  // Combine all links - only links between characters and sources, and between posts and characters if the option is enabled
-  const links = [
-    ...characterLinks,
-    ...sourceLinks,
-    ...joshuaLinks,
-    ...(includePosts ? postLinks : []),
-  ];
+  // Combine all links
+  const links = [...characterLinks, ...sourceLinks, ...joshuaLinks];
 
   console.log("Generation summary:", {
     characters: characterNodes.length,
     sources: sourceNodes.length,
-    posts: includePosts ? postNodes.length : 0,
     characterLinks: characterLinks.length,
     sourceLinks: sourceLinks.length,
     joshuaLinks: joshuaLinks.length,
-    postLinks: includePosts ? postLinks.length : 0,
   });
 
   return {

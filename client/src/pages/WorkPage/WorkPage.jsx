@@ -9,7 +9,7 @@ import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import { DEFAULT_FLIGHT_CONFIG } from "./utils/advancedCameraControls";
-
+import { EffectComposer, Bloom, Pixelation } from "@react-three/postprocessing";
 const WorkPage = () => {
   const [gamepadEnabled, setGamepadEnabled] = useState(false);
   const { isLoadingGraph, isLoadingPosts, updatePostsPositions } = useData();
@@ -18,8 +18,9 @@ const WorkPage = () => {
   const DEFAULT_POSTS_SPATIAL_CONFIG = {
     joshuaOnly: true,
     preserveOtherPositions: true,
+    // Paramètres de positionnement
     radius: 60,
-    minDistance: 20,
+    minDistance: 40,
     verticalSpread: 1.2,
     horizontalSpread: 1.5,
     // Paramètres de l'algorithme Voronoi
@@ -28,12 +29,23 @@ const WorkPage = () => {
     dilatationFactor: 1.8,
     // Coloration des posts
     useUniqueColorsPerCharacter: true,
+    // Paramètres du flowfield
+    useFlowfield: true,
+    flowFrames: 100,
+    flowScale: 0.02,
+    flowStrength: 5,
+    // Paramètres de normalisation sphérique
+    normalizeInSphere: true,
+    sphereRadius: 250,
+    volumeExponent: 2 / 3, // 1/3 donne une distribution uniforme dans le volume
+    minRadius: 0, // Distance minimum depuis le centre (10% du rayon)
+    jitter: 0.2, // 20% de variation aléatoire pour éviter les motifs trop réguliers
   };
 
   // Configurer tous les contrôles avec Leva
   const { debug, backgroundColor, cameraConfig } = useControls({
     debug: true,
-    backgroundColor: "#523e3e",
+    backgroundColor: "#000000",
   });
 
   // Configurer les contrôles de la manette
@@ -53,7 +65,7 @@ const WorkPage = () => {
     }),
   });
 
-  // Ajouter des contrôles pour les posts dans le panneau Leva
+  // Ajouter un contrôle simple pour mettre à jour les positions
   useControls({
     "Contrôles des Posts": folder({
       "Mettre à jour les positions": button(() => {
@@ -88,10 +100,7 @@ const WorkPage = () => {
       // Attendre que le rendu du graphe soit terminé avant de mettre à jour
       const timer = setTimeout(() => {
         console.log("Tentative de mise à jour des positions des posts...");
-        updatePostsPositions({
-          ...DEFAULT_POSTS_SPATIAL_CONFIG,
-          radius: 50, // Utiliser un rayon légèrement différent pour l'initialisation automatique
-        });
+        updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
         positionsUpdatedOnceRef.current = true;
       }, 3000);
 
@@ -113,17 +122,6 @@ const WorkPage = () => {
         <color attach="background" args={[backgroundColor]} />
         {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
-        <pointLight position={[10, 10, 10]} intensity={1.5} />
-        <pointLight position={[-10, -10, -10]} intensity={1} color="#ffffff" />
-        <pointLight position={[0, 20, 0]} intensity={1.2} color="#f0f0ff" />
-        <SpotLight
-          position={[10, 20, 10]}
-          angle={0.3}
-          penumbra={0.8}
-          intensity={2}
-          castShadow
-          distance={100}
-        />
 
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
         <AdvancedCameraController config={cameraConfig} />
@@ -131,6 +129,16 @@ const WorkPage = () => {
         {/* Composant ForceGraph pour le rendu 3D uniquement */}
         <ForceGraphComponent />
         <PostsRenderer />
+        <EffectComposer>
+          <Bloom
+            intensity={0.5}
+            luminanceThreshold={0.5}
+            luminanceSmoothing={0.5}
+          />
+          {/* <Pixelation
+            granularity={5} // pixel granularity
+          /> */}
+        </EffectComposer>
       </Canvas>
     </div>
   );

@@ -228,9 +228,7 @@ const ForceGraphComponent = () => {
         ref={fgRef}
         graphData={displayData}
         nodeLabel="name"
-        nodeRelSize={5}
-        linkWidth={1}
-        linkOpacity={0.5}
+        linkOpacity={1}
         showNavInfo={false}
         cooldownTicks={3000}
         cooldownTime={3000}

@@ -85,6 +85,13 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     endTarget: new Vector3(),
   });
 
+  // Variables pour la rotation automatique
+  const [autoRotateEnabled, setAutoRotateEnabled] = useState(false);
+  const lastInteractionTime = useRef(Date.now());
+  const autoRotateTimerId = useRef(null);
+  const AUTO_ROTATE_DELAY = 5000; // 5 secondes avant activation de la rotation auto
+  const AUTO_ROTATE_SPEED = 0.025; // Vitesse de rotation automatique
+
   // Récupérer les entrées unifiées (clavier et manette)
   const inputs = useInputs();
   const prevInputs = useRef({});
@@ -124,8 +131,111 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     };
   }, [config]);
 
+  // Fonction pour détecter l'activité de l'utilisateur
+  const detectUserActivity = () => {
+    lastInteractionTime.current = Date.now();
+
+    // Si la rotation auto est activée, la désactiver
+    if (autoRotateEnabled) {
+      setAutoRotateEnabled(false);
+    }
+
+    // Annuler le timer existant et en démarrer un nouveau
+    if (autoRotateTimerId.current) {
+      clearTimeout(autoRotateTimerId.current);
+    }
+
+    // Programmer l'activation de la rotation auto après le délai
+    autoRotateTimerId.current = setTimeout(() => {
+      setAutoRotateEnabled(true);
+    }, AUTO_ROTATE_DELAY);
+  };
+
+  // Ajouter des écouteurs pour les mouvements de souris et les clics
+  useEffect(() => {
+    const handleMouseActivity = () => detectUserActivity();
+
+    // Ajouter les écouteurs d'événements au niveau de la fenêtre
+    window.addEventListener("mousemove", handleMouseActivity);
+    window.addEventListener("mousedown", handleMouseActivity);
+    window.addEventListener("mouseup", handleMouseActivity);
+    window.addEventListener("keydown", handleMouseActivity);
+    window.addEventListener("wheel", handleMouseActivity);
+    window.addEventListener("touchstart", handleMouseActivity);
+    window.addEventListener("touchmove", handleMouseActivity);
+
+    // Ajouter spécifiquement des écouteurs au canvas de Three.js
+    // Ces écouteurs sont essentiels car OrbitControls peut capturer les événements
+    // avant qu'ils n'atteignent window
+    if (gl && gl.domElement) {
+      gl.domElement.addEventListener("mousemove", handleMouseActivity, {
+        passive: true,
+      });
+      gl.domElement.addEventListener("mousedown", handleMouseActivity, {
+        passive: true,
+      });
+      gl.domElement.addEventListener("mouseup", handleMouseActivity, {
+        passive: true,
+      });
+      gl.domElement.addEventListener("touchstart", handleMouseActivity, {
+        passive: true,
+      });
+      gl.domElement.addEventListener("touchmove", handleMouseActivity, {
+        passive: true,
+      });
+      gl.domElement.addEventListener("wheel", handleMouseActivity, {
+        passive: true,
+      });
+    }
+
+    // OrbitControls génère également des événements de changement
+    // lorsque l'utilisateur interagit avec lui
+    if (controlsRef.current) {
+      controlsRef.current.addEventListener("change", handleMouseActivity);
+    }
+
+    // Démarrer le timer initial
+    detectUserActivity();
+
+    // Nettoyage lors du démontage
+    return () => {
+      // Nettoyage des écouteurs de la fenêtre
+      window.removeEventListener("mousemove", handleMouseActivity);
+      window.removeEventListener("mousedown", handleMouseActivity);
+      window.removeEventListener("mouseup", handleMouseActivity);
+      window.removeEventListener("keydown", handleMouseActivity);
+      window.removeEventListener("wheel", handleMouseActivity);
+      window.removeEventListener("touchstart", handleMouseActivity);
+      window.removeEventListener("touchmove", handleMouseActivity);
+
+      // Nettoyage des écouteurs du canvas
+      if (gl && gl.domElement) {
+        gl.domElement.removeEventListener("mousemove", handleMouseActivity);
+        gl.domElement.removeEventListener("mousedown", handleMouseActivity);
+        gl.domElement.removeEventListener("mouseup", handleMouseActivity);
+        gl.domElement.removeEventListener("touchstart", handleMouseActivity);
+        gl.domElement.removeEventListener("touchmove", handleMouseActivity);
+        gl.domElement.removeEventListener("wheel", handleMouseActivity);
+      }
+
+      // Nettoyage de l'écouteur OrbitControls
+      if (controlsRef.current) {
+        controlsRef.current.removeEventListener("change", handleMouseActivity);
+      }
+
+      if (autoRotateTimerId.current) {
+        clearTimeout(autoRotateTimerId.current);
+      }
+    };
+  }, [gl, controlsRef.current]); // Ajouter les dépendances pour recréer les écouteurs si nécessaire
+
   // Traiter les entrées unifiées
   useEffect(() => {
+    // Si l'une des entrées a changé, détecter l'activité
+    if (JSON.stringify(inputs) !== JSON.stringify(prevInputs.current)) {
+      detectUserActivity();
+    }
+
     // Réagir au changement de mode
     if (inputs.toggleMode && !prevInputs.current.toggleMode) {
       toggleMode();
@@ -195,12 +305,25 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
       flightController.current.setInput(flightInput);
       flightController.current.update(delta);
+
+      // Si la rotation automatique est activée, appliquer une rotation lente
+      if (autoRotateEnabled && !isTransitioning && !flightInput.yaw) {
+        // Ajouter une légère rotation horizontale
+        flightController.current.setInput({
+          ...flightInput,
+          yaw: AUTO_ROTATE_SPEED,
+        });
+      }
     } else if (mode === CAMERA_MODES.ORBIT && controlsRef.current) {
       // En mode orbite, manipuler directement la caméra et les contrôles
       const orbitControls = controlsRef.current;
 
       if (orbitControls && !isTransitioning) {
-        // Manipuler la position cible des contrôles d'orbite
+        // Activer/désactiver la rotation automatique selon l'état
+        orbitControls.autoRotate = autoRotateEnabled;
+        orbitControls.autoRotateSpeed = AUTO_ROTATE_SPEED * 10; // OrbitControls utilise une échelle différente
+
+        // Manipuler la position cible des contrôles d'orbite si l'utilisateur interagit
         const rotationSpeed = config.rotationSpeed * 0.05;
         const moveSpeed = 2;
 
@@ -266,6 +389,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     }
 
     setMode(newMode);
+
+    // Réinitialiser le timer de rotation automatique
+    detectUserActivity();
   };
 
   // Fonction pour animer vers une position de caméra prédéfinie
@@ -302,6 +428,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
     setPositionIndex(index);
     setIsTransitioning(true);
+
+    // Réinitialiser le timer de rotation automatique
+    detectUserActivity();
   };
 
   // Initialiser le contrôleur de vol une fois que la caméra est disponible
@@ -329,6 +458,10 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         dampingFactor={0.25}
         rotateSpeed={0.5}
         enabled={mode === CAMERA_MODES.ORBIT && !isTransitioning}
+        autoRotate={
+          autoRotateEnabled && mode === CAMERA_MODES.ORBIT && !isTransitioning
+        }
+        autoRotateSpeed={AUTO_ROTATE_SPEED * 10}
       />
     </>
   );

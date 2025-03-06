@@ -399,6 +399,220 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
 }
 
 /**
+ * Génère un vecteur de flowfield pour une position donnée
+ * Le flowfield est basé sur un bruit de Perlin 3D
+ *
+ * @param {Object} position - Position {x, y, z} à évaluer dans le flowfield
+ * @param {Object} options - Options du flowfield
+ * @param {number} options.scale - Échelle du bruit (défaut: 0.02)
+ * @param {number} options.strength - Force du vecteur généré (défaut: 2)
+ * @param {number} options.time - Temps utilisé pour l'animation (défaut: 0)
+ * @returns {Object} Vecteur {x, y, z} indiquant la direction du flow
+ */
+function generateFlowfieldVector(position, options = {}) {
+  const scale = options.scale || 0.02;
+  const strength = options.strength || 2;
+  const time = options.time || 0;
+
+  // Utiliser des fonctions trigonométriques pour simuler le bruit de Perlin
+  // car nous n'avons pas accès à une vraie implémentation de Perlin noise ici
+  const x = position.x * scale;
+  const y = position.y * scale;
+  const z = position.z * scale;
+  const t = time * 0.2;
+
+  // Calculer des composantes de direction à partir de sin/cos pour simuler un champ de vecteurs
+  const vx = Math.sin(y + t) * Math.cos(z * 0.5) * strength;
+  const vy = Math.sin(z + t) * Math.cos(x * 0.5) * strength;
+  const vz = Math.sin(x + t) * Math.cos(y * 0.5) * strength;
+
+  return { x: vx, y: vy, z: vz };
+}
+
+/**
+ * Anime les posts dans un flowfield pendant plusieurs frames
+ *
+ * @param {Array} posts - Liste des posts avec leurs positions
+ * @param {Object} options - Options pour l'animation flowfield
+ * @param {number} options.frames - Nombre de frames d'animation (défaut: 10)
+ * @param {number} options.flowScale - Échelle du flowfield (défaut: 0.02)
+ * @param {number} options.flowStrength - Force du flowfield (défaut: 2)
+ * @returns {Promise<Array>} Promise résolue avec les posts animés
+ */
+export function animatePostsInFlowfield(posts, options = {}) {
+  return new Promise((resolve) => {
+    const frames = options.frames || 10;
+    const flowScale = options.flowScale || 0.02;
+    const flowStrength = options.flowStrength || 2;
+
+    // Créer une copie profonde des posts pour éviter de modifier l'original
+    const animatedPosts = JSON.parse(JSON.stringify(posts));
+
+    // Compteur de frames
+    let currentFrame = 0;
+
+    // Fonction pour effectuer une étape d'animation
+    const animate = () => {
+      // Incrémenter le compteur
+      currentFrame++;
+
+      // Mettre à jour les positions selon le flowfield
+      for (let i = 0; i < animatedPosts.length; i++) {
+        const post = animatedPosts[i];
+
+        // Obtenir le vecteur de flow pour cette position
+        const flowVector = generateFlowfieldVector(post.coordinates, {
+          scale: flowScale,
+          strength: flowStrength * (1 - currentFrame / frames), // Réduire la force au fil du temps
+          time: currentFrame,
+        });
+
+        // Appliquer le vecteur à la position
+        post.coordinates.x += flowVector.x;
+        post.coordinates.y += flowVector.y;
+        post.coordinates.z += flowVector.z;
+      }
+
+      // Continuer l'animation si nécessaire
+      if (currentFrame < frames) {
+        // Utiliser requestAnimationFrame si disponible, sinon setTimeout
+        if (typeof window !== "undefined" && window.requestAnimationFrame) {
+          window.requestAnimationFrame(animate);
+        } else {
+          setTimeout(animate, 16); // ~60fps
+        }
+      } else {
+        // Animation terminée, résoudre la promesse
+        console.log(`Animation flowfield terminée après ${frames} frames`);
+        resolve(animatedPosts);
+      }
+    };
+
+    // Démarrer l'animation
+    console.log(`Début de l'animation flowfield pour ${posts.length} posts`);
+    animate();
+  });
+}
+
+/**
+ * Normalise les positions des posts pour qu'ils soient tous contenus dans une sphère
+ * avec une distribution volumique plus uniforme
+ *
+ * @param {Array} posts - Liste des posts à normaliser
+ * @param {Object} options - Options de normalisation
+ * @param {number} options.sphereRadius - Rayon de la sphère (défaut: 100)
+ * @param {Object} options.center - Centre de la sphère (défaut: {x: 0, y: 0, z: 0})
+ * @param {number} options.volumeExponent - Exposant pour la redistribution volumique (défaut: 1/3)
+ * @param {number} options.minRadius - Rayon minimum depuis le centre (défaut: 0.1)
+ * @param {number} options.jitter - Facteur de variation aléatoire des positions (défaut: 0.1)
+ * @returns {Array} Posts avec coordonnées normalisées
+ */
+export function normalizePostsInSphere(posts, options = {}) {
+  const sphereRadius = options.sphereRadius || 100;
+  const center = options.center || { x: 0, y: 0, z: 0 };
+  const volumeExponent =
+    options.volumeExponent !== undefined ? options.volumeExponent : 1 / 3;
+  const minRadius = options.minRadius || sphereRadius * 0.1; // 10% du rayon comme minimum
+  const jitter = options.jitter !== undefined ? options.jitter : 0.1; // 10% de variation aléatoire
+
+  if (!posts || posts.length === 0) {
+    return posts;
+  }
+
+  console.log(
+    `Redistribution volumique de ${posts.length} posts dans une sphère de rayon ${sphereRadius}`
+  );
+
+  // Calculer et stocker la direction et la distance de chaque post par rapport au centre
+  const postsWithSphericalInfo = posts.map((post) => {
+    const dx = post.coordinates.x - center.x;
+    const dy = post.coordinates.y - center.y;
+    const dz = post.coordinates.z - center.z;
+
+    // Distance euclidienne au centre
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    // Si la distance est nulle (post au centre), générer une direction aléatoire
+    let direction;
+    if (distance < 0.0001) {
+      // Générer des coordonnées aléatoires pour la direction
+      const randomX = Math.random() * 2 - 1; // Entre -1 et 1
+      const randomY = Math.random() * 2 - 1;
+      const randomZ = Math.random() * 2 - 1;
+
+      // Normaliser pour obtenir un vecteur unitaire
+      const randomLength = Math.sqrt(
+        randomX * randomX + randomY * randomY + randomZ * randomZ
+      );
+      direction = {
+        x: randomX / randomLength,
+        y: randomY / randomLength,
+        z: randomZ / randomLength,
+      };
+    } else {
+      // Normaliser la direction (vecteur unitaire)
+      direction = {
+        x: dx / distance,
+        y: dy / distance,
+        z: dz / distance,
+      };
+    }
+
+    return {
+      post,
+      direction,
+      originalDistance: distance,
+    };
+  });
+
+  // Tri des posts par distance pour la redistribution volumique
+  postsWithSphericalInfo.sort(
+    (a, b) => a.originalDistance - b.originalDistance
+  );
+
+  // Redistribution volumique des distances
+  const normalizedPosts = postsWithSphericalInfo.map((item, index) => {
+    // Calcul du pourcentage volumique basé sur l'index (0 à 1)
+    const volumeRatio = index / (postsWithSphericalInfo.length - 1);
+
+    // Transformation du ratio volumique en distance radiale avec exposant pour distribution volumique
+    // L'exposant 1/3 (racine cubique) donne une distribution uniforme dans le volume de la sphère
+    let newDistance =
+      Math.pow(volumeRatio, volumeExponent) * (sphereRadius - minRadius) +
+      minRadius;
+
+    // Ajouter un peu de jitter (variation aléatoire) pour éviter une trop grande régularité
+    if (jitter > 0) {
+      const jitterAmount =
+        ((Math.random() * 2 - 1) * jitter * (sphereRadius - minRadius)) /
+        postsWithSphericalInfo.length;
+      newDistance = Math.max(
+        minRadius,
+        Math.min(sphereRadius, newDistance + jitterAmount)
+      );
+    }
+
+    // Calculer les nouvelles coordonnées en appliquant la distance à la direction
+    const newCoordinates = {
+      x: center.x + item.direction.x * newDistance,
+      y: center.y + item.direction.y * newDistance,
+      z: center.z + item.direction.z * newDistance,
+    };
+
+    // Retourner le post avec ses nouvelles coordonnées
+    return {
+      ...item.post,
+      coordinates: newCoordinates,
+    };
+  });
+
+  console.log(
+    `Redistribution terminée - tous les posts sont répartis dans une sphère de rayon ${sphereRadius}`
+  );
+  return normalizedPosts;
+}
+
+/**
  * Met à jour directement les positions des posts en utilisant les nœuds du graphe déjà chargés
  * Cette fonction est conçue pour être utilisée avec les données déjà en mémoire
  *
@@ -436,12 +650,64 @@ export function updatePostsPositionsInContext(
   );
 
   // Spatialiser les posts autour des nœuds Joshua
-  const updatedPosts = spatializePostsAroundJoshuaNodes(posts, nodes, options);
+  const initialPosts = spatializePostsAroundJoshuaNodes(posts, nodes, options);
 
-  // Si une fonction de rappel est fournie, l'appeler avec les posts mis à jour
-  if (typeof updateCallback === "function") {
-    updateCallback(updatedPosts);
+  // Options pour le flowfield et la normalisation sphérique
+  const useFlowfield =
+    options.useFlowfield !== undefined ? options.useFlowfield : true;
+  const normalizeInSphere =
+    options.normalizeInSphere !== undefined ? options.normalizeInSphere : true;
+  const sphereRadius = options.sphereRadius || 100;
+
+  const flowOptions = {
+    frames: options.flowFrames || 10,
+    flowScale: options.flowScale || 0.02,
+    flowStrength: options.flowStrength || 2,
+  };
+
+  // Si l'animation flowfield est activée, l'exécuter
+  if (useFlowfield) {
+    // Commencer par mettre à jour avec les positions initiales
+    if (typeof updateCallback === "function") {
+      updateCallback(initialPosts);
+    }
+
+    // Puis lancer l'animation et mettre à jour progressivement
+    animatePostsInFlowfield(initialPosts, flowOptions)
+      .then((animatedPosts) => {
+        console.log(
+          "Animation flowfield terminée, finalisation des positions..."
+        );
+
+        // Normaliser dans une sphère si demandé
+        let finalPosts = animatedPosts;
+        if (normalizeInSphere) {
+          finalPosts = normalizePostsInSphere(animatedPosts, { sphereRadius });
+        }
+
+        // Mettre à jour avec les positions finales
+        if (typeof updateCallback === "function") {
+          updateCallback(finalPosts);
+        }
+        return finalPosts;
+      })
+      .catch((error) => {
+        console.error("Erreur pendant l'animation flowfield:", error);
+        return initialPosts;
+      });
+
+    return initialPosts;
+  } else {
+    // Si l'animation est désactivée, normaliser directement si nécessaire
+    let finalPosts = initialPosts;
+    if (normalizeInSphere) {
+      finalPosts = normalizePostsInSphere(initialPosts, { sphereRadius });
+    }
+
+    // Mettre à jour avec les positions finales
+    if (typeof updateCallback === "function") {
+      updateCallback(finalPosts);
+    }
+    return finalPosts;
   }
-
-  return updatedPosts;
 }

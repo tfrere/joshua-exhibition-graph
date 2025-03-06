@@ -13,9 +13,36 @@ import { useControls, folder } from "leva";
  * @property {number} coordinates.y - Position Y
  * @property {number} coordinates.z - Position Z
  * @property {Array} color - Couleur RGB du post
+ * @property {number} impact - Valeur d'impact du post (1-1000)
  */
 
-const SIZE = 2;
+const SIZE = 0.3;
+const MIN_IMPACT_SIZE = 10;
+const MAX_IMPACT_SIZE = 50;
+
+// Vertex shader qui utilise l'attribut size pour les points
+const vertexShader = `
+  attribute float size;
+  varying vec3 vColor;
+  
+  void main() {
+    vColor = color;
+    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+    gl_PointSize = size * (300.0 / -mvPosition.z);
+    gl_Position = projectionMatrix * mvPosition;
+  }
+`;
+
+// Fragment shader pour les points avec une texture circulaire
+const fragmentShader = `
+  uniform sampler2D pointTexture;
+  varying vec3 vColor;
+  
+  void main() {
+    gl_FragColor = vec4(vColor, 1.0) * texture2D(pointTexture, gl_PointCoord);
+    if (gl_FragColor.a < 0.3) discard;
+  }
+`;
 
 /**
  * Composant pour le rendu ultra-optimisé des posts
@@ -25,15 +52,22 @@ export function PostsRenderer() {
   const pointsRef = useRef();
   const { camera } = useThree();
 
+  // Référence pour conserver les tailles originales basées sur l'impact
+  const originalSizesRef = useRef(null);
+
   // Ajouter un contrôle Leva pour la taille des points dans un groupe dédié
-  const { pointSize } = useControls({
+  const { pointSize, useImpactSize } = useControls({
     "Posts Renderer": folder({
       pointSize: {
         value: SIZE,
-        min: 0.5,
-        max: 10,
-        step: 0.5,
+        min: 0.2,
+        max: 1,
+        step: 0.1,
         label: "Taille des points",
+      },
+      useImpactSize: {
+        value: true,
+        label: "Utiliser la valeur d'impact pour la taille",
       },
     }),
   });
@@ -74,6 +108,9 @@ export function PostsRenderer() {
     // Tailles (1 valeur par point)
     const sizes = new Float32Array(maxPoints);
 
+    // Créer un nouveau tableau pour stocker les tailles originales basées sur l'impact
+    const originalSizes = new Float32Array(maxPoints);
+
     // Remplir les tableaux
     for (let i = 0; i < maxPoints; i++) {
       const post = postsData[i];
@@ -95,72 +132,54 @@ export function PostsRenderer() {
         colors[i3 + 2] = 0.2; // B
       }
 
-      // Taille (légèrement aléatoire pour plus de variété)
-      sizes[i] = 10 + Math.random() * 5;
+      // Taille basée sur l'impact si disponible et activé, sinon légèrement aléatoire
+      let baseSize;
+      if (
+        useImpactSize &&
+        post.impact !== undefined &&
+        !isNaN(post.impact) &&
+        post.impact > 0
+      ) {
+        // Limiter l'impact entre 1 et 500
+        const impactValue = Math.max(1, Math.min(500, post.impact));
+        // Conversion logarithmique de l'impact en taille pour une meilleure distribution visuelle
+        // (les valeurs extrêmes sont moins disproportionnées)
+        const normalizedImpact = Math.log(impactValue) / Math.log(500);
+        // Mise à l'échelle entre MIN_IMPACT_SIZE et MAX_IMPACT_SIZE
+        baseSize =
+          MIN_IMPACT_SIZE +
+          normalizedImpact * (MAX_IMPACT_SIZE - MIN_IMPACT_SIZE);
+      } else {
+        // Taille standard avec légère variation aléatoire si impact non utilisé
+        baseSize = 10 + Math.random() * 5;
+      }
+
+      // Stocker la taille originale et l'utiliser pour la taille initiale
+      originalSizes[i] = baseSize;
+      sizes[i] = baseSize * pointSize; // Multiplier par pointSize dès le début
     }
+
+    // Stocker les tailles originales dans la référence pour les utiliser dans useFrame
+    originalSizesRef.current = originalSizes;
 
     // Ajouter les attributs à la géométrie
     geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geo.setAttribute("size", new THREE.BufferAttribute(sizes, 1));
 
-    // Créer le matériau
-    const mat = new THREE.PointsMaterial({
-      size: pointSize,
-      sizeAttenuation: true,
-      map: pointTexture,
-      alphaTest: 0.1,
+    // Créer un matériau de shader personnalisé qui utilise l'attribut size
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        pointTexture: { value: pointTexture },
+      },
+      vertexShader,
+      fragmentShader,
       transparent: true,
       vertexColors: true,
     });
 
     return [geo, mat];
-  }, [postsData, pointTexture, pointSize]);
-
-  // Optimisation: réduire la taille des points quand ils sont loin de la caméra
-  useFrame(() => {
-    if (pointsRef.current) {
-      // Mise à jour dynamique des tailles en fonction de la distance
-      const positions = pointsRef.current.geometry.attributes.position.array;
-      const sizes = pointsRef.current.geometry.attributes.size.array;
-      const count = sizes.length;
-
-      const cameraPosition = camera.position;
-
-      for (let i = 0; i < count; i++) {
-        const i3 = i * 3;
-        const x = positions[i3];
-        const y = positions[i3 + 1];
-        const z = positions[i3 + 2];
-
-        // Calculer la distance au carré (plus rapide que sqrt)
-        const distanceSq =
-          (x - cameraPosition.x) * (x - cameraPosition.x) +
-          (y - cameraPosition.y) * (y - cameraPosition.y) +
-          (z - cameraPosition.z) * (z - cameraPosition.z);
-
-        // Ajuster la taille en fonction de la distance, en utilisant le pointSize comme base
-        sizes[i] = Math.min(
-          pointSize + 500 / (1 + distanceSq / 10000),
-          pointSize * 1.5
-        );
-      }
-
-      pointsRef.current.geometry.attributes.size.needsUpdate = true;
-
-      // Mettre à jour la taille globale des points
-      if (pointsRef.current.material.size !== pointSize) {
-        pointsRef.current.material.size = pointSize;
-        pointsRef.current.material.needsUpdate = true;
-      }
-    }
-  });
-
-  useEffect(() => {
-    if (postsData && postsData.length > 0) {
-      console.log(`postsData chargés (${postsData.length} points)`);
-    }
-  }, [postsData]);
+  }, [postsData, pointTexture, pointSize, useImpactSize]);
 
   // Ne rien afficher pendant le chargement ou si pas de données
   if (
