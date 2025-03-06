@@ -29,8 +29,11 @@ dist-ssr
 *.sln
 *.sw?
 
-spatialized_posts_*.json
-posts-flatlist.json
-
 *.data.json
 **/*.data.json
+
+# Exceptions - ces fichiers ne doivent pas être ignorés
+!database.data.json
+!**/database.data.json
+!posts.data.json
+!**/posts.data.json

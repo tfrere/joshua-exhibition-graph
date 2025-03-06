@@ -48,23 +48,6 @@ const WorkPage = () => {
     backgroundColor: "#000000",
   });
 
-  // Configurer les contrôles de la manette
-  const gamepadControls = useControls({
-    Manette: folder({
-      enabled: {
-        value: gamepadEnabled,
-        onChange: (v) => setGamepadEnabled(v),
-      },
-      config: folder({
-        maxSpeed: { value: 10, min: 1, max: 50 },
-        acceleration: { value: 15, min: 1, max: 30 },
-        deceleration: { value: 0.95, min: 0.5, max: 0.99 },
-        rotationSpeed: { value: 1.5, min: 0.1, max: 5 },
-        deadzone: { value: 0.1, min: 0.01, max: 0.5 },
-      }),
-    }),
-  });
-
   // Ajouter un contrôle simple pour mettre à jour les positions
   useControls({
     "Contrôles des Posts": folder({
