@@ -14,6 +14,22 @@ const WorkPage = () => {
   const [gamepadEnabled, setGamepadEnabled] = useState(false);
   const { isLoadingGraph, isLoadingPosts, updatePostsPositions } = useData();
 
+  // Configuration par défaut pour la spatialisation des posts
+  const DEFAULT_POSTS_SPATIAL_CONFIG = {
+    joshuaOnly: true,
+    preserveOtherPositions: true,
+    radius: 60,
+    minDistance: 20,
+    verticalSpread: 1.2,
+    horizontalSpread: 1.5,
+    // Paramètres de l'algorithme Voronoi
+    perlinScale: 0.05,
+    perlinAmplitude: 7,
+    dilatationFactor: 1.8,
+    // Coloration des posts
+    useUniqueColorsPerCharacter: true,
+  };
+
   // Configurer tous les contrôles avec Leva
   const { debug, backgroundColor, cameraConfig } = useControls({
     debug: true,
@@ -50,18 +66,7 @@ const WorkPage = () => {
         }
 
         console.log("Mise à jour manuelle des positions des posts...");
-        updatePostsPositions({
-          joshuaOnly: true,
-          preserveOtherPositions: true,
-          radius: 20,
-          minDistance: 8,
-          verticalSpread: 1.2,
-          horizontalSpread: 1.5,
-          // Paramètres de l'algorithme Voronoi
-          perlinScale: 0.05,
-          perlinAmplitude: 7,
-          dilatationFactor: 1.3,
-        });
+        updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
       }),
     }),
   });
@@ -84,19 +89,11 @@ const WorkPage = () => {
       const timer = setTimeout(() => {
         console.log("Tentative de mise à jour des positions des posts...");
         updatePostsPositions({
-          joshuaOnly: true,
-          preserveOtherPositions: true,
-          radius: 20,
-          minDistance: 8,
-          verticalSpread: 1.2,
-          horizontalSpread: 1.5,
-          // Paramètres de l'algorithme Voronoi
-          perlinScale: 0.05,
-          perlinAmplitude: 7,
-          dilatationFactor: 1.3,
+          ...DEFAULT_POSTS_SPATIAL_CONFIG,
+          radius: 50, // Utiliser un rayon légèrement différent pour l'initialisation automatique
         });
         positionsUpdatedOnceRef.current = true;
-      }, 1500);
+      }, 3000);
 
       return () => clearTimeout(timer);
     }
