@@ -16,7 +16,7 @@ import { useControls, folder } from "leva";
  * @property {number} impact - Valeur d'impact du post (1-1000)
  */
 
-const SIZE = 0.3;
+const SIZE = 0.125;
 const MIN_IMPACT_SIZE = 10;
 const MAX_IMPACT_SIZE = 50;
 
@@ -60,7 +60,7 @@ export function PostsRenderer() {
     "Posts Renderer": folder({
       pointSize: {
         value: SIZE,
-        min: 0.2,
+        min: 0.1,
         max: 1,
         step: 0.1,
         label: "Taille des points",
