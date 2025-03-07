@@ -5,9 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
+    include: ['d3-force']
+  },
   build: {
     rollupOptions: {
-      external: ['d3-force']
+      // Si nécessaire, configurez des options spécifiques de build ici
     }
   }
 })
