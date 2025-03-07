@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { useControls, folder, button } from "leva";
 import { ForceGraphUI } from "./components/ForceGraph";
 import CustomForceGraph from "./components/CustomForceGraph";
+import ForceGraph from "./components/ForceGraph";
 import PostsRenderer from "../../components/PostsRenderer";
 import { useData } from "../../contexts/DataContext";
 import AdvancedCameraController, {
@@ -191,34 +192,35 @@ const WorkPage = () => {
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
         <AdvancedCameraController config={cameraConfig} />
 
-        {/* Nouveau composant de graphe personnalisé */}
-        <CustomForceGraph
-          ref={forceGraphRef}
-          nodeSize={5}
-          linkWidth={0.5}
-          chargeStrength={graphControls.chargeStrength}
-          centerStrength={0.05}
-          linkStrength={0.7}
-          linkDistance={graphControls.linkDistance}
-          zStrength={graphControls.zStrength}
-          simulationSpeed={graphControls.simulationSpeed}
-          collisionStrength={5}
-          cooldownTime={10000}
-          onGraphStabilized={() => {
-            console.log(
-              "Le graphe est stabilisé, mise à jour des positions des posts..."
-            );
-            // Mise à jour automatique des positions lorsque le graphe est stabilisé
-            if (!positionsUpdatedOnceRef.current) {
-              const currentNodes = forceGraphRef.current.getNodesPositions();
-              updatePostsPositions({
-                ...DEFAULT_POSTS_SPATIAL_CONFIG,
-                customNodes: currentNodes,
-              });
-              positionsUpdatedOnceRef.current = true;
-            }
-          }}
-        />
+        {/* Nouveau composant de graphe personnalisé
+        // <CustomForceGraph
+        //   ref={forceGraphRef}
+        //   nodeSize={5}
+        //   linkWidth={0.5}
+        //   chargeStrength={graphControls.chargeStrength}
+        //   centerStrength={0.05}
+        //   linkStrength={0.7}
+        //   linkDistance={graphControls.linkDistance}
+        //   zStrength={graphControls.zStrength}
+        //   simulationSpeed={graphControls.simulationSpeed}
+        //   collisionStrength={5}
+        //   cooldownTime={10000}
+        //   onGraphStabilized={() => {
+        //     console.log(
+        //       "Le graphe est stabilisé, mise à jour des positions des posts..."
+        //     );
+        //     // Mise à jour automatique des positions lorsque le graphe est stabilisé
+        //     if (!positionsUpdatedOnceRef.current) {
+        //       const currentNodes = forceGraphRef.current.getNodesPositions();
+        //       updatePostsPositions({
+        //         ...DEFAULT_POSTS_SPATIAL_CONFIG,
+        //         customNodes: currentNodes,
+        //       });
+        //       positionsUpdatedOnceRef.current = true;
+        //     }
+        //   }}
+        // /> */}
+        <ForceGraph />
         <PostsRenderer />
         <EffectComposer>
           <Bloom
