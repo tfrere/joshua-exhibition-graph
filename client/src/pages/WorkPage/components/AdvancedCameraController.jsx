@@ -168,22 +168,22 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     // Ces écouteurs sont essentiels car OrbitControls peut capturer les événements
     // avant qu'ils n'atteignent window
     if (gl && gl.domElement) {
-      gl.domElement.addEventListener("mousemove", handleMouseActivity, {
+      window.addEventListener("mousemove", handleMouseActivity, {
         passive: true,
       });
-      gl.domElement.addEventListener("mousedown", handleMouseActivity, {
+      window.addEventListener("mousedown", handleMouseActivity, {
         passive: true,
       });
-      gl.domElement.addEventListener("mouseup", handleMouseActivity, {
+      window.addEventListener("mouseup", handleMouseActivity, {
         passive: true,
       });
-      gl.domElement.addEventListener("touchstart", handleMouseActivity, {
+      window.addEventListener("touchstart", handleMouseActivity, {
         passive: true,
       });
-      gl.domElement.addEventListener("touchmove", handleMouseActivity, {
+      window.addEventListener("touchmove", handleMouseActivity, {
         passive: true,
       });
-      gl.domElement.addEventListener("wheel", handleMouseActivity, {
+      window.addEventListener("wheel", handleMouseActivity, {
         passive: true,
       });
     }

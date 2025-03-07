@@ -60,34 +60,34 @@ const WorkPage = () => {
           min: -300,
           max: -10,
           step: 10,
-          label: "Force de répulsion"
+          label: "Force de répulsion",
         },
         linkDistance: {
           value: 60,
           min: 10,
           max: 150,
           step: 5,
-          label: "Distance des liens"
+          label: "Distance des liens",
         },
         zStrength: {
           value: 2.0,
           min: 0,
           max: 5,
           step: 0.1,
-          label: "Force Z (3D)"
+          label: "Force Z (3D)",
         },
         simulationSpeed: {
           value: 0.5,
           min: 0.1,
           max: 1.0,
           step: 0.05,
-          label: "Vitesse de simulation"
+          label: "Vitesse de simulation",
         },
         onChange: () => {
           if (forceGraphRef.current) {
             console.log("Mise à jour des paramètres 3D du graphe");
           }
-        }
+        },
       }),
       "Stabiliser manuellement": button(() => {
         if (forceGraphRef.current) {
@@ -98,19 +98,23 @@ const WorkPage = () => {
       "Mettre à jour les positions après stabilisation": button(() => {
         // Vérifier que les données ne sont pas en cours de chargement avant de mettre à jour
         if (isLoadingGraph || isLoadingPosts) {
-          console.warn("Impossible de mettre à jour les positions : chargement des données en cours");
+          console.warn(
+            "Impossible de mettre à jour les positions : chargement des données en cours"
+          );
           return;
         }
-        
+
         // Vérifier si le graphe est stabilisé
         if (forceGraphRef.current && forceGraphRef.current.isStabilized()) {
-          console.log("Mise à jour des positions des posts après stabilisation du graphe");
+          console.log(
+            "Mise à jour des positions des posts après stabilisation du graphe"
+          );
           // Récupérer les positions actuelles des nœuds
           const currentNodes = forceGraphRef.current.getNodesPositions();
           updatePostsPositions({
             ...DEFAULT_POSTS_SPATIAL_CONFIG,
             // Fournir les positions des nœuds à jour
-            customNodes: currentNodes
+            customNodes: currentNodes,
           });
         } else {
           console.warn("Le graphe n'est pas encore stabilisé");
@@ -140,20 +144,26 @@ const WorkPage = () => {
           if (forceGraphRef.current.isStabilized()) {
             console.log("Graphe déjà stabilisé, mise à jour des positions...");
             const currentNodes = forceGraphRef.current.getNodesPositions();
-            console.log(`Récupération de ${currentNodes.length} nœuds pour la spatialisation`);
+            console.log(
+              `Récupération de ${currentNodes.length} nœuds pour la spatialisation`
+            );
             updatePostsPositions({
               ...DEFAULT_POSTS_SPATIAL_CONFIG,
-              customNodes: currentNodes
+              customNodes: currentNodes,
             });
             positionsUpdatedOnceRef.current = true;
           } else {
             // Forcer la stabilisation puis mettre à jour
-            console.log("Stabilisation du graphe puis mise à jour des positions...");
+            console.log(
+              "Stabilisation du graphe puis mise à jour des positions..."
+            );
             forceGraphRef.current.stabilize();
             // La mise à jour sera déclenchée par le callback onGraphStabilized
           }
         } else {
-          console.warn("Référence du graphe non disponible, mise à jour classique...");
+          console.warn(
+            "Référence du graphe non disponible, mise à jour classique..."
+          );
           updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
           positionsUpdatedOnceRef.current = true;
         }
@@ -182,7 +192,7 @@ const WorkPage = () => {
         <AdvancedCameraController config={cameraConfig} />
 
         {/* Nouveau composant de graphe personnalisé */}
-        <CustomForceGraph 
+        <CustomForceGraph
           ref={forceGraphRef}
           nodeSize={5}
           linkWidth={0.5}
@@ -195,13 +205,15 @@ const WorkPage = () => {
           collisionStrength={5}
           cooldownTime={10000}
           onGraphStabilized={() => {
-            console.log("Le graphe est stabilisé, mise à jour des positions des posts...");
+            console.log(
+              "Le graphe est stabilisé, mise à jour des positions des posts..."
+            );
             // Mise à jour automatique des positions lorsque le graphe est stabilisé
             if (!positionsUpdatedOnceRef.current) {
               const currentNodes = forceGraphRef.current.getNodesPositions();
               updatePostsPositions({
                 ...DEFAULT_POSTS_SPATIAL_CONFIG,
-                customNodes: currentNodes
+                customNodes: currentNodes,
               });
               positionsUpdatedOnceRef.current = true;
             }
@@ -214,6 +226,9 @@ const WorkPage = () => {
             luminanceThreshold={0.5}
             luminanceSmoothing={0.5}
           />
+          {/* <Pixelation
+            granularity={3} // pixel granularity
+          /> */}
         </EffectComposer>
       </Canvas>
     </div>
