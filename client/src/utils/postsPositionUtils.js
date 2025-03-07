@@ -267,6 +267,7 @@ function hslToRgb(h, s, l) {
  * @param {number} options.perlinAmplitude - Amplitude du bruit de Perlin (défaut: 5)
  * @param {number} options.dilatationFactor - Facteur de dilatation pour l'effet Voronoï (défaut: 1.2)
  * @param {boolean} options.useUniqueColorsPerCharacter - Si true, attribue une couleur unique par personnage (défaut: true)
+ * @param {Array} options.customNodes - Nœuds personnalisés avec leurs positions actuelles, utilisés à la place des nœuds standards
  * @returns {Array} Posts spatialisés avec coordonnées mises à jour
  */
 export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
@@ -284,116 +285,148 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     dilatationFactor = 1.2,
     // Option pour les couleurs uniques par personnage
     useUniqueColorsPerCharacter = true,
+    // Nœuds personnalisés avec positions actuelles de la simulation
+    customNodes = null
   } = options;
 
-  // Créer un index des nœuds par slug pour un accès rapide
+  // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
+  const nodesData = customNodes || nodes;
+  
+  console.log(`Spatialisation des posts: utilisation de ${customNodes ? 'nœuds personnalisés' : 'nœuds standards'} (${nodesData.length} nœuds)`);
+  
+  if (nodesData.length === 0) {
+    console.warn("Aucun nœud disponible pour la spatialisation des posts");
+    return posts;
+  }
+  
+  // Afficher les 5 premiers nœuds pour débogage
+  if (nodesData.length > 0) {
+    console.log("Échantillon de nœuds pour spatialisation:", 
+      nodesData.slice(0, 5).map(n => ({ 
+        id: n.id, 
+        slug: n.slug, 
+        type: n.type, 
+        isJoshua: n.isJoshua,
+        pos: [Math.round(n.x), Math.round(n.y), Math.round(n.z)]
+      }))
+    );
+  }
+  
+  // Créer un index des nœuds par slug ET par id pour un accès rapide
   const nodesMap = {};
+  const nodesByIdMap = {};
 
   // Index des nœuds de personnages
   const characterNodesMap = {};
 
   // Identifier spécifiquement les noeuds Joshua
   const joshuaCharacterSlugs = new Set();
+  const joshuaCharacterIds = new Set();
 
-  nodes.forEach((node) => {
-    // Indexer tous les nœuds par slug
+  nodesData.forEach((node) => {
+    // Indexer tous les nœuds par id et par slug
+    if (node.id) {
+      nodesByIdMap[node.id] = node;
+    }
+    
     if (node.slug) {
       nodesMap[node.slug] = node;
-
+      
       // Indexer les nœuds de type character
-      if (node.type === "character") {
+      if (node.type === 'character') {
         characterNodesMap[node.slug] = node;
-
-        // Si le noeud est marqué comme Joshua, l'ajouter à l'ensemble
+        
+        // Si le noeud est marqué comme Joshua, l'ajouter aux ensembles
         if (node.isJoshua === true) {
           joshuaCharacterSlugs.add(node.slug);
+          if (node.id) {
+            joshuaCharacterIds.add(node.id);
+          }
         }
       }
     }
   });
-
-  console.log(
-    `Nombre de personnages Joshua identifiés: ${joshuaCharacterSlugs.size}`
-  );
-
+  
+  console.log(`Nombre de personnages Joshua identifiés: ${joshuaCharacterSlugs.size} (par slug) et ${joshuaCharacterIds.size} (par id)`);
+  
   // Cache pour les couleurs générées par personnage
   const characterColorCache = {};
-
+  
   // Positionner chaque post en fonction de son slug (identifiant du personnage)
-  return posts.map((post) => {
-    // Utiliser le slug du post pour trouver le nœud correspondant
-    const slug = post.slug;
-
-    if (!slug) {
-      console.warn("Post sans slug:", post);
-      return post; // Conserver le post intact s'il n'a pas de slug
+  return posts.map(post => {
+    // Trouver le nœud correspondant en essayant plusieurs stratégies
+    let characterNode = null;
+    let isJoshuaPost = false;
+    let characterSlug = null;
+    
+    // Stratégie 1: Utiliser le slug du post directement
+    if (post.slug) {
+      characterSlug = post.slug;
+      characterNode = nodesMap[characterSlug] || characterNodesMap[characterSlug];
+      isJoshuaPost = post.isJoshuaCharacter === true || joshuaCharacterSlugs.has(characterSlug);
     }
-
-    // Chercher d'abord dans les nœuds de type character
-    let characterNode = characterNodesMap[slug];
-
-    // Si aucun nœud character n'est trouvé, chercher dans tous les nœuds
-    if (!characterNode) {
-      characterNode = nodesMap[slug];
+    
+    // Stratégie 2: Utiliser le champ character du post comme fallback
+    if (!characterNode && post.character) {
+      characterSlug = post.character;
+      characterNode = nodesMap[characterSlug] || characterNodesMap[characterSlug];
+      isJoshuaPost = post.isJoshuaCharacter === true || joshuaCharacterSlugs.has(characterSlug);
     }
-
-    // Vérifier si ce post appartient à un personnage Joshua
-    // Soit via la propriété ajoutée lors du chargement, soit via le Set de slugs
-    const isJoshuaPost =
-      post.isJoshuaCharacter === true || joshuaCharacterSlugs.has(slug);
-
+    
+    // Stratégie 3: Essayer de trouver par ID
+    if (!characterNode && post.id) {
+      const nodeById = nodesByIdMap[post.id];
+      if (nodeById) {
+        characterNode = nodeById;
+        characterSlug = nodeById.slug || nodeById.id;
+        isJoshuaPost = nodeById.isJoshua === true || joshuaCharacterIds.has(post.id);
+      }
+    }
+    
+    // Si aucun nœud n'est trouvé avec les stratégies précédentes
+    if (!characterNode || !characterSlug) {
+      // Conserver le post intact si aucun nœud correspondant n'est trouvé
+      return post;
+    }
+    
     // Si joshuaOnly est true, on ne repositionne que les posts des personnages Joshua
     // Si preserveOtherPositions est true, on conserve les positions existantes des autres posts
     if (joshuaOnly && !isJoshuaPost && preserveOtherPositions) {
       return post; // Conserver le post intact
     }
-
-    // Générer ou récupérer la couleur unique pour ce personnage
+    
+    // Préparer les options pour le calcul de position
+    const postOptions = {
+      radius,
+      minDistance,
+      verticalSpread,
+      horizontalSpread,
+      // Transmettre également les nouveaux paramètres
+      perlinScale,
+      perlinAmplitude,
+      dilatationFactor
+    };
+    
+    // Calculer de nouvelles coordonnées pour ce post avec l'algorithme Voronoi
+    const coordinates = calculatePostPosition(characterNode, postOptions);
+    
+    // Si on utilise des couleurs uniques par personnage, les générer ou récupérer du cache
     let color = post.color;
-    if (useUniqueColorsPerCharacter && slug) {
-      // Vérifier si on a déjà généré une couleur pour ce personnage
-      if (!characterColorCache[slug]) {
-        characterColorCache[slug] = generateCharacterColor(slug, isJoshuaPost);
+    if (useUniqueColorsPerCharacter) {
+      if (!characterColorCache[characterSlug]) {
+        characterColorCache[characterSlug] = generateCharacterColor(
+          characterSlug, 
+          isJoshuaPost
+        );
       }
-      color = characterColorCache[slug];
+      color = characterColorCache[characterSlug];
     }
-
-    // Si un nœud correspondant existe et (c'est un Joshua ou on traite tous les characters)
-    if (characterNode && (!joshuaOnly || isJoshuaPost)) {
-      const postOptions = {
-        radius,
-        minDistance,
-        verticalSpread,
-        horizontalSpread,
-        // Transmettre également les nouveaux paramètres
-        perlinScale,
-        perlinAmplitude,
-        dilatationFactor,
-      };
-
-      // Calculer de nouvelles coordonnées pour ce post avec l'algorithme Voronoi
-      const coordinates = calculatePostPosition(characterNode, postOptions);
-
-      return {
-        ...post,
-        coordinates,
-        color, // Ajouter la couleur générée/cachée
-      };
-    }
-
-    // Si on arrive ici et le post n'a pas de coordonnées, on en crée par défaut
-    if (!post.coordinates) {
-      return {
-        ...post,
-        coordinates: { x: 0, y: 0, z: 0 },
-        color, // Ajouter la couleur générée/cachée même si on ne change pas les positions
-      };
-    }
-
-    // Sinon, retourner le post avec sa couleur mise à jour
+    
+    // Retourner le post avec ses nouvelles coordonnées et éventuellement sa couleur
     return {
       ...post,
-      color,
+      coordinates,
+      color: color || post.color || [0.8, 0.4, 0.0]
     };
   });
 }
@@ -613,13 +646,30 @@ export function normalizePostsInSphere(posts, options = {}) {
 }
 
 /**
- * Met à jour directement les positions des posts en utilisant les nœuds du graphe déjà chargés
- * Cette fonction est conçue pour être utilisée avec les données déjà en mémoire
- *
- * @param {Array|Object} postsData - Données des posts à mettre à jour (peut être un tableau ou l'état du contexte)
- * @param {Array|Object} graphData - Données du graphe avec les positions des nœuds (peut être un tableau ou l'état du contexte)
- * @param {Object} options - Options de spatialisation
- * @param {Function} updateCallback - Fonction à appeler avec les posts mis à jour (ex: setPostsData)
+ * Met à jour les positions des posts en fonction des positions actuelles des nœuds du graphe
+ * dans le contexte de l'application.
+ * 
+ * @param {Array|Object} postsData - Tableau de posts ou objet contenant les posts
+ * @param {Array|Object} graphData - Tableau de nœuds ou objet contenant les nœuds du graphe
+ * @param {Object} options - Options de mise à jour
+ * @param {boolean} options.joshuaOnly - Ne mettre à jour que les posts des personnages Joshua (défaut: true)
+ * @param {boolean} options.preserveOtherPositions - Préserver les positions existantes des autres posts (défaut: true)
+ * @param {number} options.radius - Rayon maximal de dispersion (défaut: 15)
+ * @param {number} options.minDistance - Distance minimale du nœud (défaut: 5)
+ * @param {number} options.verticalSpread - Facteur de dispersion verticale (défaut: 1)
+ * @param {number} options.horizontalSpread - Facteur de dispersion horizontale (défaut: 1)
+ * @param {boolean} options.useFlowfield - Appliquer une animation flowfield (défaut: true)
+ * @param {number} options.flowFrames - Nombre d'images pour l'animation flowfield (défaut: 10)
+ * @param {number} options.flowScale - Échelle du flowfield (défaut: 0.02)
+ * @param {number} options.flowStrength - Force du flowfield (défaut: 2)
+ * @param {boolean} options.normalizeInSphere - Normaliser les positions dans une sphère (défaut: true)
+ * @param {number} options.sphereRadius - Rayon de la sphère (défaut: 100)
+ * @param {number} options.perlinScale - Échelle du bruit de Perlin (défaut: 0.05)
+ * @param {number} options.perlinAmplitude - Amplitude du bruit de Perlin (défaut: 5)
+ * @param {number} options.dilatationFactor - Facteur de dilatation pour l'effet Voronoï (défaut: 1.2)
+ * @param {Array} options.customNodes - Positions personnalisées des nœuds (à utiliser à la place de graphData.nodes)
+ * @param {Function} updateCallback - Fonction de rappel pour mettre à jour les posts (optionnel)
+ * @returns {Array} Posts avec positions mises à jour
  */
 export function updatePostsPositionsInContext(
   postsData,
@@ -630,7 +680,21 @@ export function updatePostsPositionsInContext(
   // Extraire les tableaux des posts et des nœuds selon le format des données
   const posts = Array.isArray(postsData) ? postsData : postsData?.posts || [];
 
-  // Extraire les nœuds du graphe
+  // Si des nœuds personnalisés sont fournis, les utiliser directement
+  if (options.customNodes && Array.isArray(options.customNodes)) {
+    console.log(`Utilisation de ${options.customNodes.length} nœuds personnalisés pour la mise à jour des positions`);
+    
+    // Spatialiser les posts autour des nœuds personnalisés
+    const initialPosts = spatializePostsAroundJoshuaNodes(posts, [], {
+      ...options,
+      customNodes: options.customNodes
+    });
+    
+    // Continuer avec le traitement normal
+    return processPostsForVisualization(initialPosts, options, updateCallback);
+  }
+  
+  // Sinon, extraire les nœuds du graphe comme avant
   let nodes = [];
   if (Array.isArray(graphData)) {
     nodes = graphData;
@@ -646,12 +710,21 @@ export function updatePostsPositionsInContext(
   }
 
   console.log(
-    `Mise à jour des positions de ${posts.length} posts avec ${nodes.length} nœuds`
+    `Mise à jour des positions de ${posts.length} posts avec ${nodes.length} nœuds du graphe`
   );
 
   // Spatialiser les posts autour des nœuds Joshua
   const initialPosts = spatializePostsAroundJoshuaNodes(posts, nodes, options);
 
+  // Continuer le traitement (flowfield, normalisation, etc.)
+  return processPostsForVisualization(initialPosts, options, updateCallback);
+}
+
+/**
+ * Fonction utilitaire pour traiter les posts après la spatialisation initiale
+ * (gère flowfield, normalisation, etc.)
+ */
+function processPostsForVisualization(initialPosts, options, updateCallback) {
   // Options pour le flowfield et la normalisation sphérique
   const useFlowfield =
     options.useFlowfield !== undefined ? options.useFlowfield : true;
@@ -673,7 +746,7 @@ export function updatePostsPositionsInContext(
     }
 
     // Puis lancer l'animation et mettre à jour progressivement
-    animatePostsInFlowfield(initialPosts, flowOptions)
+    return animatePostsInFlowfield(initialPosts, flowOptions)
       .then((animatedPosts) => {
         console.log(
           "Animation flowfield terminée, finalisation des positions..."
@@ -692,13 +765,11 @@ export function updatePostsPositionsInContext(
         return finalPosts;
       })
       .catch((error) => {
-        console.error("Erreur pendant l'animation flowfield:", error);
+        console.error("Erreur lors de l'animation des posts:", error);
         return initialPosts;
       });
-
-    return initialPosts;
   } else {
-    // Si l'animation est désactivée, normaliser directement si nécessaire
+    // Si pas d'animation, simplement normaliser si demandé
     let finalPosts = initialPosts;
     if (normalizeInSphere) {
       finalPosts = normalizePostsInSphere(initialPosts, { sphereRadius });

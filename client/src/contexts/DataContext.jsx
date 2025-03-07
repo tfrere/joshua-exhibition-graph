@@ -115,6 +115,7 @@ export function DataProvider({ children }) {
    * @param {Object} options - Options de spatialisation
    * @param {boolean} options.joshuaOnly - Si true, ne repositionne que les posts des personnages Joshua
    * @param {boolean} options.preserveOtherPositions - Si true, préserve les positions des autres posts
+   * @param {Array} options.customNodes - Nœuds personnalisés à utiliser pour la spatialisation (si fournis)
    * @returns {boolean} True si la mise à jour a réussi
    */
   const updatePostsPositions = useCallback(
@@ -127,7 +128,8 @@ export function DataProvider({ children }) {
           return false;
         }
 
-        if (graphData.nodes.length === 0) {
+        // Si on n'a pas de customNodes et pas de nœuds dans le graphe, impossible de mettre à jour
+        if (!options.customNodes && graphData.nodes.length === 0) {
           console.error(
             "Aucun nœud dans le graphe pour mettre à jour les positions des posts"
           );
@@ -143,6 +145,17 @@ export function DataProvider({ children }) {
           horizontalSpread: 1.5,
           ...options,
         };
+
+        // Log pour le débogage
+        if (options.customNodes) {
+          console.log(
+            `Mise à jour des positions avec ${options.customNodes.length} nœuds personnalisés`
+          );
+        } else {
+          console.log(
+            `Mise à jour des positions avec ${graphData.nodes.length} nœuds du graphe`
+          );
+        }
 
         // Mettre à jour les positions des posts en utilisant l'utilitaire
         const updatedPosts = updatePostsPositionsInContext(

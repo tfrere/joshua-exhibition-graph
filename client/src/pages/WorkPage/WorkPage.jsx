@@ -1,18 +1,21 @@
-import { Canvas, useThree, useFrame } from "@react-three/fiber";
-import { SpotLight, Stats } from "@react-three/drei";
-import { useState, useRef, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Stats } from "@react-three/drei";
+import { useRef, useEffect } from "react";
 import { useControls, folder, button } from "leva";
-import ForceGraphComponent, { ForceGraphUI } from "./components/ForceGraph";
+import { ForceGraphUI } from "./components/ForceGraph";
+import CustomForceGraph from "./components/CustomForceGraph";
 import PostsRenderer from "../../components/PostsRenderer";
 import { useData } from "../../contexts/DataContext";
 import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import { DEFAULT_FLIGHT_CONFIG } from "./utils/advancedCameraControls";
-import { EffectComposer, Bloom, Pixelation } from "@react-three/postprocessing";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
+
 const WorkPage = () => {
-  const [gamepadEnabled, setGamepadEnabled] = useState(false);
   const { isLoadingGraph, isLoadingPosts, updatePostsPositions } = useData();
+  const forceGraphRef = useRef(null);
+  const positionsUpdatedOnceRef = useRef(false);
 
   // Configuration par défaut pour la spatialisation des posts
   const DEFAULT_POSTS_SPATIAL_CONFIG = {
@@ -21,11 +24,11 @@ const WorkPage = () => {
     // Paramètres de positionnement
     radius: 60,
     minDistance: 40,
-    verticalSpread: 1.2,
+    verticalSpread: 1.5, // Augmentation pour une meilleure distribution verticale
     horizontalSpread: 1.5,
     // Paramètres de l'algorithme Voronoi
     perlinScale: 0.05,
-    perlinAmplitude: 7,
+    perlinAmplitude: 12, // Augmenté pour plus de variation 3D
     dilatationFactor: 1.8,
     // Coloration des posts
     useUniqueColorsPerCharacter: true,
@@ -48,27 +51,75 @@ const WorkPage = () => {
     backgroundColor: "#000000",
   });
 
-  // Ajouter un contrôle simple pour mettre à jour les positions
-  useControls({
-    "Contrôles des Posts": folder({
-      "Mettre à jour les positions": button(() => {
+  // Ajouter des contrôles pour le graphe dans le panneau Leva
+  const graphControls = useControls({
+    "Contrôles du Graphe": folder({
+      "Paramètres 3D": folder({
+        chargeStrength: {
+          value: -100,
+          min: -300,
+          max: -10,
+          step: 10,
+          label: "Force de répulsion"
+        },
+        linkDistance: {
+          value: 60,
+          min: 10,
+          max: 150,
+          step: 5,
+          label: "Distance des liens"
+        },
+        zStrength: {
+          value: 2.0,
+          min: 0,
+          max: 5,
+          step: 0.1,
+          label: "Force Z (3D)"
+        },
+        simulationSpeed: {
+          value: 0.5,
+          min: 0.1,
+          max: 1.0,
+          step: 0.05,
+          label: "Vitesse de simulation"
+        },
+        onChange: () => {
+          if (forceGraphRef.current) {
+            console.log("Mise à jour des paramètres 3D du graphe");
+          }
+        }
+      }),
+      "Stabiliser manuellement": button(() => {
+        if (forceGraphRef.current) {
+          forceGraphRef.current.stabilize();
+          console.log("Graphe stabilisé manuellement");
+        }
+      }),
+      "Mettre à jour les positions après stabilisation": button(() => {
         // Vérifier que les données ne sont pas en cours de chargement avant de mettre à jour
         if (isLoadingGraph || isLoadingPosts) {
-          console.warn(
-            "Impossible de mettre à jour les positions : chargement des données en cours"
-          );
+          console.warn("Impossible de mettre à jour les positions : chargement des données en cours");
           return;
         }
-
-        console.log("Mise à jour manuelle des positions des posts...");
-        updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
+        
+        // Vérifier si le graphe est stabilisé
+        if (forceGraphRef.current && forceGraphRef.current.isStabilized()) {
+          console.log("Mise à jour des positions des posts après stabilisation du graphe");
+          // Récupérer les positions actuelles des nœuds
+          const currentNodes = forceGraphRef.current.getNodesPositions();
+          updatePostsPositions({
+            ...DEFAULT_POSTS_SPATIAL_CONFIG,
+            // Fournir les positions des nœuds à jour
+            customNodes: currentNodes
+          });
+        } else {
+          console.warn("Le graphe n'est pas encore stabilisé");
+        }
       }),
     }),
   });
 
   // Mettre à jour automatiquement les positions des posts après le chargement des données
-  const positionsUpdatedOnceRef = useRef(false);
-
   useEffect(() => {
     // Vérifier que ni le graphe ni les posts ne sont en cours de chargement
     if (
@@ -82,10 +133,31 @@ const WorkPage = () => {
 
       // Attendre que le rendu du graphe soit terminé avant de mettre à jour
       const timer = setTimeout(() => {
-        console.log("Tentative de mise à jour des positions des posts...");
-        updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
-        positionsUpdatedOnceRef.current = true;
-      }, 3000);
+        console.log("Vérification de la stabilisation du graphe...");
+        // Ne mettre à jour que si la référence du graphe est disponible
+        if (forceGraphRef.current) {
+          // Vérifier si le graphe est déjà stabilisé
+          if (forceGraphRef.current.isStabilized()) {
+            console.log("Graphe déjà stabilisé, mise à jour des positions...");
+            const currentNodes = forceGraphRef.current.getNodesPositions();
+            console.log(`Récupération de ${currentNodes.length} nœuds pour la spatialisation`);
+            updatePostsPositions({
+              ...DEFAULT_POSTS_SPATIAL_CONFIG,
+              customNodes: currentNodes
+            });
+            positionsUpdatedOnceRef.current = true;
+          } else {
+            // Forcer la stabilisation puis mettre à jour
+            console.log("Stabilisation du graphe puis mise à jour des positions...");
+            forceGraphRef.current.stabilize();
+            // La mise à jour sera déclenchée par le callback onGraphStabilized
+          }
+        } else {
+          console.warn("Référence du graphe non disponible, mise à jour classique...");
+          updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
+          positionsUpdatedOnceRef.current = true;
+        }
+      }, 5000); // Attendre 5 secondes pour être sûr que le graphe est rendu
 
       return () => clearTimeout(timer);
     }
@@ -109,8 +181,32 @@ const WorkPage = () => {
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
         <AdvancedCameraController config={cameraConfig} />
 
-        {/* Composant ForceGraph pour le rendu 3D uniquement */}
-        <ForceGraphComponent />
+        {/* Nouveau composant de graphe personnalisé */}
+        <CustomForceGraph 
+          ref={forceGraphRef}
+          nodeSize={5}
+          linkWidth={0.5}
+          chargeStrength={graphControls.chargeStrength}
+          centerStrength={0.05}
+          linkStrength={0.7}
+          linkDistance={graphControls.linkDistance}
+          zStrength={graphControls.zStrength}
+          simulationSpeed={graphControls.simulationSpeed}
+          collisionStrength={5}
+          cooldownTime={10000}
+          onGraphStabilized={() => {
+            console.log("Le graphe est stabilisé, mise à jour des positions des posts...");
+            // Mise à jour automatique des positions lorsque le graphe est stabilisé
+            if (!positionsUpdatedOnceRef.current) {
+              const currentNodes = forceGraphRef.current.getNodesPositions();
+              updatePostsPositions({
+                ...DEFAULT_POSTS_SPATIAL_CONFIG,
+                customNodes: currentNodes
+              });
+              positionsUpdatedOnceRef.current = true;
+            }
+          }}
+        />
         <PostsRenderer />
         <EffectComposer>
           <Bloom
@@ -118,9 +214,6 @@ const WorkPage = () => {
             luminanceThreshold={0.5}
             luminanceSmoothing={0.5}
           />
-          {/* <Pixelation
-            granularity={5} // pixel granularity
-          /> */}
         </EffectComposer>
       </Canvas>
     </div>
