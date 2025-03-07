@@ -1,8 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useImperativeHandle, forwardRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-// Importer d3-force avec une syntaxe compatible ESM
-import * as d3Force from 'd3-force';
+import { forceSimulation, forceManyBody, forceLink, forceCenter, forceCollide } from 'd3-force';
 import { useData } from '../../../contexts/DataContext';
 import { Html } from '@react-three/drei';
 // Importer les fonctions de nodeUtils.js
@@ -156,13 +155,13 @@ const CustomForceGraph = forwardRef(({
     setIsSimulationRunning(true);
     
     // Créer une nouvelle simulation
-    const simulation = d3Force.forceSimulation(nodesData)
+    const simulation = forceSimulation(nodesData)
       .alphaDecay(0.006) // Stabilisation plus lente pour une meilleure distribution 3D
       .velocityDecay(0.3) // Friction réduite pour permettre plus de mouvement
-      .force('charge', d3Force.forceManyBody().strength(chargeStrength)) // Force de répulsion standard
-      .force('center', d3Force.forceCenter().strength(centerStrength * 0.5)) // Force de centrage réduite pour permettre plus d'étalement
-      .force('collision', d3Force.forceCollide().radius(nodeSize).strength(collisionStrength)) // Collision standard
-      .force('link', d3Force.forceLink(linksData)
+      .force('charge', forceManyBody().strength(chargeStrength)) // Force de répulsion standard
+      .force('center', forceCenter().strength(centerStrength * 0.5)) // Force de centrage réduite pour permettre plus d'étalement
+      .force('collision', forceCollide().radius(nodeSize).strength(collisionStrength)) // Collision standard
+      .force('link', forceLink(linksData)
         .distance(linkDistance)
         .strength(linkStrength));
     

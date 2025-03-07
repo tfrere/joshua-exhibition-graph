@@ -1,20 +1,6 @@
 {
-  "name": "joshua-exhibition-graph",
-  "version": "1.0.0",
-  "description": "Application 3D interactive pour l'exposition Joshua",
-  "scripts": {
-    "client:install": "cd client && npm install --legacy-peer-deps",
-    "client:build": "cd client && npm run build",
-    "server:install": "cd server && npm install",
-    "server:build": "cd server && npm run build",
-    "build": "npm install && npm run client:install && npm run client:build && npm run server:install && npm run server:build",
-    "start": "cd server && npm start"
-  },
   "dependencies": {
     "d3": "^7.9.0",
     "d3-force": "^3.0.0"
-  },
-  "engines": {
-    "node": "20.x"
   }
 }

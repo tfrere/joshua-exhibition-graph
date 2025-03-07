@@ -2,8 +2,6 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 const ALLOWED_ORIGINS =
@@ -19,35 +17,6 @@ app.use(
     credentials: true,
   })
 );
-
-// Configuration pour servir les fichiers statiques du client en production
-if (process.env.NODE_ENV === "production") {
-  // Obtenir le chemin du répertoire courant en ESM
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  
-  // Chemin vers les fichiers statiques du client (correspond à outDir dans vite.config.js)
-  const staticPath = path.join(__dirname, "../client");
-  
-  // Configurer les en-têtes de sécurité pour permettre l'exécution d'évaluations et autres ressources
-  app.use((req, res, next) => {
-    res.setHeader(
-      "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-eval'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' wss: ws:;"
-    );
-    next();
-  });
-  
-  // Servir les fichiers statiques
-  app.use(express.static(staticPath));
-  
-  // Pour SPA, rediriger toutes les routes non-API vers index.html
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(staticPath, "index.html"));
-  });
-  
-  console.log(`Servir les fichiers statiques depuis ${staticPath}`);
-}
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
