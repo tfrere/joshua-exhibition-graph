@@ -9,7 +9,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      // Si nécessaire, configurez des options spécifiques de build ici
+      external: ['d3-force']
     }
   }
 })
