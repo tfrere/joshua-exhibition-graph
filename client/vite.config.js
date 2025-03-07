@@ -19,7 +19,8 @@ export default defineConfig(({ mode }) => ({
       ? resolve(__dirname, '../server/dist/client') 
       : 'dist',
     emptyOutDir: true,
-    sourcemap: true
+    sourcemap: true,
+    // Ne pas externaliser d3-force pour qu'il soit inclus dans le bundle
   },
   server: {
     headers: {

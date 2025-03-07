@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Application 3D interactive pour l'exposition Joshua",
   "scripts": {
-    "client:install": "cd client && npm install",
+    "client:install": "cd client && npm install --legacy-peer-deps",
     "client:build": "cd client && npm run build",
     "server:install": "cd server && npm install",
     "server:build": "cd server && npm run build",
-    "build": "npm run client:install && npm run client:build && npm run server:install && npm run server:build",
+    "build": "npm install && npm run client:install && npm run client:build && npm run server:install && npm run server:build",
     "start": "cd server && npm start"
   },
   "dependencies": {
