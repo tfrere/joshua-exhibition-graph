@@ -39,7 +39,8 @@ export function DataProvider({ children }) {
             includeSourceNodes: true,
           },
         });
-        console.log("Données du graphe chargées:", data);
+        // console.log("Données du graphe chargées:", data);
+        console.log("[CYCLE DE VIE] Données du graphe chargées depuis le serveur");
 
         if (data.nodes.length === 0) {
           throw new Error("Aucun nœud trouvé dans les données chargées");
@@ -47,7 +48,8 @@ export function DataProvider({ children }) {
 
         setGraphData(data);
       } catch (err) {
-        console.error("Erreur lors du chargement des données du graphe:", err);
+        // console.error("Erreur lors du chargement des données du graphe:", err);
+        console.log("[CYCLE DE VIE] Erreur lors du chargement des données du graphe:", err.message);
         setGraphError(err.message);
       } finally {
         setIsLoadingGraph(false);
@@ -97,13 +99,15 @@ export function DataProvider({ children }) {
           }
         });
 
-        console.log(
-          `Posts chargés: ${postsCount} posts de ${characterCount} personnages`
-        );
+        // console.log(
+        //  `Posts chargés: ${postsCount} posts de ${characterCount} personnages`
+        // );
+        console.log(`[CYCLE DE VIE] Posts chargés: ${postsCount} posts de ${characterCount} personnages`);
 
         setPostsData(allPosts);
       } catch (err) {
-        console.error("Erreur lors du chargement des posts:", err);
+        // console.error("Erreur lors du chargement des posts:", err);
+        console.log("[CYCLE DE VIE] Erreur lors du chargement des posts:", err.message);
         setPostsError(err.message);
       } finally {
         setIsLoadingPosts(false);
@@ -125,17 +129,19 @@ export function DataProvider({ children }) {
     (options = {}) => {
       try {
         if (isLoadingGraph || isLoadingPosts) {
-          console.warn(
-            "Impossible de mettre à jour les positions des posts pendant le chargement des données"
-          );
+          // console.warn(
+          //  "Impossible de mettre à jour les positions des posts pendant le chargement des données"
+          // );
+          console.log("[CYCLE DE VIE] Impossible de mettre à jour les positions - Données en cours de chargement");
           return false;
         }
 
         // Si on n'a pas de customNodes et pas de nœuds dans le graphe, impossible de mettre à jour
         if (!options.customNodes && graphData.nodes.length === 0) {
-          console.error(
-            "Aucun nœud dans le graphe pour mettre à jour les positions des posts"
-          );
+          // console.error(
+          //  "Aucun nœud dans le graphe pour mettre à jour les positions des posts"
+          // );
+          console.log("[CYCLE DE VIE] Impossible de mettre à jour les positions - Aucun nœud disponible");
           return false;
         }
 
@@ -151,13 +157,15 @@ export function DataProvider({ children }) {
 
         // Log pour le débogage
         if (options.customNodes) {
-          console.log(
-            `Mise à jour des positions avec ${options.customNodes.length} nœuds personnalisés`
-          );
+          // console.log(
+          //  `Mise à jour des positions avec ${options.customNodes.length} nœuds personnalisés`
+          // );
+          console.log(`[CYCLE DE VIE] Mise à jour des positions avec ${options.customNodes.length} nœuds personnalisés`);
         } else {
-          console.log(
-            `Mise à jour des positions avec ${graphData.nodes.length} nœuds du graphe`
-          );
+          // console.log(
+          //  `Mise à jour des positions avec ${graphData.nodes.length} nœuds du graphe`
+          // );
+          console.log(`[CYCLE DE VIE] Mise à jour des positions avec ${graphData.nodes.length} nœuds du graphe`);
         }
 
         // Mettre à jour les positions des posts en utilisant l'utilitaire
@@ -168,13 +176,15 @@ export function DataProvider({ children }) {
           setPostsData
         );
 
-        console.log(`Positions de ${updatedPosts.length} posts mises à jour`);
+        // console.log(`Positions de ${updatedPosts.length} posts mises à jour`);
+        console.log(`[CYCLE DE VIE] Positions de ${updatedPosts.length} posts mises à jour avec succès`);
         return true;
       } catch (err) {
-        console.error(
-          "Erreur lors de la mise à jour des positions des posts:",
-          err
-        );
+        // console.error(
+        //  "Erreur lors de la mise à jour des positions des posts:",
+        //  err
+        // );
+        console.log("[CYCLE DE VIE] Erreur lors de la mise à jour des positions des posts:", err.message);
         setPostsError(err.message);
         return false;
       }

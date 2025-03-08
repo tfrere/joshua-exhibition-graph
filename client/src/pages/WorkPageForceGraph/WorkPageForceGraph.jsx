@@ -32,7 +32,8 @@ const WorkPage = () => {
     isLoadingPosts,
     updatePostsPositions,
     graphData,
-    postsData,
+    // postsData non utilisé, commenté pour éviter l'erreur de linter
+    // postsData,
   } = useData();
   const graphInstanceRef = useRef(null);
   const positionsUpdatedOnceRef = useRef(false);
@@ -40,10 +41,27 @@ const WorkPage = () => {
   // Utiliser useCallback pour stabiliser cette fonction
   const getGraphRef = useCallback((instance) => {
     if (instance) {
-      console.log("Référence du graphe obtenue");
+      // console.log("Référence du graphe obtenue");
+      console.log("[CYCLE DE VIE] Référence du graphe obtenue - Instance CustomForceGraph montée");
       graphInstanceRef.current = instance;
     }
   }, []);
+
+  // Log du cycle de vie du composant
+  useEffect(() => {
+    console.log("[CYCLE DE VIE] WorkPageForceGraph monté - Démarrage de l'application");
+    
+    return () => {
+      console.log("[CYCLE DE VIE] WorkPageForceGraph démonté - Nettoyage de l'application");
+    };
+  }, []);
+
+  // Observer les changements dans graphData
+  useEffect(() => {
+    if (graphData && graphData.nodes && graphData.nodes.length > 0) {
+      console.log(`[CYCLE DE VIE] Données du graphe reçues: ${graphData.nodes.length} nœuds`);
+    }
+  }, [graphData]);
 
   // Configuration par défaut pour la spatialisation des posts
   const DEFAULT_POSTS_SPATIAL_CONFIG = {
@@ -86,159 +104,16 @@ const WorkPage = () => {
 
   // Fonction pour exporter les données spatialisées
   const exportSpatializedData = () => {
-    console.log("Début de l'exportation...");
-    console.log("État actuel des données:");
-    console.log("- graphData:", graphData);
-    console.log("- postsData:", postsData);
-    console.log("- graphInstance:", graphInstanceRef.current);
-
-    // Vérifier si les données sont disponibles
-    const hasGraphData =
-      graphData && graphData.nodes && graphData.nodes.length > 0;
-    const hasPostsData =
-      postsData && Array.isArray(postsData) && postsData.length > 0;
-
-    if (!hasGraphData) {
-      console.warn("Aucune donnée de graphe à exporter");
-      alert(
-        "Attention: Aucune donnée de graphe disponible. Les données exportées seront vides."
-      );
+    if (!graphInstanceRef.current) {
+      // console.log("Référence du graphe non disponible");
+      console.log("[CYCLE DE VIE] Tentative d'export mais référence du graphe non disponible");
+      return;
     }
 
-    if (!hasPostsData) {
-      console.warn("Aucune donnée de posts à exporter");
-      alert(
-        "Attention: Aucune donnée de posts disponible. Les données exportées seront vides."
-      );
-    }
-
-    // Procéder à l'exportation même si les données sont vides (créer des fichiers vides)
-    try {
-      console.log("Démarrage de l'export...");
-
-      // Création de l'export des nœuds et liens
-      // ------------------------------------------------
-      let nodesWithPositions = [];
-      let links = [];
-
-      // 1. Tenter d'utiliser la référence du graphe si disponible
-      const useGraphRef =
-        graphInstanceRef.current &&
-        typeof graphInstanceRef.current.getNodesPositions === "function";
-
-      if (useGraphRef) {
-        console.log("Utilisation de la référence du graphe pour l'exportation");
-        try {
-          // Récupérer les positions des noeuds directement depuis le graphe
-          nodesWithPositions = graphInstanceRef.current.getNodesPositions();
-          console.log(
-            `Récupéré ${
-              nodesWithPositions?.length || 0
-            } noeuds depuis la référence du graphe`
-          );
-        } catch (err) {
-          console.error("Erreur lors de la récupération des noeuds:", err);
-          nodesWithPositions = [];
-        }
-      }
-
-      // 2. Si les noeuds sont vides, utiliser la méthode de secours avec les données du contexte
-      if (!nodesWithPositions || nodesWithPositions.length === 0) {
-        console.log("Méthode de secours pour les noeuds");
-
-        if (hasGraphData) {
-          nodesWithPositions = graphData.nodes.map((node) => ({
-            id: node.id,
-            group: node.group || 0,
-            name: node.name || "",
-            x: node.coordinates?.x ?? node.x ?? 0,
-            y: node.coordinates?.y ?? node.y ?? 0,
-            z: node.coordinates?.z ?? node.z ?? 0,
-            value: node.value || 1,
-          }));
-          console.log(
-            `Récupéré ${nodesWithPositions.length} noeuds depuis graphData`
-          );
-        }
-      }
-
-      // 3. Préparer les liens depuis graphData
-      if (graphData && graphData.links && graphData.links.length > 0) {
-        links = graphData.links.map((link) => {
-          // Extraction des IDs de source et cible
-          const source =
-            typeof link.source === "object" ? link.source.id : link.source;
-          const target =
-            typeof link.target === "object" ? link.target.id : link.target;
-
-          return {
-            source: source,
-            target: target,
-            value: link.value || 1,
-            // Propriétés additionnelles sans le préfixe underscore
-            isDirect: link._isDirect || link.isDirect,
-            relationType: link._relationType || link.relationType,
-            mediaImpact: link._mediaImpact || link.mediaImpact,
-            virality: link._virality || link.virality,
-            mediaCoverage: link._mediaCoverage || link.mediaCoverage,
-            linkType: link._linkType || link.linkType,
-          };
-        });
-        console.log(`Récupéré ${links.length} liens depuis graphData`);
-      } else {
-        console.log("Aucun lien disponible dans graphData");
-      }
-
-      // 4. Exporter le premier fichier (noeuds et liens)
-      const spatializedNodesAndLinks = {
-        nodes: nodesWithPositions || [],
-        links: links || [],
-      };
-
-      console.log(
-        `Export des nœuds: ${nodesWithPositions.length}, liens: ${links.length}`
-      );
-      downloadJSON(
-        spatializedNodesAndLinks,
-        "spatialized_nodes_and_links.data.json"
-      );
-
-      // Création de l'export des posts
-      // ------------------------------------------------
-      let spatializedPosts = [];
-
-      // 5. Préparer les données des posts si disponibles
-      if (hasPostsData) {
-        spatializedPosts = postsData.map((post) => {
-          const coords = post.coordinates || {};
-
-          return {
-            id: post.id,
-            postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
-            slug: post.slug || "",
-            impact: post.impact || 0,
-            x: coords.x || 0,
-            y: coords.y || 0,
-            z: coords.z || 0,
-            // isJoshuaCharacter supprimé
-          };
-        });
-        console.log(`Préparé ${spatializedPosts.length} posts pour l'export`);
-      }
-
-      // 6. Exporter le deuxième fichier (posts)
-      console.log(`Export des posts: ${spatializedPosts.length}`);
-      downloadJSON(spatializedPosts, "spatialized_posts.data.json");
-
-      // 7. Afficher un message de confirmation
-      alert(`Exportation terminée!
-- Noeuds: ${nodesWithPositions.length}
-- Liens: ${links.length} 
-- Posts: ${spatializedPosts.length}`);
-    } catch (error) {
-      console.error("Erreur pendant l'exportation:", error);
-      alert(`Erreur pendant l'exportation: ${error.message}`);
-    }
+    // console.log("Exportation des positions spatiales des nœuds");
+    console.log("[CYCLE DE VIE] Exportation des positions spatiales des nœuds");
+    const spatializedNodes = graphInstanceRef.current.getNodesPositions();
+    downloadJSON(spatializedNodes, "exported-graph-positions.json");
   };
 
   // Configurer tous les contrôles avec Leva en dehors de la fonction de render
@@ -294,7 +169,7 @@ const WorkPage = () => {
           updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
           positionsUpdatedOnceRef.current = true;
         }
-      }, 5000); // Attendre 5 secondes pour être sûr que le graphe est rendu
+      }, 10000); // Attendre 5 secondes pour être sûr que le graphe est rendu
 
       return () => clearTimeout(timer);
     }
@@ -386,37 +261,29 @@ const WorkPage = () => {
         <CustomForceGraph
           ref={getGraphRef}
           nodeSize={5}
-          linkWidth={0.1}
-          chargeStrength={-100}
-          centerStrength={0.3}
-          linkStrength={0.5}
-          linkDistance={30}
-          simulationSpeed={0.8}
-          collisionStrength={1}
-          cooldownTime={15000}
+          chargeStrength={-150}
+          centerStrength={1}
+          linkStrength={0.7}
+          linkDistance={40}
+          simulationSpeed={0.5}
+          collisionStrength={0.01}
+          cooldownTime={8000}
           onGraphStabilized={() => {
-            console.log(
-              "Le graphe est stabilisé, mise à jour des positions des posts..."
-            );
+            console.log("[CYCLE DE VIE] Le graphe est stabilisé, mise à jour des positions des posts");
+            
             // Mise à jour automatique des positions lorsque le graphe est stabilisé
             if (!positionsUpdatedOnceRef.current) {
-              console.log("Récupération des positions des nœuds depuis graphInstanceRef.current");
+              console.log("[CYCLE DE VIE] Récupération des positions finales des nœuds pour les posts");
               const currentNodes = graphInstanceRef.current.getNodesPositions();
-              console.log(`Récupéré ${currentNodes.length} nœuds avec leurs positions`);
+              console.log(`[CYCLE DE VIE] ${currentNodes.length} nœuds récupérés avec leurs positions finales`);
               
               // Vérifier si les nœuds ont les propriétés requises pour la spatialisation
               if (currentNodes.length > 0) {
                 const sampleNode = currentNodes[0];
-                console.log("Exemple de nœud récupéré:", {
-                  id: sampleNode.id,
-                  slug: sampleNode.slug,
-                  type: sampleNode.type,
-                  isJoshua: sampleNode.isJoshua,
-                  position: [sampleNode.x, sampleNode.y, sampleNode.z]
-                });
+                console.log(`[CYCLE DE VIE] Position finale du premier nœud: (${sampleNode.x.toFixed(2)}, ${sampleNode.y.toFixed(2)}, ${sampleNode.z.toFixed(2)})`);
               }
               
-              console.log("Appel de updatePostsPositions avec les nœuds récupérés");
+              console.log("[CYCLE DE VIE] Mise à jour des positions des posts avec les positions finales des nœuds");
               updatePostsPositions({
                 ...DEFAULT_POSTS_SPATIAL_CONFIG,
                 customNodes: currentNodes,

@@ -14,9 +14,6 @@ import {
   forceLink,
   forceCenter,
   forceCollide,
-  forceX,
-  forceY,
-  forceZ,
 } from "d3-force-3d";
 import { useData } from "../../../contexts/DataContext";
 import { Html } from "@react-three/drei";
@@ -37,7 +34,7 @@ const CustomForceGraph = forwardRef(
       linkDistance = 40,
       simulationSpeed = 0.5,
       collisionStrength = 5,
-      cooldownTime = 15000, // Temps après lequel la simulation se stabilise (ms)
+      cooldownTime = 8000, // Temps après lequel la simulation se stabilise (ms)
       onGraphStabilized = () => {},
     },
     ref
@@ -50,6 +47,41 @@ const CustomForceGraph = forwardRef(
     const [hoverInfo, setHoverInfo] = useState(null);
     const [isSimulationRunning, setIsSimulationRunning] = useState(true);
 
+    // Référence pour suivre si le rendu initial a été effectué (tous les nœuds à 0,0,0)
+    const initialRenderDoneRef = useRef(false);
+    // Facteur de transition pour un déploiement progressif
+    const transitionFactorRef = useRef(0);
+    // Temps de démarrage de la transition
+    const transitionStartTimeRef = useRef(0);
+    // Durée totale de la transition en millisecondes
+    const TRANSITION_DURATION = 1500;
+
+    // Fonction déterministe pour générer des coordonnées initiales basées sur l'ID du nœud
+    const generateDeterministicPosition = (nodeId, axis) => {
+      // Si nodeId est undefined ou null, retourner 0
+      if (!nodeId) return 0;
+      
+      // Convertir nodeId en chaîne de caractères
+      const idString = String(nodeId);
+      
+      // Initialiser un nombre hash
+      let hash = 0;
+      
+      // Utiliser des valeurs de départ différentes pour chaque axe
+      const seedOffset = axis === 'x' ? 1 : axis === 'y' ? 2 : 3;
+      
+      // Algorithme simple de hachage
+      for (let i = 0; i < idString.length; i++) {
+        const char = idString.charCodeAt(i);
+        // Utiliser une multiplication différente selon l'axe pour éviter la corrélation
+        hash = ((hash << 5) - hash + char * seedOffset) | 0;
+      }
+      
+      // Convertir le hash en nombre entre -1 et 1
+      // Utiliser modulo 1000 puis division pour normaliser entre -1 et 1
+      return (hash % 1000) / 500 - 1;
+    };
+
     // Préparer les données adaptées à d3-force - cette partie n'est exécutée que lorsque graphData change
     const { nodesData, linksData } = useMemo(() => {
       if (!graphData || !graphData.nodes || !graphData.links) {
@@ -61,14 +93,23 @@ const CustomForceGraph = forwardRef(
         // S'assurer que chaque nœud a un ID unique (utilisé pour les liens)
         const nodeId = node.id || `generated_${index}`;
         
+        // Générer des positions déterministes pour chaque nœud
+        const initialX = generateDeterministicPosition(nodeId, 'x');
+        const initialY = generateDeterministicPosition(nodeId, 'y');
+        const initialZ = generateDeterministicPosition(nodeId, 'z');
+        
         return {
           ...node, // Copier toutes les propriétés originales (important pour préserver isJoshua, type, etc.)
           // Assurer qu'il y a toujours un ID
           id: nodeId,
-          // Utiliser notre fonction déterministe pour les positions initiales
-          x: 0,
-          y: 0,
-          z: 0,
+          // Utiliser les positions déterministes générées
+          x: initialX,
+          y: initialY,
+          z: initialZ,
+          // Conserver les vélocités à 0 au démarrage
+          vx: 0,
+          vy: 0,
+          vz: 0,
           // Stocker les positions originales si elles existaient
           originalX: node.x,
           originalY: node.y,
@@ -150,9 +191,7 @@ const CustomForceGraph = forwardRef(
         })
         .filter((link) => link !== null);
 
-      console.log(
-        `Graphe préparé avec ${nodesData.length} nœuds et ${linksData.length} liens`
-      );
+      console.log("[CYCLE DE VIE] Préparation des données du graphe - Positions initialisées de manière déterministe");
       return { nodesData, linksData };
     }, [graphData]);
 
@@ -160,7 +199,8 @@ const CustomForceGraph = forwardRef(
     useImperativeHandle(ref, () => ({
       // Récupérer les positions actuelles des nœuds
       getNodesPositions: () => {
-        console.log("CustomForceGraph: Retourne les positions des nœuds pour spatialisation");
+        // console.log("CustomForceGraph: Retourne les positions des nœuds pour spatialisation");
+        console.log("[CYCLE DE VIE] Demande des positions actuelles des nœuds via la ref");
         return nodesData.map((node) => ({
           // Propriétés utilisées par ForceGraph
           id: node.id,
@@ -191,7 +231,8 @@ const CustomForceGraph = forwardRef(
           isStabilized.current = true;
           setIsSimulationRunning(false);
           onGraphStabilized();
-          console.log("Simulation stabilisée manuellement");
+          // console.log("Simulation stabilisée manuellement");
+          console.log("[CYCLE DE VIE] Stabilisation manuelle de la simulation");
         }
       },
     }));
@@ -200,18 +241,45 @@ const CustomForceGraph = forwardRef(
     useEffect(() => {
       if (isLoadingGraph || nodesData.length === 0) return;
 
-      console.log("Initialisation de la simulation 3D");
+      console.log("[CYCLE DE VIE] Initialisation de la simulation 3D - Création des forces");
 
-      // Réinitialiser le statut de stabilisation
+      // Donner une petite impulsion aléatoire initiale aux nœuds pour démarrer le mouvement
+      // mais seulement après un délai pour permettre le rendu initial à l'origine
+      setTimeout(() => {
+        if (!isStabilized.current) {
+          console.log("[CYCLE DE VIE] Application des impulsions initiales aux nœuds après délai");
+          
+          // Impulsions initiales
+          nodesData.forEach(node => {
+            // Laisser les positions telles qu'elles ont été initialisées de manière déterministe
+            // Ajouter de petites impulsions pour démarrer le mouvement
+            node.vx = (Math.random() - 0.5) * 0.05;
+            node.vy = (Math.random() - 0.5) * 0.05;
+            node.vz = (Math.random() - 0.5) * 0.05;
+          });
+          
+          // Maintenant marquer que le rendu initial est terminé et démarrer la transition
+          console.log("[CYCLE DE VIE] Début de la transition d'origine vers positions calculées");
+          initialRenderDoneRef.current = true;
+          transitionStartTimeRef.current = Date.now();
+        }
+      }, 100);
+
+      // Réinitialiser le statut de stabilisation et de rendu initial
       isStabilized.current = false;
+      initialRenderDoneRef.current = false;
+      transitionFactorRef.current = 0;
       setIsSimulationRunning(true);
 
-      // Créer une nouvelle simulation
+      // Positions déjà initialisées de manière déterministe lors de la création des nodesData
+      console.log("[CYCLE DE VIE] Positions des nœuds initialisées de manière déterministe");
+      
+      // Créer une nouvelle simulation avec des forces standard
       const simulation = forceSimulation(nodesData, 3)
-        .alphaDecay(0.006) // Stabilisation plus lente pour une meilleure distribution 3D
-        .velocityDecay(0.3) // Friction réduite pour permettre plus de mouvement
+        .alphaDecay(0.003) // Stabilisation plus lente pour une meilleure distribution 3D
+        .velocityDecay(0.9) // Friction modérée pour un bon équilibre
         .force("charge", forceManyBody().strength(chargeStrength)) // Force de répulsion standard
-        .force("center", forceCenter(0, 0, 0).strength(centerStrength)) // Force de centrage réduite pour permettre plus d'étalement
+        .force("center", forceCenter(0, 0, 0).strength(centerStrength)) // Force de centrage 
         .force(
           "collision",
           forceCollide().radius(nodeSize).strength(collisionStrength)
@@ -219,7 +287,7 @@ const CustomForceGraph = forwardRef(
         .force(
           "link",
           forceLink(linksData).distance(linkDistance).strength(linkStrength)
-        );
+        ); // Liens standard
 
       // Référence pour éviter que onGraphStabilized soit appelé plusieurs fois
       const onStabilizeCalledRef = { called: false };
@@ -230,7 +298,6 @@ const CustomForceGraph = forwardRef(
         let totalMovement = 0;
 
         // La simulation 3D met automatiquement à jour les positions x, y, z
-        // Nous n'avons plus besoin de calculer manuellement les forces 3D
         nodesData.forEach(node => {
           // Limiter la vitesse maximale
           const maxVelocity = 5 * simulationSpeed;
@@ -244,7 +311,7 @@ const CustomForceGraph = forwardRef(
 
         // Détecter la stabilisation basée sur le mouvement total
         if (totalMovement < 0.5 && !isStabilized.current) {
-          console.log("Graphe stabilisé naturellement (mouvement < 0.5)");
+          console.log("[CYCLE DE VIE] Stabilisation naturelle du graphe (mouvement < 0.5)");
           isStabilized.current = true;
           setIsSimulationRunning(false);
 
@@ -270,9 +337,10 @@ const CustomForceGraph = forwardRef(
 
           // N'appeler onGraphStabilized qu'une seule fois
           if (!onStabilizeCalledRef.called) {
-            console.log(
-              "Simulation stabilisée après cooldown, appel du callback"
-            );
+            // console.log(
+            //   "Simulation stabilisée après cooldown, appel du callback"
+            // );
+            console.log("[CYCLE DE VIE] Stabilisation après cooldown");
             onGraphStabilized();
             onStabilizeCalledRef.called = true;
           }
@@ -288,9 +356,10 @@ const CustomForceGraph = forwardRef(
 
           // N'appeler onGraphStabilized qu'une seule fois
           if (!onStabilizeCalledRef.called) {
-            console.log(
-              "Simulation stabilisée naturellement, appel du callback"
-            );
+            // console.log(
+            //   "Simulation stabilisée naturellement, appel du callback"
+            // );
+            console.log("[CYCLE DE VIE] Stabilisation naturelle (alpha < 0.001)");
             onGraphStabilized();
             onStabilizeCalledRef.called = true;
           }
@@ -310,9 +379,43 @@ const CustomForceGraph = forwardRef(
     useFrame(() => {
       if (!nodesRef.current || !linksRef.current) return;
 
+      // Ajout d'un log pour surveiller les tick de simulation au début de la transition
+      const isStartingTransition = initialRenderDoneRef.current && transitionFactorRef.current === 0;
+      if (isStartingTransition && isSimulationRunning && simulationRef.current) {
+        console.log("[CYCLE DE VIE] Premier tick de simulation après le début de la transition");
+        
+        // Vérifier si les positions des nœuds dans la simulation ne sont pas à l'origine
+        let maxPositionValue = 0;
+        nodesData.forEach(node => {
+          const posValue = Math.max(Math.abs(node.x), Math.abs(node.y), Math.abs(node.z));
+          maxPositionValue = Math.max(maxPositionValue, posValue);
+        });
+        
+        if (maxPositionValue > 1) {
+          console.log(`[CYCLE DE VIE] PROBLÈME DÉTECTÉ: Positions des nœuds déjà loin de l'origine (max: ${maxPositionValue.toFixed(2)})`);
+        }
+      }
+
       // Appliquer un tick de simulation si elle est en cours
       if (isSimulationRunning && simulationRef.current) {
         simulationRef.current.tick();
+      }
+
+      // Mise à jour du facteur de transition si la transition est en cours
+      if (initialRenderDoneRef.current && transitionFactorRef.current < 1) {
+        const elapsed = Date.now() - transitionStartTimeRef.current;
+        const oldFactor = transitionFactorRef.current;
+        transitionFactorRef.current = Math.min(elapsed / TRANSITION_DURATION, 1);
+        
+        // Détecter les changements significatifs dans le facteur de transition
+        if (Math.floor(oldFactor * 10) !== Math.floor(transitionFactorRef.current * 10)) {
+          console.log(`[CYCLE DE VIE] Transition à ${Math.floor(transitionFactorRef.current * 100)}%`);
+        }
+        
+        // Détecter la fin de la transition
+        if (oldFactor < 1 && transitionFactorRef.current === 1) {
+          console.log("[CYCLE DE VIE] Transition terminée - Nœuds déployés à leurs positions finales");
+        }
       }
 
       // Mettre à jour les positions des objets THREE.js pour les nœuds
@@ -320,45 +423,63 @@ const CustomForceGraph = forwardRef(
       for (let i = 0; i < nodeObjects.length; i++) {
         const node = i < nodesData.length ? nodesData[i] : null;
         if (node && nodeObjects[i]) {
-          // Mettre à jour la position visuelle du nœud
-          nodeObjects[i].position.set(node.x, node.y, node.z);
+          if (!initialRenderDoneRef.current) {
+            // Avant le début de la transition, tous les nœuds sont à l'origine
+            nodeObjects[i].position.set(0, 0, 0);
+          } else {
+            // Pendant la transition, interpoler entre l'origine et la position calculée
+            const factor = transitionFactorRef.current;
+            
+            // CORRECTION POUR ÉVITER LE SAUT: Forcer les positions à 0 au tout début de la transition
+            const useRealPositions = factor > 0.01; // N'utiliser les vraies positions qu'après 1% de la transition
+            
+            const posX = useRealPositions ? node.x * factor : 0;
+            const posY = useRealPositions ? node.y * factor : 0;
+            const posZ = useRealPositions ? node.z * factor : 0;
+            
+            nodeObjects[i].position.set(posX, posY, posZ);
+          }
         }
       }
 
-      // Mettre à jour les positions des liens - PARTIE CRITIQUE
+      // Même correction pour les liens
       const linkObjects = linksRef.current.children;
-
-      // Pour chaque lien, recalculer sa position et son orientation
       for (let i = 0; i < linkObjects.length; i++) {
-        if (i >= linksData.length) continue; // Sécurité pour éviter les erreurs d'index
+        if (i >= linksData.length) continue;
 
         const link = linksData[i];
         const linkObject = linkObjects[i];
-
-        // Vérifier que le lien et l'objet existent
         if (!link || !linkObject) continue;
 
-        // Dans notre nouvelle structure, source et target sont déjà des objets nœuds complets
         const sourceNode = link.source;
         const targetNode = link.target;
-
-        // Vérifier que les nœuds existent et ont des positions
         if (!sourceNode || !targetNode) continue;
 
-        // Mettre à jour la position du lien avec les coordonnées actuelles des nœuds
-        updateSimpleLinkPosition(
-          linkObject,
-          new THREE.Vector3(
-            sourceNode.x || 0,
-            sourceNode.y || 0,
-            sourceNode.z || 0
-          ),
-          new THREE.Vector3(
-            targetNode.x || 0,
-            targetNode.y || 0,
-            targetNode.z || 0
-          )
-        );
+        if (!initialRenderDoneRef.current) {
+          updateSimpleLinkPosition(
+            linkObject,
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, 0)
+          );
+        } else {
+          const factor = transitionFactorRef.current;
+          // CORRECTION POUR ÉVITER LE SAUT: Forcer les positions à 0 au tout début de la transition
+          const useRealPositions = factor > 0.01; // N'utiliser les vraies positions qu'après 1% de la transition
+          
+          updateSimpleLinkPosition(
+            linkObject,
+            new THREE.Vector3(
+              useRealPositions ? sourceNode.x * factor : 0,
+              useRealPositions ? sourceNode.y * factor : 0,
+              useRealPositions ? sourceNode.z * factor : 0
+            ),
+            new THREE.Vector3(
+              useRealPositions ? targetNode.x * factor : 0,
+              useRealPositions ? targetNode.y * factor : 0,
+              useRealPositions ? targetNode.z * factor : 0
+            )
+          );
+        }
       }
     });
 
@@ -430,7 +551,8 @@ const CustomForceGraph = forwardRef(
           linkObject.userData.line.geometry.attributes.position.needsUpdate = true;
         }
       } catch (error) {
-        console.error("Erreur de mise à jour de lien:", error);
+        // console.error("Erreur de mise à jour de lien:", error);
+        console.log("[CYCLE DE VIE] Erreur lors de la mise à jour d'un lien", error.message);
       }
     };
 
@@ -458,21 +580,22 @@ const CustomForceGraph = forwardRef(
             const targetNode = link.target;
 
             // Obtenir les positions des nœuds pour la création du lien
+            // Au premier rendu, forcer les positions à 0,0,0 pour que les liens partent de l'origine
             const sourcePosition = sourceNode
               ? new THREE.Vector3(
-                  sourceNode.x || 0,
-                  sourceNode.y || 0,
-                  sourceNode.z || 0
+                  !isSimulationRunning || isStabilized.current ? sourceNode.x || 0 : 0,
+                  !isSimulationRunning || isStabilized.current ? sourceNode.y || 0 : 0,
+                  !isSimulationRunning || isStabilized.current ? sourceNode.z || 0 : 0
                 )
               : new THREE.Vector3(0, 0, 0);
 
             const targetPosition = targetNode
               ? new THREE.Vector3(
-                  targetNode.x || 0,
-                  targetNode.y || 0,
-                  targetNode.z || 0
+                  !isSimulationRunning || isStabilized.current ? targetNode.x || 0 : 0,
+                  !isSimulationRunning || isStabilized.current ? targetNode.y || 0 : 0,
+                  !isSimulationRunning || isStabilized.current ? targetNode.z || 0 : 0
                 )
-              : new THREE.Vector3(0, 10, 0);
+              : new THREE.Vector3(0, 0, 0);
 
             // Créer l'objet représentant le lien en utilisant notre fonction simplifiée
             const linkObj = createSimpleLinkObject(
@@ -490,6 +613,9 @@ const CustomForceGraph = forwardRef(
           {nodesData.map((node, i) => {
             // Créer l'objet nœud en utilisant directement la fonction importée
             const nodeObj = createNodeObject(node);
+            
+            // Forcer la position initiale à l'origine (0,0,0)
+            nodeObj.position.set(0, 0, 0);
 
             // Ajouter les métadonnées nécessaires au tracking
             nodeObj.userData = { ...nodeObj.userData, node, index: i };
@@ -498,6 +624,7 @@ const CustomForceGraph = forwardRef(
               <primitive
                 key={`node-${i}`}
                 object={nodeObj}
+                position={[0, 0, 0]}
                 onPointerOver={(e) => handleNodeHover(e, node)}
                 onPointerOut={handleNodeLeave}
               />
