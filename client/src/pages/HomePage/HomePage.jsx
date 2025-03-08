@@ -2,7 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, SpotLight, Stats } from "@react-three/drei";
 import { useState } from "react";
 import { useControls, folder } from "leva";
-import PostsRenderer from "../../components/PostsRenderer";
+import PostsRenderer from "../WorkPage/components/PostRenderer/PostsRenderer.jsx";
 
 const HomePage = () => {
   const [gamepadEnabled, setGamepadEnabled] = useState(false);

@@ -1,7 +1,7 @@
 import { useRef, useMemo, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useData } from "../contexts/DataContext";
+import { useData } from "../../../../contexts/DataContext";
 import { useControls, folder } from "leva";
 
 // Type de données pour les posts (pour référence)

@@ -2,15 +2,14 @@ import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useRef, useEffect } from "react";
 import { useControls, folder, button } from "leva";
-import { ForceGraphUI } from "./components/ForceGraph";
-import CustomForceGraph from "./components/CustomForceGraph";
-import ForceGraph from "./components/ForceGraph";
-import PostsRenderer from "../../components/PostsRenderer";
-import { useData } from "../../contexts/DataContext";
+import { ForceGraphUI } from "./components/ForceGraph/ForceGraph.jsx";
+import ForceGraph from "./components/ForceGraph/ForceGraph.jsx";
+import CustomForceGraph from "./components/CustomForceGraph.jsx";
+import PostsRenderer from "./components/PostRenderer/PostsRenderer.jsx";
+import { useData } from "../../contexts/DataContext.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
-import { DEFAULT_FLIGHT_CONFIG } from "./utils/advancedCameraControls";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 const WorkPage = () => {
@@ -27,19 +26,30 @@ const WorkPage = () => {
     minDistance: 40,
     verticalSpread: 1.5, // Augmentation pour une meilleure distribution verticale
     horizontalSpread: 1.5,
-    // Paramètres de l'algorithme Voronoi
+
+    // === PASSE 1: VORONOI (bvoronoi) ===
+    // Cette passe applique une dilatation des positions autour des nœuds
+    // centraux avec un effet voronoi, qui crée des clusters distincts
+    useVoronoi: true, // Active/désactive la passe bvoronoi
     perlinScale: 0.05,
     perlinAmplitude: 12, // Augmenté pour plus de variation 3D
     dilatationFactor: 1.8,
+
     // Coloration des posts
     useUniqueColorsPerCharacter: true,
-    // Paramètres du flowfield
-    useFlowfield: true,
+
+    // === PASSE 2: FLOWFIELD ===
+    // Cette passe anime les positions des posts à travers un champ de vecteurs
+    // pour créer des motifs organiques et naturels
+    useFlowfield: true, // Active/désactive la passe flowfield
     flowFrames: 100,
     flowScale: 0.02,
     flowStrength: 5,
-    // Paramètres de normalisation sphérique
-    normalizeInSphere: true,
+
+    // === PASSE 3: SPHERIZATION ===
+    // Cette passe normalise les positions dans une sphère pour assurer
+    // une distribution homogène et contenir l'ensemble dans un volume défini
+    normalizeInSphere: false, // Active/désactive la passe spherization
     sphereRadius: 250,
     volumeExponent: 2 / 3, // 1/3 donne une distribution uniforme dans le volume
     minRadius: 0, // Distance minimum depuis le centre (10% du rayon)
@@ -50,78 +60,6 @@ const WorkPage = () => {
   const { debug, backgroundColor, cameraConfig } = useControls({
     debug: true,
     backgroundColor: "#000000",
-  });
-
-  // Ajouter des contrôles pour le graphe dans le panneau Leva
-  const graphControls = useControls({
-    "Contrôles du Graphe": folder({
-      "Paramètres 3D": folder({
-        chargeStrength: {
-          value: -100,
-          min: -300,
-          max: -10,
-          step: 10,
-          label: "Force de répulsion",
-        },
-        linkDistance: {
-          value: 60,
-          min: 10,
-          max: 150,
-          step: 5,
-          label: "Distance des liens",
-        },
-        zStrength: {
-          value: 2.0,
-          min: 0,
-          max: 5,
-          step: 0.1,
-          label: "Force Z (3D)",
-        },
-        simulationSpeed: {
-          value: 0.5,
-          min: 0.1,
-          max: 1.0,
-          step: 0.05,
-          label: "Vitesse de simulation",
-        },
-        onChange: () => {
-          if (forceGraphRef.current) {
-            console.log("Mise à jour des paramètres 3D du graphe");
-          }
-        },
-      }),
-      "Stabiliser manuellement": button(() => {
-        if (forceGraphRef.current) {
-          forceGraphRef.current.stabilize();
-          console.log("Graphe stabilisé manuellement");
-        }
-      }),
-      "Mettre à jour les positions après stabilisation": button(() => {
-        // Vérifier que les données ne sont pas en cours de chargement avant de mettre à jour
-        if (isLoadingGraph || isLoadingPosts) {
-          console.warn(
-            "Impossible de mettre à jour les positions : chargement des données en cours"
-          );
-          return;
-        }
-
-        // Vérifier si le graphe est stabilisé
-        if (forceGraphRef.current && forceGraphRef.current.isStabilized()) {
-          console.log(
-            "Mise à jour des positions des posts après stabilisation du graphe"
-          );
-          // Récupérer les positions actuelles des nœuds
-          const currentNodes = forceGraphRef.current.getNodesPositions();
-          updatePostsPositions({
-            ...DEFAULT_POSTS_SPATIAL_CONFIG,
-            // Fournir les positions des nœuds à jour
-            customNodes: currentNodes,
-          });
-        } else {
-          console.warn("Le graphe n'est pas encore stabilisé");
-        }
-      }),
-    }),
   });
 
   // Mettre à jour automatiquement les positions des posts après le chargement des données
@@ -188,39 +126,36 @@ const WorkPage = () => {
         <color attach="background" args={[backgroundColor]} />
         {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
-
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
         <AdvancedCameraController config={cameraConfig} />
-
-        {/* Nouveau composant de graphe personnalisé
-        // <CustomForceGraph
-        //   ref={forceGraphRef}
-        //   nodeSize={5}
-        //   linkWidth={0.5}
-        //   chargeStrength={graphControls.chargeStrength}
-        //   centerStrength={0.05}
-        //   linkStrength={0.7}
-        //   linkDistance={graphControls.linkDistance}
-        //   zStrength={graphControls.zStrength}
-        //   simulationSpeed={graphControls.simulationSpeed}
-        //   collisionStrength={5}
-        //   cooldownTime={10000}
-        //   onGraphStabilized={() => {
-        //     console.log(
-        //       "Le graphe est stabilisé, mise à jour des positions des posts..."
-        //     );
-        //     // Mise à jour automatique des positions lorsque le graphe est stabilisé
-        //     if (!positionsUpdatedOnceRef.current) {
-        //       const currentNodes = forceGraphRef.current.getNodesPositions();
-        //       updatePostsPositions({
-        //         ...DEFAULT_POSTS_SPATIAL_CONFIG,
-        //         customNodes: currentNodes,
-        //       });
-        //       positionsUpdatedOnceRef.current = true;
-        //     }
-        //   }}
-        // /> */}
-        <ForceGraph />
+        <CustomForceGraph
+          ref={forceGraphRef}
+          nodeSize={5}
+          linkWidth={0.5}
+          chargeStrength={1}
+          centerStrength={1}
+          linkStrength={0.7}
+          linkDistance={10}
+          zStrength={1}
+          simulationSpeed={1}
+          collisionStrength={5}
+          cooldownTime={10000}
+          onGraphStabilized={() => {
+            console.log(
+              "Le graphe est stabilisé, mise à jour des positions des posts..."
+            );
+            // Mise à jour automatique des positions lorsque le graphe est stabilisé
+            if (!positionsUpdatedOnceRef.current) {
+              const currentNodes = forceGraphRef.current.getNodesPositions();
+              updatePostsPositions({
+                ...DEFAULT_POSTS_SPATIAL_CONFIG,
+                customNodes: currentNodes,
+              });
+              positionsUpdatedOnceRef.current = true;
+            }
+          }}
+        />
+        {/* <ForceGraph /> */}
         <PostsRenderer />
         <EffectComposer>
           <Bloom

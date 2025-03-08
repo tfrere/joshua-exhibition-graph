@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, createContext } from "react";
 import { useThree } from "@react-three/fiber";
 import R3fForceGraph from "r3f-forcegraph";
-import { useData } from "../../../contexts/DataContext";
+import { useData } from "../../../../contexts/DataContext";
 import {
   createNodeObject,
   createLinkObject,
   updateLinkPosition,
-} from "../utils/nodeUtils";
+} from "./utils/nodeUtils";
 import { Html } from "@react-three/drei";
 
 // Contexte pour l'affichage d'informations UI (simplifié)
@@ -94,80 +94,79 @@ const ForceGraphComponent = () => {
   const fgRef = useRef();
   const { camera } = useThree();
 
-  // Function to generate random graph data (used as fallback when error loading)
-  const generateRandomGraph = () => {
-    // Créer d'abord les nœuds
-    const nodes = [...Array(10).keys()].map((i) => ({
-      id: i === 0 ? "central-joshua" : `node-${i}`,
-      name: i === 0 ? "Joshua Goldberg" : `Node ${i}`,
-      type:
-        i === 0
-          ? "central-joshua"
-          : i % 3 === 0
-          ? "source"
-          : i % 2 === 0
-          ? "character"
-          : "contact",
-      isJoshua: i === 0 || i === 5,
-      slug:
-        i === 0
-          ? "real-joshua-goldberg"
-          : i === 5
-          ? "joshua-alt"
-          : i % 2 === 0
-          ? `char-${i}`
-          : null,
-    }));
+  // // Function to generate random graph data (used as fallback when error loading)
+  // const generateRandomGraph = () => {
+  //   // Créer d'abord les nœuds
+  //   const nodes = [...Array(100).keys()].map((i) => ({
+  //     id: i === 0 ? "central-joshua" : `node-${i}`,
+  //     name: i === 0 ? "Joshua Goldberg" : `Node ${i}`,
+  //     type:
+  //       i === 0
+  //         ? "central-joshua"
+  //         : i % 3 === 0
+  //         ? "source"
+  //         : i % 2 === 0
+  //         ? "character"
+  //         : "contact",
+  //     isJoshua: i === 0 || i === 5,
+  //     slug:
+  //       i === 0
+  //         ? "real-joshua-goldberg"
+  //         : i === 5
+  //         ? "joshua-alt"
+  //         : i % 2 === 0
+  //         ? `char-${i}`
+  //         : null,
+  //   }));
 
-    // Créer ensuite les liens
-    const links = [];
+  //   // Créer ensuite les liens
+  //   const links = [];
 
-    // D'abord, ajouter des liens aléatoires
-    for (let i = 0; i < 15; i++) {
-      const source = Math.floor(Math.random() * 10);
-      const target = Math.floor(Math.random() * 10);
-      if (source !== target) {
-        links.push({
-          source: nodes[source].id,
-          target: nodes[target].id,
-          value: Math.random(),
-        });
-      }
-    }
+  //   // D'abord, ajouter des liens aléatoires
+  //   for (let i = 0; i < 15; i++) {
+  //     const source = Math.floor(Math.random() * 10);
+  //     const target = Math.floor(Math.random() * 10);
+  //     if (source !== target) {
+  //       links.push({
+  //         source: nodes[source].id,
+  //         target: nodes[target].id,
+  //         value: Math.random(),
+  //       });
+  //     }
+  //   }
 
-    // Ensuite, s'assurer que tous les personnages Joshua sont connectés au nœud central
-    nodes.forEach((node, index) => {
-      if (index > 0) {
-        // Ignorer le nœud central lui-même
-        if (
-          node.isJoshua ||
-          node.slug === "real-joshua-goldberg" ||
-          node.slug === "joshua-alt"
-        ) {
-          // Vérifier si le lien n'existe pas déjà
-          const linkExists = links.some(
-            (link) =>
-              (link.source === "central-joshua" && link.target === node.id) ||
-              (link.target === "central-joshua" && link.source === node.id)
-          );
+  //   // Ensuite, s'assurer que tous les personnages Joshua sont connectés au nœud central
+  //   nodes.forEach((node, index) => {
+  //     if (index > 0) {
+  //       // Ignorer le nœud central lui-même
+  //       if (
+  //         node.isJoshua ||
+  //         node.slug === "real-joshua-goldberg" ||
+  //         node.slug === "joshua-alt"
+  //       ) {
+  //         // Vérifier si le lien n'existe pas déjà
+  //         const linkExists = links.some(
+  //           (link) =>
+  //             (link.source === "central-joshua" && link.target === node.id) ||
+  //             (link.target === "central-joshua" && link.source === node.id)
+  //         );
 
-          if (!linkExists) {
-            links.push({
-              source: "central-joshua",
-              target: node.id,
-              value: 0.8, // Lien fort pour les personnages Joshua
-            });
-          }
-        }
-      }
-    });
+  //         if (!linkExists) {
+  //           links.push({
+  //             source: "central-joshua",
+  //             target: node.id,
+  //             value: 0.8, // Lien fort pour les personnages Joshua
+  //           });
+  //         }
+  //       }
+  //     }
+  //   });
 
-    return { nodes, links };
-  };
+  //   return { nodes, links };
+  // };
 
   // Déterminer quelles données afficher (données réelles ou données de secours)
-  const displayData =
-    graphError || !graphData ? generateRandomGraph() : graphData;
+  const displayData = graphError || !graphData ? null : graphData;
 
   // Vérifier si les données sont vraiment disponibles et complètes
   const dataIsReady =

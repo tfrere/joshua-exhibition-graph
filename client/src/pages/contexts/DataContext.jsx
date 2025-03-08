@@ -6,7 +6,7 @@ import {
   useCallback,
 } from "react";
 import { loadGraphData } from "../pages/WorkPage/utils/graphDataUtils";
-import { updatePostsPositionsInContext } from "../pages/WorkPage/components/PostRenderer/utils/postsPositionUtils";
+import { updatePostsPositionsInContext } from "../components/PostRenderer/utils/postsPositionUtils";
 
 // Création du contexte
 const DataContext = createContext(null);

@@ -16,6 +16,7 @@
  * @param {number} options.perlinScale - Échelle du bruit de Perlin (défaut: 0.05)
  * @param {number} options.perlinAmplitude - Amplitude du bruit de Perlin (défaut: 5)
  * @param {number} options.dilatationFactor - Facteur de dilatation pour l'effet Voronoï (défaut: 1.2)
+ * @param {boolean} options.useVoronoi - Si true, applique l'effet de dilatation Voronoi (défaut: true)
  * @returns {Object} Coordonnées {x, y, z} du post
  */
 export function calculatePostPosition(characterNode, options = {}) {
@@ -37,6 +38,8 @@ export function calculatePostPosition(characterNode, options = {}) {
   const perlinScale = options.perlinScale ?? 0.05;
   const perlinAmplitude = options.perlinAmplitude ?? 5;
   const dilatationFactor = options.dilatationFactor ?? 1.2;
+  const useVoronoi =
+    options.useVoronoi !== undefined ? options.useVoronoi : true;
 
   // Position du nœud
   const center = {
@@ -57,20 +60,27 @@ export function calculatePostPosition(characterNode, options = {}) {
     z: center.z + distance * Math.sin(phi) * verticalSpread,
   };
 
-  // 2. Appliquer l'effet de dilatation (inspiration Voronoi)
-  // Vecteur du centre à la position initiale
-  const vec = {
-    x: initialPosition.x - center.x,
-    y: initialPosition.y - center.y,
-    z: initialPosition.z - center.z,
-  };
+  // 2. Déterminer la position de base (avec ou sans dilatation Voronoi)
+  let basePosition;
 
-  // Appliquer la dilatation
-  const dilatedPosition = {
-    x: center.x + vec.x * dilatationFactor,
-    y: center.y + vec.y * dilatationFactor,
-    z: center.z + vec.z * dilatationFactor,
-  };
+  if (useVoronoi) {
+    // Appliquer l'effet de dilatation (inspiration Voronoi)
+    const vec = {
+      x: initialPosition.x - center.x,
+      y: initialPosition.y - center.y,
+      z: initialPosition.z - center.z,
+    };
+
+    // Appliquer la dilatation
+    basePosition = {
+      x: center.x + vec.x * dilatationFactor,
+      y: center.y + vec.y * dilatationFactor,
+      z: center.z + vec.z * dilatationFactor,
+    };
+  } else {
+    // Sauter l'étape de dilatation Voronoi
+    basePosition = { ...initialPosition };
+  }
 
   // 3. Ajouter du bruit de type Perlin (approximation simplifiée)
   // Utiliser plusieurs fréquences pour un effet plus naturel
@@ -93,16 +103,16 @@ export function calculatePostPosition(characterNode, options = {}) {
     // Approximation du bruit de Perlin avec des fonctions sinus
     noiseX +=
       amp *
-      Math.sin(dilatedPosition.x * freq + phases[0]) *
-      Math.cos(dilatedPosition.y * freq + phases[1]);
+      Math.sin(basePosition.x * freq + phases[0]) *
+      Math.cos(basePosition.y * freq + phases[1]);
     noiseY +=
       amp *
-      Math.sin(dilatedPosition.y * freq + phases[2]) *
-      Math.cos(dilatedPosition.z * freq + phases[3]);
+      Math.sin(basePosition.y * freq + phases[2]) *
+      Math.cos(basePosition.z * freq + phases[3]);
     noiseZ +=
       amp *
-      Math.sin(dilatedPosition.z * freq + phases[4]) *
-      Math.cos(dilatedPosition.x * freq + phases[5]);
+      Math.sin(basePosition.z * freq + phases[4]) *
+      Math.cos(basePosition.x * freq + phases[5]);
   });
 
   // Normaliser et appliquer l'amplitude
@@ -112,9 +122,9 @@ export function calculatePostPosition(characterNode, options = {}) {
 
   // Position finale avec bruit
   const finalPosition = {
-    x: dilatedPosition.x + (noiseX / normalizationFactor) * perlinAmplitude,
-    y: dilatedPosition.y + (noiseY / normalizationFactor) * perlinAmplitude,
-    z: dilatedPosition.z + (noiseZ / normalizationFactor) * perlinAmplitude,
+    x: basePosition.x + (noiseX / normalizationFactor) * perlinAmplitude,
+    y: basePosition.y + (noiseY / normalizationFactor) * perlinAmplitude,
+    z: basePosition.z + (noiseZ / normalizationFactor) * perlinAmplitude,
   };
 
   return finalPosition;
@@ -266,6 +276,7 @@ function hslToRgb(h, s, l) {
  * @param {number} options.perlinScale - Échelle du bruit de Perlin (défaut: 0.05)
  * @param {number} options.perlinAmplitude - Amplitude du bruit de Perlin (défaut: 5)
  * @param {number} options.dilatationFactor - Facteur de dilatation pour l'effet Voronoï (défaut: 1.2)
+ * @param {boolean} options.useVoronoi - Si true, applique l'effet de dilatation Voronoi (défaut: true)
  * @param {boolean} options.useUniqueColorsPerCharacter - Si true, attribue une couleur unique par personnage (défaut: true)
  * @param {Array} options.customNodes - Nœuds personnalisés avec leurs positions actuelles, utilisés à la place des nœuds standards
  * @returns {Array} Posts spatialisés avec coordonnées mises à jour
@@ -283,35 +294,41 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     perlinScale = 0.05,
     perlinAmplitude = 5,
     dilatationFactor = 1.2,
+    useVoronoi = true,
     // Option pour les couleurs uniques par personnage
     useUniqueColorsPerCharacter = true,
     // Nœuds personnalisés avec positions actuelles de la simulation
-    customNodes = null
+    customNodes = null,
   } = options;
 
   // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
   const nodesData = customNodes || nodes;
-  
-  console.log(`Spatialisation des posts: utilisation de ${customNodes ? 'nœuds personnalisés' : 'nœuds standards'} (${nodesData.length} nœuds)`);
-  
+
+  console.log(
+    `Spatialisation des posts: utilisation de ${
+      customNodes ? "nœuds personnalisés" : "nœuds standards"
+    } (${nodesData.length} nœuds)`
+  );
+
   if (nodesData.length === 0) {
     console.warn("Aucun nœud disponible pour la spatialisation des posts");
     return posts;
   }
-  
+
   // Afficher les 5 premiers nœuds pour débogage
   if (nodesData.length > 0) {
-    console.log("Échantillon de nœuds pour spatialisation:", 
-      nodesData.slice(0, 5).map(n => ({ 
-        id: n.id, 
-        slug: n.slug, 
-        type: n.type, 
+    console.log(
+      "Échantillon de nœuds pour spatialisation:",
+      nodesData.slice(0, 5).map((n) => ({
+        id: n.id,
+        slug: n.slug,
+        type: n.type,
         isJoshua: n.isJoshua,
-        pos: [Math.round(n.x), Math.round(n.y), Math.round(n.z)]
+        pos: [Math.round(n.x), Math.round(n.y), Math.round(n.z)],
       }))
     );
   }
-  
+
   // Créer un index des nœuds par slug ET par id pour un accès rapide
   const nodesMap = {};
   const nodesByIdMap = {};
@@ -328,14 +345,14 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     if (node.id) {
       nodesByIdMap[node.id] = node;
     }
-    
+
     if (node.slug) {
       nodesMap[node.slug] = node;
-      
+
       // Indexer les nœuds de type character
-      if (node.type === 'character') {
+      if (node.type === "character") {
         characterNodesMap[node.slug] = node;
-        
+
         // Si le noeud est marqué comme Joshua, l'ajouter aux ensembles
         if (node.isJoshua === true) {
           joshuaCharacterSlugs.add(node.slug);
@@ -346,55 +363,64 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
       }
     }
   });
-  
-  console.log(`Nombre de personnages Joshua identifiés: ${joshuaCharacterSlugs.size} (par slug) et ${joshuaCharacterIds.size} (par id)`);
-  
+
+  console.log(
+    `Nombre de personnages Joshua identifiés: ${joshuaCharacterSlugs.size} (par slug) et ${joshuaCharacterIds.size} (par id)`
+  );
+
   // Cache pour les couleurs générées par personnage
   const characterColorCache = {};
-  
+
   // Positionner chaque post en fonction de son slug (identifiant du personnage)
-  return posts.map(post => {
+  return posts.map((post) => {
     // Trouver le nœud correspondant en essayant plusieurs stratégies
     let characterNode = null;
     let isJoshuaPost = false;
     let characterSlug = null;
-    
+
     // Stratégie 1: Utiliser le slug du post directement
     if (post.slug) {
       characterSlug = post.slug;
-      characterNode = nodesMap[characterSlug] || characterNodesMap[characterSlug];
-      isJoshuaPost = post.isJoshuaCharacter === true || joshuaCharacterSlugs.has(characterSlug);
+      characterNode =
+        nodesMap[characterSlug] || characterNodesMap[characterSlug];
+      isJoshuaPost =
+        post.isJoshuaCharacter === true ||
+        joshuaCharacterSlugs.has(characterSlug);
     }
-    
+
     // Stratégie 2: Utiliser le champ character du post comme fallback
     if (!characterNode && post.character) {
       characterSlug = post.character;
-      characterNode = nodesMap[characterSlug] || characterNodesMap[characterSlug];
-      isJoshuaPost = post.isJoshuaCharacter === true || joshuaCharacterSlugs.has(characterSlug);
+      characterNode =
+        nodesMap[characterSlug] || characterNodesMap[characterSlug];
+      isJoshuaPost =
+        post.isJoshuaCharacter === true ||
+        joshuaCharacterSlugs.has(characterSlug);
     }
-    
+
     // Stratégie 3: Essayer de trouver par ID
     if (!characterNode && post.id) {
       const nodeById = nodesByIdMap[post.id];
       if (nodeById) {
         characterNode = nodeById;
         characterSlug = nodeById.slug || nodeById.id;
-        isJoshuaPost = nodeById.isJoshua === true || joshuaCharacterIds.has(post.id);
+        isJoshuaPost =
+          nodeById.isJoshua === true || joshuaCharacterIds.has(post.id);
       }
     }
-    
+
     // Si aucun nœud n'est trouvé avec les stratégies précédentes
     if (!characterNode || !characterSlug) {
       // Conserver le post intact si aucun nœud correspondant n'est trouvé
       return post;
     }
-    
+
     // Si joshuaOnly est true, on ne repositionne que les posts des personnages Joshua
     // Si preserveOtherPositions est true, on conserve les positions existantes des autres posts
     if (joshuaOnly && !isJoshuaPost && preserveOtherPositions) {
       return post; // Conserver le post intact
     }
-    
+
     // Préparer les options pour le calcul de position
     const postOptions = {
       radius,
@@ -404,29 +430,30 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
       // Transmettre également les nouveaux paramètres
       perlinScale,
       perlinAmplitude,
-      dilatationFactor
+      dilatationFactor,
+      useVoronoi, // Transmettre le paramètre useVoronoi
     };
-    
+
     // Calculer de nouvelles coordonnées pour ce post avec l'algorithme Voronoi
     const coordinates = calculatePostPosition(characterNode, postOptions);
-    
+
     // Si on utilise des couleurs uniques par personnage, les générer ou récupérer du cache
     let color = post.color;
     if (useUniqueColorsPerCharacter) {
       if (!characterColorCache[characterSlug]) {
         characterColorCache[characterSlug] = generateCharacterColor(
-          characterSlug, 
+          characterSlug,
           isJoshuaPost
         );
       }
       color = characterColorCache[characterSlug];
     }
-    
+
     // Retourner le post avec ses nouvelles coordonnées et éventuellement sa couleur
     return {
       ...post,
       coordinates,
-      color: color || post.color || [0.8, 0.4, 0.0]
+      color: color || post.color || [0.8, 0.4, 0.0],
     };
   });
 }
@@ -648,7 +675,7 @@ export function normalizePostsInSphere(posts, options = {}) {
 /**
  * Met à jour les positions des posts en fonction des positions actuelles des nœuds du graphe
  * dans le contexte de l'application.
- * 
+ *
  * @param {Array|Object} postsData - Tableau de posts ou objet contenant les posts
  * @param {Array|Object} graphData - Tableau de nœuds ou objet contenant les nœuds du graphe
  * @param {Object} options - Options de mise à jour
@@ -682,18 +709,20 @@ export function updatePostsPositionsInContext(
 
   // Si des nœuds personnalisés sont fournis, les utiliser directement
   if (options.customNodes && Array.isArray(options.customNodes)) {
-    console.log(`Utilisation de ${options.customNodes.length} nœuds personnalisés pour la mise à jour des positions`);
-    
+    console.log(
+      `Utilisation de ${options.customNodes.length} nœuds personnalisés pour la mise à jour des positions`
+    );
+
     // Spatialiser les posts autour des nœuds personnalisés
     const initialPosts = spatializePostsAroundJoshuaNodes(posts, [], {
       ...options,
-      customNodes: options.customNodes
+      customNodes: options.customNodes,
     });
-    
+
     // Continuer avec le traitement normal
     return processPostsForVisualization(initialPosts, options, updateCallback);
   }
-  
+
   // Sinon, extraire les nœuds du graphe comme avant
   let nodes = [];
   if (Array.isArray(graphData)) {

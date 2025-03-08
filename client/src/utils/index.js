@@ -8,11 +8,11 @@ export {
   calculatePostPosition,
   calculatePostColor,
   spatializePostsAroundJoshuaNodes,
-  updatePostsPositionsInContext
-} from './postsPositionUtils';
+  updatePostsPositionsInContext,
+} from "../pages/WorkPage/components/PostRenderer/utils/postsPositionUtils";
 
 // Exporter la fonction d'exportation des positions du graphe
-export { exportGraphPositions } from './exportGraphPositions';
+export { exportGraphPositions } from "./exportGraphPositions";
 
 // Exporter l'utilitaire de synchronisation socket si nécessaire
-export * from './socketSync'; 
+export * from "./socketSync";
