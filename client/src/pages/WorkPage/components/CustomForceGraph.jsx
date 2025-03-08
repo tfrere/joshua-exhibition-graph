@@ -14,7 +14,7 @@ import {
   forceLink,
   forceCenter,
   forceCollide,
-} from "d3-force";
+} from "d3-force-3d";
 import { useData } from "../../../contexts/DataContext";
 import { Html } from "@react-three/drei";
 // Importer les fonctions de nodeUtils.js
@@ -32,7 +32,6 @@ const CustomForceGraph = forwardRef(
       centerStrength = 0.03,
       linkStrength = 0.5,
       linkDistance = 40,
-      zStrength = 1.0,
       simulationSpeed = 0.5,
       collisionStrength = 5,
       cooldownTime = 15000, // Temps après lequel la simulation se stabilise (ms)
@@ -54,20 +53,43 @@ const CustomForceGraph = forwardRef(
         return { nodesData: [], linksData: [] };
       }
 
-      // Distribution initiale 3D améliorée - Vraiment 3D cette fois
-      const spread = 200; // Étendue des positions initiales augmentée
+      // Fonction déterministe pour générer des positions initiales basées sur l'ID du nœud
+      // Cette fonction produira toujours la même valeur pour le même ID
+      const getPositionFromId = (id, index, axis) => {
+        // Convertir l'ID en chaîne de caractères pour le hachage
+        const idString = String(id || `generated_${index}`);
+        
+        // On utilise une approche simple de hachage pour générer un nombre entre 0 et 1
+        // basé sur différentes parties de l'ID pour chaque axe
+        let hash = 0;
+        // On utilise des multiplieurs différents pour chaque axe pour éviter les alignements
+        const multiplier = axis === 'x' ? 1 : axis === 'y' ? 2 : 3;
+        
+        for (let i = 0; i < idString.length; i++) {
+          const char = idString.charCodeAt(i);
+          // On utilise un algorithme de hachage simple
+          hash = ((hash << 5) - hash + char * multiplier) | 0;
+        }
+        
+        // Normaliser entre -1 et 1
+        const normalized = (hash % 1000) / 500 - 1;
+        // Étendre à la plage -100 à 100
+        return normalized * 100;
+      };
 
       // Copier les données pour ne pas modifier les originales et assurer que chaque nœud a un ID
       const nodesData = graphData.nodes.map((node, index) => {
         // S'assurer que chaque nœud a un ID unique (utilisé pour les liens)
+        const nodeId = node.id || `generated_${index}`;
+        
         return {
           ...node,
-          // Assurer qu'il y a toujours un ID (utiliser l'original ou créer un numérique)
-          id: node.id || `generated_${index}`,
-          // Toujours utiliser une distribution 3D aléatoire complète pour assurer la dimensionnalité
-          x: (Math.random() - 0.5) * spread,
-          y: (Math.random() - 0.5) * spread,
-          z: (Math.random() - 0.5) * spread,
+          // Assurer qu'il y a toujours un ID
+          id: nodeId,
+          // Utiliser notre fonction déterministe pour les positions initiales
+          x: getPositionFromId(nodeId, index, 'x'),
+          y: getPositionFromId(nodeId, index, 'y'),
+          z: getPositionFromId(nodeId, index, 'z'),
           // Stocker les positions originales si elles existaient
           originalX: node.x,
           originalY: node.y,
@@ -207,100 +229,23 @@ const CustomForceGraph = forwardRef(
       // Référence pour éviter que onGraphStabilized soit appelé plusieurs fois
       const onStabilizeCalledRef = { called: false };
 
-      // Vraie force 3D complète remplaçant la force 2D standard
-      // Cette approche est plus radicale et va traiter X, Y, Z de manière identique
+      // Utiliser la simulation 3D native
       simulation.on("tick", () => {
-        // Code d'origine de d3-force pour X et Y mais réduit de force
-        const alpha = simulation.alpha() * 0.7; // Réduire l'impact des forces 2D
-
         // Calculer le mouvement total pour détecter la stabilisation
         let totalMovement = 0;
 
-        // Calculer les répulsions et attractions en 3D
-        for (let i = 0; i < nodesData.length; i++) {
-          const node = nodesData[i];
-
-          // Initialiser les forces
-          let fx = 0,
-            fy = 0,
-            fz = 0;
-
-          // Force de répulsion 3D avec tous les autres nœuds (échantillonnage pour performance)
-          const sampleSize = Math.min(20, nodesData.length);
-          for (let j = 0; j < sampleSize; j++) {
-            const randomIdx = Math.floor(Math.random() * nodesData.length);
-            if (randomIdx !== i) {
-              const other = nodesData[randomIdx];
-
-              // Calculer le vecteur de répulsion 3D
-              const dx = node.x - other.x;
-              const dy = node.y - other.y;
-              const dz = node.z - other.z;
-
-              // Distance 3D
-              const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-
-              // Force inversement proportionnelle au carré de la distance
-              // Facteur multiple pour compenser l'échantillonnage
-              const force =
-                (chargeStrength * 5 * zStrength) / (distance * distance);
-
-              // Normaliser et appliquer la force dans les trois dimensions
-              const factor = force / distance;
-              fx += dx * factor;
-              fy += dy * factor;
-              fz += dz * factor * 1.5; // Force Z légèrement plus forte
-            }
-          }
-
-          // Force d'attraction 3D pour les liens
-          linksData.forEach((link) => {
-            if (link.source === node || link.target === node) {
-              const other = link.source === node ? link.target : link.source;
-
-              // Vecteur de distance 3D
-              const dx = node.x - other.x;
-              const dy = node.y - other.y;
-              const dz = node.z - other.z;
-
-              // Distance 3D
-              const distance = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-
-              // Force proportionnelle à la distance moins la distance souhaitée
-              const force = (distance - linkDistance) * linkStrength;
-
-              // Normaliser et appliquer la force
-              const factor = force / distance;
-              fx -= dx * factor;
-              fy -= dy * factor;
-              fz -= dz * factor * 1.2; // Force Z légèrement plus forte
-            }
-          });
-
-          // Centrage 3D
-          fx += (0 - node.x) * centerStrength;
-          fy += (0 - node.y) * centerStrength;
-          fz += (0 - node.z) * centerStrength;
-
-          // Appliquer les forces avec facteur de vitesse
-          node.vx = (node.vx || 0) * 0.9 + fx * alpha * 0.1 * simulationSpeed;
-          node.vy = (node.vy || 0) * 0.9 + fy * alpha * 0.1 * simulationSpeed;
-          node.vz = (node.vz || 0) * 0.9 + fz * alpha * 0.1 * simulationSpeed;
-
+        // La simulation 3D met automatiquement à jour les positions x, y, z
+        // Nous n'avons plus besoin de calculer manuellement les forces 3D
+        nodesData.forEach(node => {
           // Limiter la vitesse maximale
           const maxVelocity = 5 * simulationSpeed;
-          const vx = Math.min(Math.max(node.vx, -maxVelocity), maxVelocity);
-          const vy = Math.min(Math.max(node.vy, -maxVelocity), maxVelocity);
-          const vz = Math.min(Math.max(node.vz, -maxVelocity), maxVelocity);
-
-          // Appliquer les vélocités
-          node.x += vx;
-          node.y += vy;
-          node.z += vz;
+          node.vx = Math.min(Math.max(node.vx || 0, -maxVelocity), maxVelocity);
+          node.vy = Math.min(Math.max(node.vy || 0, -maxVelocity), maxVelocity);
+          node.vz = Math.min(Math.max(node.vz || 0, -maxVelocity), maxVelocity);
 
           // Calculer le mouvement pour cette itération
-          totalMovement += Math.abs(vx) + Math.abs(vy) + Math.abs(vz);
-        }
+          totalMovement += Math.abs(node.vx) + Math.abs(node.vy) + Math.abs(node.vz);
+        });
 
         // Détecter la stabilisation basée sur le mouvement total
         if (totalMovement < 0.5 && !isStabilized.current) {

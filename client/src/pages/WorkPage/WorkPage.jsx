@@ -132,14 +132,13 @@ const WorkPage = () => {
           ref={forceGraphRef}
           nodeSize={5}
           linkWidth={0.5}
-          chargeStrength={1}
+          chargeStrength={-500}
           centerStrength={1}
-          linkStrength={0.7}
-          linkDistance={10}
-          zStrength={1}
-          simulationSpeed={1}
+          linkStrength={2}
+          linkDistance={70}
+          simulationSpeed={0.1}
           collisionStrength={5}
-          cooldownTime={10000}
+          cooldownTime={5000}
           onGraphStabilized={() => {
             console.log(
               "Le graphe est stabilisé, mise à jour des positions des posts..."
