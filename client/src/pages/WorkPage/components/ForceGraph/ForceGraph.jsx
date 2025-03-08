@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, createContext } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  createContext,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import { useThree } from "@react-three/fiber";
 import R3fForceGraph from "r3f-forcegraph";
 import { useData } from "../../../../contexts/DataContext";
@@ -12,11 +19,121 @@ import { Html } from "@react-three/drei";
 // Contexte pour l'affichage d'informations UI (simplifié)
 export const ForceGraphContext = createContext(null);
 
+// Fonction utilitaire pour exporter des données JSON en fichier téléchargeable
+const exportJsonFile = (data, filename) => {
+  // Convertir les données en chaîne JSON formatée
+  const jsonString = JSON.stringify(data, null, 2);
+
+  // Créer un blob avec le contenu JSON
+  const blob = new Blob([jsonString], { type: "application/json" });
+
+  // Créer une URL pour le blob
+  const url = URL.createObjectURL(blob);
+
+  // Créer un élément <a> pour le téléchargement
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+
+  // Ajouter l'élément au DOM, cliquer dessus, puis le supprimer
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  // Libérer l'URL
+  URL.revokeObjectURL(url);
+};
+
 // Composant UI simplifié
-export const ForceGraphUI = () => {
+export const ForceGraphUI = ({ graphRef }) => {
   // Accéder à l'état global pour connaître l'état d'animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [cameraMode, setCameraMode] = useState("orbit");
+  const { graphData, postsData } = useData();
+  const [showExportButton, setShowExportButton] = useState(false);
+
+  // Fonction pour exporter les données spatiales
+  const handleExportData = () => {
+    // 1. Exporter les noeuds et liens spatialisés avec positions les plus récentes
+    if (graphRef && graphRef.current && graphRef.current.getNodesPositions) {
+      // Utiliser la méthode getNodesPositions du graphe pour avoir les positions les plus récentes
+      const spatializedNodes = graphRef.current.getNodesPositions();
+
+      const spatializedNodesAndLinks = {
+        nodes: spatializedNodes,
+        links: graphData.links.map((link) => ({
+          source:
+            typeof link.source === "object" ? link.source.id : link.source,
+          target:
+            typeof link.target === "object" ? link.target.id : link.target,
+          value: link.value || 1,
+        })),
+      };
+
+      console.log(
+        "Exportation de spatialized_nodes_and_links.json avec",
+        spatializedNodes.length,
+        "noeuds"
+      );
+      exportJsonFile(
+        spatializedNodesAndLinks,
+        "spatialized_nodes_and_links.json"
+      );
+    } else if (graphData && graphData.nodes && graphData.links) {
+      // Fallback si la référence n'est pas disponible
+      const spatializedNodesAndLinks = {
+        nodes: graphData.nodes.map((node) => ({
+          id: node.id,
+          slug: node.slug,
+          x: node.x,
+          y: node.y,
+          z: node.z,
+          isJoshua: node.isJoshua,
+          type: node.type,
+        })),
+        links: graphData.links.map((link) => ({
+          source:
+            typeof link.source === "object" ? link.source.id : link.source,
+          target:
+            typeof link.target === "object" ? link.target.id : link.target,
+          value: link.value || 1,
+        })),
+      };
+
+      console.log(
+        "Exportation de spatialized_nodes_and_links.json avec méthode de secours"
+      );
+      exportJsonFile(
+        spatializedNodesAndLinks,
+        "spatialized_nodes_and_links.json"
+      );
+    }
+
+    // 2. Exporter les posts spatialisés
+    if (postsData && postsData.length > 0) {
+      const spatializedPosts = postsData.map((post) => ({
+        id: post.id,
+        slug: post.slug,
+        content: post.content,
+        date: post.date,
+        x: post.coordinates.x,
+        y: post.coordinates.y,
+        z: post.coordinates.z,
+        isJoshuaCharacter: post.isJoshuaCharacter,
+        color: post.color,
+      }));
+
+      console.log(
+        "Exportation de spatialized_posts.json avec",
+        spatializedPosts.length,
+        "posts"
+      );
+      exportJsonFile(spatializedPosts, "spatialized_posts.json");
+    }
+
+    // Afficher un message de confirmation
+    alert("Exportation des données terminée !");
+  };
 
   // Écouter l'état d'animation et le mode exposés par le contrôleur de caméra
   useEffect(() => {
@@ -34,6 +151,22 @@ export const ForceGraphUI = () => {
     const intervalId = setInterval(checkCameraState, 100);
     return () => clearInterval(intervalId);
   }, []);
+
+  // Afficher le bouton d'export une fois que les données sont chargées et spatialisées
+  useEffect(() => {
+    if (
+      graphData &&
+      graphData.nodes &&
+      graphData.nodes.length > 0 &&
+      graphData.nodes[0].x !== undefined &&
+      postsData &&
+      postsData.length > 0 &&
+      postsData[0].coordinates &&
+      postsData[0].coordinates.x !== undefined
+    ) {
+      setShowExportButton(true);
+    }
+  }, [graphData, postsData]);
 
   return (
     <div
@@ -84,15 +217,166 @@ export const ForceGraphUI = () => {
           )}
         </>
       )}
+
+      {/* Bouton d'exportation des données spatiales */}
+      {showExportButton && (
+        <button
+          onClick={handleExportData}
+          style={{
+            marginTop: "15px",
+            backgroundColor: "#4CAF50",
+            color: "white",
+            border: "none",
+            padding: "8px 12px",
+            textAlign: "center",
+            textDecoration: "none",
+            display: "inline-block",
+            fontSize: "14px",
+            borderRadius: "4px",
+            cursor: "pointer",
+            width: "100%",
+          }}
+        >
+          Exporter données spatialisées
+        </button>
+      )}
     </div>
   );
 };
 
 // Composant principal du graphe 3D - simplifié sans gestion de caméra ni nœuds
-const ForceGraphComponent = () => {
+const ForceGraphComponent = forwardRef((props, ref) => {
   const { graphData, isLoadingGraph, graphError } = useData();
   const fgRef = useRef();
-  const { camera } = useThree();
+
+  // Exposer des méthodes via la référence
+  useImperativeHandle(
+    ref,
+    () => ({
+      // Méthode pour récupérer les positions des noeuds
+      getNodesPositions: () => {
+        console.log(
+          "Récupération des positions des noeuds depuis la référence"
+        );
+        if (!fgRef.current || !graphData || !graphData.nodes) {
+          console.warn(
+            "Impossible de récupérer les positions des noeuds - références manquantes"
+          );
+          return [];
+        }
+
+        try {
+          // Accéder au graphe interne pour récupérer les positions
+          const graphInstance = fgRef.current;
+          console.log("Contenu de fgRef.current:", graphInstance);
+
+          // Vérifier si le graphInstance a déjà des objets avec des positions
+          if (graphInstance.__nodeObjects) {
+            console.log("Utilisation des nodeObjects internes");
+            const nodeObjects = graphInstance.__nodeObjects;
+
+            return graphData.nodes.map((node) => {
+              const nodeObj = nodeObjects[node.id];
+
+              if (nodeObj && nodeObj.position) {
+                return {
+                  id: node.id,
+                  group: node.group,
+                  name: node.name,
+                  x: nodeObj.position.x,
+                  y: nodeObj.position.y,
+                  z: nodeObj.position.z,
+                  value: node.value,
+                };
+              }
+
+              // Fallback aux données du graphe d3
+              if (
+                graphInstance.graphData &&
+                graphInstance.graphData.nodes &&
+                graphInstance.graphData.nodes.length > 0
+              ) {
+                const d3Node = graphInstance.graphData.nodes.find(
+                  (n) => n.id === node.id
+                );
+                if (d3Node) {
+                  return {
+                    id: node.id,
+                    group: node.group,
+                    name: node.name,
+                    x: d3Node.x || 0,
+                    y: d3Node.y || 0,
+                    z: d3Node.z || 0,
+                    value: node.value,
+                  };
+                }
+              }
+
+              // Dernier recours: utiliser les données brutes du contexte
+              return {
+                id: node.id,
+                group: node.group,
+                name: node.name,
+                x: node.x || node.coordinates?.x || 0,
+                y: node.y || node.coordinates?.y || 0,
+                z: node.z || node.coordinates?.z || 0,
+                value: node.value,
+              };
+            });
+          }
+
+          // Méthode de secours - si la méthode précédente ne fonctionne pas
+          console.log("Utilisation des coordonnées existantes dans graphData");
+          return graphData.nodes.map((node) => {
+            return {
+              id: node.id,
+              group: node.group,
+              name: node.name,
+              x: node.x || node.coordinates?.x || 0,
+              y: node.y || node.coordinates?.y || 0,
+              z: node.z || node.coordinates?.z || 0,
+              value: node.value,
+            };
+          });
+        } catch (error) {
+          console.error("Erreur lors de la récupération des positions:", error);
+          console.log(
+            "Utilisation de la méthode de secours avec les données du contexte"
+          );
+
+          // Dernier recours: utiliser les données du contexte directement
+          return graphData.nodes.map((node) => ({
+            id: node.id,
+            group: node.group,
+            name: node.name,
+            x: node.x || node.coordinates?.x || 0,
+            y: node.y || node.coordinates?.y || 0,
+            z: node.z || node.coordinates?.z || 0,
+            value: node.value,
+          }));
+        }
+      },
+
+      // Indique si le graphe est stabilisé
+      isStabilized: () => {
+        return fgRef.current
+          ? !fgRef.current.d3Force("simulation")?.alpha()
+          : false;
+      },
+
+      // Force la stabilisation du graphe
+      stabilize: () => {
+        if (fgRef.current) {
+          const simulation = fgRef.current.d3Force("simulation");
+          if (simulation) {
+            simulation.alpha(0); // Set alpha to 0 to stop the simulation
+            simulation.stop();
+          }
+        }
+      },
+    }),
+    [graphData]
+  ); // Ajouter graphData comme dépendance pour s'assurer que les méthodes sont mises à jour
 
   // Déterminer quelles données afficher (données réelles ou données de secours)
   const displayData = graphError || !graphData ? null : graphData;
@@ -125,7 +409,7 @@ const ForceGraphComponent = () => {
       // Clean up animation
       cancelAnimationFrame(animationFrameId);
     };
-  }, [camera, dataIsReady]);
+  }, [dataIsReady]);
 
   // Afficher l'état de chargement directement dans la scène 3D
   if (!dataIsReady) {
@@ -178,6 +462,6 @@ const ForceGraphComponent = () => {
       />
     </ForceGraphContext.Provider>
   );
-};
+});
 
 export default ForceGraphComponent;
