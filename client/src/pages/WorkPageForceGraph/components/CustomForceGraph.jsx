@@ -276,18 +276,19 @@ const CustomForceGraph = forwardRef(
       
       // Créer une nouvelle simulation avec des forces standard
       const simulation = forceSimulation(nodesData, 3)
-        .alphaDecay(0.003) // Stabilisation plus lente pour une meilleure distribution 3D
-        .velocityDecay(0.9) // Friction modérée pour un bon équilibre
-        .force("charge", forceManyBody().strength(chargeStrength)) // Force de répulsion standard
-        .force("center", forceCenter(0, 0, 0).strength(centerStrength)) // Force de centrage 
+        .alphaDecay(0.02) // Augmenter le taux de décroissance d'alpha (défaut: 0.0228)
+        .velocityDecay(0.9) // Valeur de ralentissement (défaut: 0.4)
+        .force("charge", forceManyBody().strength(chargeStrength).distanceMin(200).distanceMax(500))
+        .force("center", forceCenter(0, 0, 0).strength(centerStrength))
         .force(
           "collision",
-          forceCollide().radius(nodeSize).strength(collisionStrength)
-        ) // Collision standard
+          forceCollide().radius(nodeSize * 1.5).strength(collisionStrength)
+        )
         .force(
           "link",
           forceLink(linksData).distance(linkDistance).strength(linkStrength)
-        ); // Liens standard
+        )
+        .stop();
 
       // Référence pour éviter que onGraphStabilized soit appelé plusieurs fois
       const onStabilizeCalledRef = { called: false };
@@ -349,7 +350,7 @@ const CustomForceGraph = forwardRef(
 
       // Détecter aussi quand alpha devient très faible (stabilisation naturelle)
       simulation.on("tick", () => {
-        if (simulation.alpha() < 0.001 && !isStabilized.current) {
+        if (simulation.alpha() < 0.01 && !isStabilized.current) { // Augmenter le seuil d'alpha pour une détection plus rapide (était 0.001)
           simulation.stop();
           isStabilized.current = true;
           setIsSimulationRunning(false);
@@ -359,7 +360,7 @@ const CustomForceGraph = forwardRef(
             // console.log(
             //   "Simulation stabilisée naturellement, appel du callback"
             // );
-            console.log("[CYCLE DE VIE] Stabilisation naturelle (alpha < 0.001)");
+            console.log("[CYCLE DE VIE] Stabilisation naturelle (alpha < 0.01)");
             onGraphStabilized();
             onStabilizeCalledRef.called = true;
           }

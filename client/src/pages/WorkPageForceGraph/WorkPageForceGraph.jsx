@@ -169,7 +169,7 @@ const WorkPage = () => {
           updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
           positionsUpdatedOnceRef.current = true;
         }
-      }, 10000); // Attendre 5 secondes pour être sûr que le graphe est rendu
+      }, 5000); // Attendre 5 secondes pour être sûr que le graphe est rendu
 
       return () => clearTimeout(timer);
     }
@@ -261,13 +261,13 @@ const WorkPage = () => {
         <CustomForceGraph
           ref={getGraphRef}
           nodeSize={5}
-          chargeStrength={-150}
-          centerStrength={1}
-          linkStrength={0.7}
-          linkDistance={40}
+          chargeStrength={-300}
+          centerStrength={0.5}
+          linkStrength={0.9}
+          linkDistance={30}
           simulationSpeed={0.5}
-          collisionStrength={0.01}
-          cooldownTime={8000}
+          collisionStrength={0.5}
+          cooldownTime={5000}
           onGraphStabilized={() => {
             console.log("[CYCLE DE VIE] Le graphe est stabilisé, mise à jour des positions des posts");
             
