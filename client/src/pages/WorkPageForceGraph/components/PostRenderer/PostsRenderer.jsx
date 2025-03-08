@@ -181,6 +181,36 @@ export function PostsRenderer() {
     return [geo, mat];
   }, [postsData, pointTexture, pointSize, useImpactSize]);
 
+  // Ajouter un effet pour afficher des informations de débogage sur les posts
+  useEffect(() => {
+    if (postsData && postsData.length > 0) {
+      console.log(`PostsRenderer: ${postsData.length} posts chargés`);
+      
+      // Vérifier si les posts ont des coordonnées
+      const postsWithCoordinates = postsData.filter(post => 
+        post.coordinates && 
+        (post.coordinates.x !== 0 || post.coordinates.y !== 0 || post.coordinates.z !== 0)
+      );
+      
+      console.log(`PostsRenderer: ${postsWithCoordinates.length} posts ont des coordonnées non nulles`);
+      
+      // Afficher un échantillon de posts
+      if (postsWithCoordinates.length > 0) {
+        console.log("PostsRenderer: Exemple de post avec coordonnées:", {
+          id: postsWithCoordinates[0].id,
+          slug: postsWithCoordinates[0].slug,
+          coordinates: postsWithCoordinates[0].coordinates
+        });
+      } else if (postsData.length > 0) {
+        console.log("PostsRenderer: Exemple de post sans coordonnées:", {
+          id: postsData[0].id,
+          slug: postsData[0].slug,
+          coordinates: postsData[0].coordinates
+        });
+      }
+    }
+  }, [postsData]);
+
   // Ne rien afficher pendant le chargement ou si pas de données
   if (
     isLoadingPosts ||

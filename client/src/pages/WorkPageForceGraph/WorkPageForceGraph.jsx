@@ -1,9 +1,7 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
-import { useRef, useEffect, useState, useCallback } from "react";
-import { useControls, folder, button } from "leva";
-import { ForceGraphUI } from "./components/ForceGraph/ForceGraph.jsx";
-import ForceGraph from "./components/ForceGraph/ForceGraph.jsx";
+import { useRef, useEffect, useCallback } from "react";
+import { useControls } from "leva";
 import CustomForceGraph from "./components/CustomForceGraph.jsx";
 import PostsRenderer from "./components/PostRenderer/PostsRenderer.jsx";
 import { useData } from "../../contexts/DataContext.jsx";
@@ -36,11 +34,8 @@ const WorkPage = () => {
     graphData,
     postsData,
   } = useData();
-  const forceGraphRef = useRef(null);
-  const positionsUpdatedOnceRef = useRef(false);
-
-  // Utiliser useRef au lieu de useState pour éviter les re-rendus
   const graphInstanceRef = useRef(null);
+  const positionsUpdatedOnceRef = useRef(false);
 
   // Utiliser useCallback pour stabiliser cette fonction
   const getGraphRef = useCallback((instance) => {
@@ -271,11 +266,11 @@ const WorkPage = () => {
       const timer = setTimeout(() => {
         console.log("Vérification de la stabilisation du graphe...");
         // Ne mettre à jour que si la référence du graphe est disponible
-        if (forceGraphRef.current) {
+        if (graphInstanceRef.current) {
           // Vérifier si le graphe est déjà stabilisé
-          if (forceGraphRef.current.isStabilized()) {
+          if (graphInstanceRef.current.isStabilized()) {
             console.log("Graphe déjà stabilisé, mise à jour des positions...");
-            const currentNodes = forceGraphRef.current.getNodesPositions();
+            const currentNodes = graphInstanceRef.current.getNodesPositions();
             console.log(
               `Récupération de ${currentNodes.length} nœuds pour la spatialisation`
             );
@@ -289,7 +284,7 @@ const WorkPage = () => {
             console.log(
               "Stabilisation du graphe puis mise à jour des positions..."
             );
-            forceGraphRef.current.stabilize();
+            graphInstanceRef.current.stabilize();
             // La mise à jour sera déclenchée par le callback onGraphStabilized
           }
         } else {
@@ -329,6 +324,51 @@ const WorkPage = () => {
         Exporter les données JSON
       </button>
 
+      {/* Bouton de debug pour forcer la spatialisation des posts */}
+      <button
+        className="spatialize-button"
+        onClick={() => {
+          console.log("Forçage manuel de la spatialisation des posts");
+          if (graphInstanceRef.current) {
+            const nodes = graphInstanceRef.current.getNodesPositions();
+            console.log(`Utilisation de ${nodes.length} nœuds pour la spatialisation manuelle`);
+            // Vérifie si les nœuds ont les propriétés requises
+            if (nodes.length > 0) {
+              console.log("Premier nœud:", {
+                id: nodes[0].id,
+                slug: nodes[0].slug,
+                isJoshua: nodes[0].isJoshua,
+                type: nodes[0].type,
+                position: [nodes[0].x, nodes[0].y, nodes[0].z]
+              });
+            }
+            updatePostsPositions({
+              ...DEFAULT_POSTS_SPATIAL_CONFIG,
+              customNodes: nodes,
+            });
+          } else {
+            console.log("Aucune référence de graphe disponible, utilisation des paramètres par défaut");
+            updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
+          }
+        }}
+        style={{
+          position: "absolute",
+          top: "60px",
+          right: "20px",
+          padding: "10px 15px",
+          backgroundColor: "#3f51b5",
+          color: "white",
+          border: "none",
+          borderRadius: "4px",
+          fontSize: "14px",
+          cursor: "pointer",
+          zIndex: 1000,
+          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+        }}
+      >
+        Forcer la spatialisation
+      </button>
+
       {/* Canvas 3D avec les éléments 3D uniquement */}
       <Canvas camera={{ position: [0, 0, 500] }}>
         {debug && <Stats />}
@@ -344,23 +384,39 @@ const WorkPage = () => {
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
         <AdvancedCameraController config={cameraConfig} />
         <CustomForceGraph
-          ref={forceGraphRef}
+          ref={getGraphRef}
           nodeSize={5}
-          linkWidth={0.5}
-          chargeStrength={-30}
-          centerStrength={1}
-          linkStrength={0.7}
+          linkWidth={0.1}
+          chargeStrength={-100}
+          centerStrength={0.3}
+          linkStrength={0.5}
           linkDistance={30}
-          simulationSpeed={1}
+          simulationSpeed={0.8}
           collisionStrength={1}
-          cooldownTime={5000}
+          cooldownTime={15000}
           onGraphStabilized={() => {
             console.log(
               "Le graphe est stabilisé, mise à jour des positions des posts..."
             );
             // Mise à jour automatique des positions lorsque le graphe est stabilisé
             if (!positionsUpdatedOnceRef.current) {
-              const currentNodes = forceGraphRef.current.getNodesPositions();
+              console.log("Récupération des positions des nœuds depuis graphInstanceRef.current");
+              const currentNodes = graphInstanceRef.current.getNodesPositions();
+              console.log(`Récupéré ${currentNodes.length} nœuds avec leurs positions`);
+              
+              // Vérifier si les nœuds ont les propriétés requises pour la spatialisation
+              if (currentNodes.length > 0) {
+                const sampleNode = currentNodes[0];
+                console.log("Exemple de nœud récupéré:", {
+                  id: sampleNode.id,
+                  slug: sampleNode.slug,
+                  type: sampleNode.type,
+                  isJoshua: sampleNode.isJoshua,
+                  position: [sampleNode.x, sampleNode.y, sampleNode.z]
+                });
+              }
+              
+              console.log("Appel de updatePostsPositions avec les nœuds récupérés");
               updatePostsPositions({
                 ...DEFAULT_POSTS_SPATIAL_CONFIG,
                 customNodes: currentNodes,
@@ -369,7 +425,6 @@ const WorkPage = () => {
             }
           }}
         />
-        {/* <ForceGraph ref={getGraphRef} /> */}
         <PostsRenderer />
         <EffectComposer>
           <Bloom

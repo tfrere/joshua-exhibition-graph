@@ -14,6 +14,9 @@ import {
   forceLink,
   forceCenter,
   forceCollide,
+  forceX,
+  forceY,
+  forceZ,
 } from "d3-force-3d";
 import { useData } from "../../../contexts/DataContext";
 import { Html } from "@react-three/drei";
@@ -53,47 +56,27 @@ const CustomForceGraph = forwardRef(
         return { nodesData: [], linksData: [] };
       }
 
-      // Fonction déterministe pour générer des positions initiales basées sur l'ID du nœud
-      // Cette fonction produira toujours la même valeur pour le même ID
-      const getPositionFromId = (id, index, axis) => {
-        // Convertir l'ID en chaîne de caractères pour le hachage
-        const idString = String(id || `generated_${index}`);
-        
-        // On utilise une approche simple de hachage pour générer un nombre entre 0 et 1
-        // basé sur différentes parties de l'ID pour chaque axe
-        let hash = 0;
-        // On utilise des multiplieurs différents pour chaque axe pour éviter les alignements
-        const multiplier = axis === 'x' ? 1 : axis === 'y' ? 2 : 3;
-        
-        for (let i = 0; i < idString.length; i++) {
-          const char = idString.charCodeAt(i);
-          // On utilise un algorithme de hachage simple
-          hash = ((hash << 5) - hash + char * multiplier) | 0;
-        }
-        
-        // Normaliser entre -1 et 1
-        const normalized = (hash % 1000) / 500 - 1;
-        // Étendre à la plage -100 à 100
-        return normalized * 100;
-      };
-
       // Copier les données pour ne pas modifier les originales et assurer que chaque nœud a un ID
       const nodesData = graphData.nodes.map((node, index) => {
         // S'assurer que chaque nœud a un ID unique (utilisé pour les liens)
         const nodeId = node.id || `generated_${index}`;
         
         return {
-          ...node,
+          ...node, // Copier toutes les propriétés originales (important pour préserver isJoshua, type, etc.)
           // Assurer qu'il y a toujours un ID
           id: nodeId,
           // Utiliser notre fonction déterministe pour les positions initiales
-          x: getPositionFromId(nodeId, index, 'x'),
-          y: getPositionFromId(nodeId, index, 'y'),
-          z: getPositionFromId(nodeId, index, 'z'),
+          x: 0,
+          y: 0,
+          z: 0,
           // Stocker les positions originales si elles existaient
           originalX: node.x,
           originalY: node.y,
           originalZ: node.z,
+          // S'assurer que les propriétés critiques pour la spatialisation sont définies
+          slug: node.slug || nodeId,
+          isJoshua: node.isJoshua === true,
+          type: node.type || 'entity',
           // Stocker l'index pour référence
           index,
         };
@@ -177,14 +160,26 @@ const CustomForceGraph = forwardRef(
     useImperativeHandle(ref, () => ({
       // Récupérer les positions actuelles des nœuds
       getNodesPositions: () => {
+        console.log("CustomForceGraph: Retourne les positions des nœuds pour spatialisation");
         return nodesData.map((node) => ({
+          // Propriétés utilisées par ForceGraph
           id: node.id,
-          slug: node.slug,
+          group: node.group || 0,
+          name: node.name || "",
           x: node.x,
           y: node.y,
           z: node.z,
-          isJoshua: node.isJoshua,
-          type: node.type,
+          value: node.value || 1,
+          
+          // Propriétés critiques pour la spatialisation des posts
+          slug: node.slug,
+          isJoshua: node.isJoshua === true, // S'assurer que c'est un booléen
+          type: node.type || (node.isJoshua === true ? "character" : "entity"),
+          
+          // Autres propriétés qui pourraient être utiles
+          originalX: node.originalX,
+          originalY: node.originalY,
+          originalZ: node.originalZ
         }));
       },
       // Vérifier si la simulation est stabilisée
@@ -212,11 +207,11 @@ const CustomForceGraph = forwardRef(
       setIsSimulationRunning(true);
 
       // Créer une nouvelle simulation
-      const simulation = forceSimulation(nodesData)
+      const simulation = forceSimulation(nodesData, 3)
         .alphaDecay(0.006) // Stabilisation plus lente pour une meilleure distribution 3D
         .velocityDecay(0.3) // Friction réduite pour permettre plus de mouvement
         .force("charge", forceManyBody().strength(chargeStrength)) // Force de répulsion standard
-        .force("center", forceCenter().strength(centerStrength * 0.5)) // Force de centrage réduite pour permettre plus d'étalement
+        .force("center", forceCenter(0, 0, 0).strength(centerStrength)) // Force de centrage réduite pour permettre plus d'étalement
         .force(
           "collision",
           forceCollide().radius(nodeSize).strength(collisionStrength)
@@ -310,42 +305,6 @@ const CustomForceGraph = forwardRef(
         clearTimeout(stabilizeTimer);
       };
     }, [nodesData, linksData, isLoadingGraph]); // Dépendances réduites au minimum pour éviter les redémarrages
-
-    // Mise à jour des paramètres sans redémarrer la simulation
-    useEffect(() => {
-      const simulation = simulationRef.current;
-      if (!simulation || isLoadingGraph || isStabilized.current) return;
-
-      // Mettre à jour les forces sans redémarrer la simulation
-      if (simulation.force("charge")) {
-        simulation.force("charge").strength(chargeStrength);
-      }
-      if (simulation.force("center")) {
-        simulation.force("center").strength(centerStrength * 0.5);
-      }
-      if (simulation.force("collision")) {
-        simulation
-          .force("collision")
-          .radius(nodeSize)
-          .strength(collisionStrength);
-      }
-      if (simulation.force("link")) {
-        simulation.force("link").distance(linkDistance).strength(linkStrength);
-      }
-
-      // Réveiller légèrement la simulation si elle s'est trop ralentie
-      if (simulation.alpha() < 0.1) {
-        simulation.alpha(0.1);
-      }
-    }, [
-      chargeStrength,
-      centerStrength,
-      nodeSize,
-      collisionStrength,
-      linkDistance,
-      linkStrength,
-      isLoadingGraph,
-    ]);
 
     // Gérer le rendu et les mises à jour de la simulation
     useFrame(() => {
