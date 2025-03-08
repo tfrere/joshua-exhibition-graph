@@ -5,7 +5,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
-import { loadGraphData } from "../pages/WorkPage/utils/graphDataUtils";
+import { loadGraphData } from "./graphDataUtils";
 import { updatePostsPositionsInContext } from "../pages/WorkPage/components/PostRenderer/utils/postsPositionUtils";
 
 // Création du contexte
