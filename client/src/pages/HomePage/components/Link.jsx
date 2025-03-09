@@ -319,6 +319,13 @@ const calculateLinkPoints = (
     .copy(midPoint)
     .add(perpendicularVector.multiplyScalar(distance * arcHeight));
 
+  const translationVector = perpendicularVector.clone().divideScalar(distance * arcHeight / Math.PI / 2)
+
+  // On applique cette translation aux trois points clés
+  adjustedSourcePos.add(translationVector);
+  controlPoint.add(translationVector);
+  adjustedTargetPos.add(translationVector);
+  
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
     adjustedSourcePos,
