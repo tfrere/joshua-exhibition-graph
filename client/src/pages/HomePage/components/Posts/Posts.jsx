@@ -702,7 +702,7 @@ export function Posts({
       <sphereGeometry args={[0.1, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
       <meshLambertMaterial
         transparent={true}
-        opacity={0.9}
+        opacity={0.2}
         color="white"
         side={THREE.DoubleSide}
         depthWrite={true}

@@ -2446,9 +2446,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "amina-blackberry",
+      "target": "michael-slay",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "josh-bornstein",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "amina-blackberry",
+      "target": "josh-bornstein",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -2468,9 +2490,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "amina-blackberry",
+      "target": "australi-witness",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "elton-simpson",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Incitation Terroriste",
+      "mediaImpact": "10",
+      "virality": "50K+ RTs / Médias majeurs",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "australi-witness",
+      "target": "elton-simpson",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Incitation Terroriste",
       "mediaImpact": "10",
@@ -2490,9 +2534,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "australi-witness",
+      "target": "nadir-soofi",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Incitation Terroriste",
+      "mediaImpact": "10",
+      "virality": "50K+ RTs / Médias internationaux",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "pamela-geller",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "7",
+      "virality": "Modérément repris dans les médias",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "australi-witness",
+      "target": "pamela-geller",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Menace de Mort",
       "mediaImpact": "7",
@@ -2512,9 +2578,31 @@
       "linkType": "destinateur"
     },
     {
+      "source": "australi-witness",
+      "target": "elise-potaka",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
       "source": "platform_twitter",
       "target": "jim-berry-fbi",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "8",
+      "virality": "Traqué publiquement",
+      "mediaCoverage": "Forte",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "australi-witness",
+      "target": "jim-berry-fbi",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Enquête",
       "mediaImpact": "8",
@@ -2534,9 +2622,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "australi-witness",
+      "target": "bindi-cole",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ciblage & Harcèlement",
+      "mediaImpact": "4",
+      "virality": "Modérément viral",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "bill-leak",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "5",
+      "virality": "Quelques mentions dans les médias",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "australi-witness",
+      "target": "bill-leak",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Menace de Mort",
       "mediaImpact": "5",
@@ -2556,9 +2666,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "australi-witness",
+      "target": "larry-pickering",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "5",
+      "virality": "Caricatures attaquées en ligne",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "rita-katz",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "9",
+      "virality": "Fort impact sur les enquêtes",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "australi-witness",
+      "target": "rita-katz",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Désinformation Médiatique",
       "mediaImpact": "9",
@@ -2578,6 +2710,17 @@
       "linkType": "destinateur"
     },
     {
+      "source": "australi-witness",
+      "target": "afp-federal-agent-as-mohamadmo7",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
       "source": "platform_surespot",
       "target": "fbi-as-wilayaks",
       "type": "platform_to_character",
@@ -2589,26 +2732,26 @@
       "linkType": "destinateur"
     },
     {
-      "source": "platform_twitter",
+      "source": "australi-witness",
+      "target": "fbi-as-wilayaks",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "australi-witness",
       "target": "michael-slay",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
       "virality": "",
       "mediaCoverage": "",
       "linkType": "destinataire"
-    },
-    {
-      "source": "platform_surespot",
-      "target": "fbi-as-wilayaks",
-      "type": "platform_to_character",
-      "isDirect": "Direct",
-      "relationType": "Manipulation",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": ""
     },
     {
       "source": "platform_times-of-israel",
@@ -2622,9 +2765,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "dinah-silverstein",
+      "target": "michael-slay",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "jilian-c-york",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Couverture partielle",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "ryoko-tamada",
+      "target": "jilian-c-york",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Manipulation",
       "mediaImpact": "7",
@@ -2655,9 +2820,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "ryoko-tamada",
+      "target": "peter-wallace",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "mariam-veiszadeh",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "ryoko-tamada",
+      "target": "mariam-veiszadeh",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -2677,9 +2864,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "ryoko-tamada",
+      "target": "tanya-cohen",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "moon-metropolis",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "ryoko-tamada",
+      "target": "moon-metropolis",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Allié",
       "mediaImpact": "",
@@ -2699,6 +2908,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "emily-americana",
+      "target": "michael-slay",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_reddit",
       "target": "european-88",
       "type": "platform_to_character",
@@ -2710,9 +2930,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "emily-americana",
+      "target": "european-88",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_reddit",
       "target": "moon-metropolis",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "emily-americana",
+      "target": "moon-metropolis",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -2732,9 +2974,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "emily-americana",
+      "target": "death-to-sjws",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "elon-musk",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Amplification de Fake News",
+      "mediaImpact": "9",
+      "virality": "Mentionné indirectement dans des affaires",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "elon-musk",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Amplification de Fake News",
       "mediaImpact": "9",
@@ -2754,9 +3018,31 @@
       "linkType": ""
     },
     {
+      "source": "emily-goldstein",
+      "target": "hadiyo-elmi",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
       "source": "platform_thoughtcatalog",
       "target": "tanya-cohen",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "tanya-cohen",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Allié",
       "mediaImpact": "",
@@ -2776,31 +3062,64 @@
       "linkType": ""
     },
     {
-      "source": "platform_thoughtcatalog",
-      "target": "european-88",
-      "type": "platform_to_character",
-      "isDirect": "indirect",
-      "relationType": "Ennemi",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": ""
-    },
-    {
-      "source": "platform_thoughtcatalog",
-      "target": "mariam-veiszadeh",
-      "type": "platform_to_character",
-      "isDirect": "indirect",
-      "relationType": "Ennemi",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": ""
-    },
-    {
-      "source": "platform_twitter",
+      "source": "emily-goldstein",
       "target": "michael-slay",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "european-88",
       "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "european-88",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "mariam-veiszadeh",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "hadiyo-elmi",
+      "target": "michael-slay",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -2820,9 +3139,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "hadiyo-elmi",
+      "target": "european-88",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "hadiyo-elmi",
       "target": "mariam-veiszadeh",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Instrumentalisation",
       "mediaImpact": "",
@@ -2842,6 +3172,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "central",
+      "target": "josh-bornstein",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "10",
+      "virality": "Scandale médiatisé, retrait d’articles",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "lindsay-campbell-fbi",
       "type": "platform_to_character",
@@ -2853,9 +3194,20 @@
       "linkType": "destinateur"
     },
     {
-      "source": "platform_twitter",
+      "source": "central",
+      "target": "lindsay-campbell-fbi",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Enquête FBI",
+      "mediaImpact": "8",
+      "virality": "Couverture modérée",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "central",
       "target": "elise-potaka",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Usurpation d’Identité",
       "mediaImpact": "9",
@@ -2886,25 +3238,14 @@
       "linkType": "destinateur"
     },
     {
-      "source": "platform_twitter",
-      "target": "elise-potaka",
-      "type": "platform_to_character",
-      "isDirect": "Direct",
+      "source": "central",
+      "target": "luke-mcmahon",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
       "relationType": "Enquête",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "platform_facebook",
-      "target": "elise-potaka",
-      "type": "platform_to_character",
-      "isDirect": "Direct",
-      "relationType": "Enquête",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
+      "mediaImpact": "9",
+      "virality": "Grande couverture médiatique",
+      "mediaCoverage": "Forte",
       "linkType": "destinateur"
     },
     {
@@ -2930,9 +3271,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "central",
+      "target": "junaid-thorne",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "8",
+      "virality": "Modérément viral",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_reddit",
       "target": "ben-garrison",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "6",
+      "virality": "5K RTs, niche Alt-Right",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "ben-garrison",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Usurpation d’Identité",
       "mediaImpact": "6",
@@ -2952,6 +3315,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "central",
+      "target": "caitlin-roper",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "5",
+      "virality": "Ciblage par faux comptes",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_sluthate",
       "target": "dean-saxton",
       "type": "platform_to_character",
@@ -2963,9 +3337,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "central",
+      "target": "dean-saxton",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_e-mail",
       "target": "nathan-sykes",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "nathan-sykes",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Enquête",
       "mediaImpact": "",
@@ -2996,15 +3392,15 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_sluthate",
-      "target": "dean-saxton",
-      "type": "platform_to_character",
-      "isDirect": "",
-      "relationType": "",
+      "source": "central",
+      "target": "nancy-goldstein",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Usurpation d’Identité",
       "mediaImpact": "",
       "virality": "",
       "mediaCoverage": "",
-      "linkType": ""
+      "linkType": "destinataire"
     },
     {
       "source": "platform_e-mail",
@@ -3018,9 +3414,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "metropolis-forever",
+      "target": "cyndi-lavrenci",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Trollé sous faux nom",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "grant-taylor",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "8",
+      "virality": "Présent dans les médias",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "grant-taylor",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Manipulation",
       "mediaImpact": "8",
@@ -3062,6 +3480,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "metropolis-forever",
+      "target": "tom-minear",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Enquête médiatique modérée",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_reddit",
       "target": "emily-americana",
       "type": "platform_to_character",
@@ -3073,9 +3502,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "metropolis-forever",
+      "target": "emily-americana",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
       "target": "tanya-cohen",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -3095,9 +3535,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_reddit",
+      "source": "metropolis-forever",
+      "target": "amina-blackberry",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
       "target": "death-to-sjws",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Allié",
       "mediaImpact": "",
@@ -3117,9 +3568,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "michael-slay",
+      "target": "mariam-veiszadeh",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Ciblage & Harcèlement",
+      "mediaImpact": "9",
+      "virality": "10K RTs / Articles niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_dailystormer",
       "target": "andrew-anglin",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "7",
+      "virality": "Publication sur site néo-nazi influent",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "michael-slay",
+      "target": "andrew-anglin",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Infiltration",
       "mediaImpact": "7",
@@ -3139,6 +3612,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "michael-slay",
+      "target": "hadiyo-elmi",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_dailystormer",
       "target": "hadiyo-elmi",
       "type": "platform_to_character",
@@ -3161,6 +3645,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "michael-slay",
+      "target": "tanya-cohen",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_dailystormer",
       "target": "tanya-cohen",
       "type": "platform_to_character",
@@ -3183,6 +3678,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "michael-slay",
+      "target": "emily-americana",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_dailystormer",
       "target": "emily-americana",
       "type": "platform_to_character",
@@ -3205,6 +3711,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "michael-slay",
+      "target": "nuke-europe",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_dailystormer",
       "target": "nuke-europe",
       "type": "platform_to_character",
@@ -3227,9 +3744,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_dailystormer",
+      "source": "michael-slay",
       "target": "australi-witness",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -3242,7 +3759,7 @@
       "target": "australi-witness",
       "type": "platform_to_character",
       "isDirect": "Direct",
-      "relationType": "ennemi",
+      "relationType": "Ennemi",
       "mediaImpact": "",
       "virality": "",
       "mediaCoverage": "",
@@ -3252,6 +3769,17 @@
       "source": "platform_twitter",
       "target": "milo-yiannopoulos",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Collaboration Désinformation",
+      "mediaImpact": "7",
+      "virality": "Fort engagement Reddit / Twitter",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "milo-yiannopoulos",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Collaboration Désinformation",
       "mediaImpact": "7",
@@ -3271,9 +3799,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
+      "target": "shaun-king",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "6",
+      "virality": "10K RTs",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
       "target": "luke-mcmahon",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Enquête",
       "mediaImpact": "",
@@ -3282,9 +3821,9 @@
       "linkType": "destinateur"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
       "target": "elise-potaka",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Enquête",
       "mediaImpact": "",
@@ -3304,9 +3843,31 @@
       "linkType": "destinataire"
     },
     {
+      "source": "moon-metropolis",
+      "target": "mike-wendling",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Couverture internationale",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "weev-andrew-auernheimer",
       "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Collaboration Désinformation",
+      "mediaImpact": "6",
+      "virality": "Influent dans niche extrême-droite",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "weev-andrew-auernheimer",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Collaboration Désinformation",
       "mediaImpact": "6",
@@ -3326,6 +3887,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "moon-metropolis",
+      "target": "chiara-zaffino",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Article niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_e-mail",
       "target": "alice-pooley",
       "type": "platform_to_character",
@@ -3337,9 +3909,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_e-mail",
+      "source": "moon-metropolis",
+      "target": "alice-pooley",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Publication niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
       "target": "peter-wallace",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Indirect",
       "relationType": "Désinformation Médiatique",
       "mediaImpact": "8",
@@ -3370,6 +3953,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "moon-metropolis",
+      "target": "rita-panahi",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Menace en ligne",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_e-mail",
       "target": "nikki",
       "type": "platform_to_character",
@@ -3381,6 +3975,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "moon-metropolis",
+      "target": "nikki",
+      "type": "character_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Amie",
+      "mediaImpact": "5",
+      "virality": "Relation de proximité, influence directe",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "nikki",
       "type": "platform_to_character",
@@ -3392,9 +3997,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_reddit",
+      "source": "moon-metropolis",
       "target": "emily-americana",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -3403,9 +4008,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
       "target": "tanya-cohen",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -3414,9 +4019,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
       "target": "amina-blackberry",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Allié",
       "mediaImpact": "",
@@ -3425,9 +4030,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_reddit",
+      "source": "moon-metropolis",
       "target": "death-to-sjws",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Allié",
       "mediaImpact": "",
@@ -3447,9 +4052,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
+      "target": "chris-lavergne",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
       "target": "mariam-veiszadeh",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Instrumentalisation",
       "mediaImpact": "",
@@ -3469,6 +4085,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "moon-metropolis",
+      "target": "steve-bannon",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_twitter",
       "target": "alec-baldwin",
       "type": "platform_to_character",
@@ -3480,9 +4107,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "moon-metropolis",
+      "target": "alec-baldwin",
+      "type": "character_to_character",
+      "isDirect": "indirect",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "tanya-cohen",
       "target": "mariam-veiszadeh",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Instrumentalisation",
       "mediaImpact": "",
@@ -3502,9 +4140,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
+      "source": "tanya-cohen",
+      "target": "james-taranto-wsj",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "5",
+      "virality": "Confusion médiatique",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "tanya-cohen",
       "target": "michael-slay",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Ennemi",
       "mediaImpact": "",
@@ -3524,6 +4173,17 @@
       "linkType": "destinataire"
     },
     {
+      "source": "tanya-cohen",
+      "target": "pamela-geller",
+      "type": "character_to_character",
+      "isDirect": "michael-slay",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
       "source": "platform_techdirt",
       "target": "mike-masnick",
       "type": "platform_to_character",
@@ -3535,9 +4195,20 @@
       "linkType": "destinateur"
     },
     {
-      "source": "platform_twitter",
+      "source": "tanya-cohen",
+      "target": "mike-masnick",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "luke-mcmahon",
       "target": "australi-witness",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Enquête",
       "mediaImpact": "",
@@ -3557,9 +4228,9 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_twitter",
-      "target": "josh-bornstein",
-      "type": "platform_to_character",
+      "source": "luke-mcmahon",
+      "target": "nathan-sykes",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "Manipulation",
       "mediaImpact": "",
@@ -3568,9 +4239,20 @@
       "linkType": "destinataire"
     },
     {
-      "source": "platform_dailystormer",
+      "source": "naomi-wolf",
+      "target": "josh-bornstein",
+      "type": "character_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "tanya-gersh",
       "target": "andrew-anglin",
-      "type": "platform_to_character",
+      "type": "character_to_character",
       "isDirect": "Direct",
       "relationType": "harcèlement",
       "mediaImpact": "",
@@ -3598,63 +4280,6 @@
       "mediaImpact": "",
       "virality": "",
       "mediaCoverage": "",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "platform_dailystormer",
-      "target": "andrew-anglin",
-      "type": "platform_to_character_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "tanya-gersh",
-      "target": "platform_dailystormer",
-      "type": "character_to_platform_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "platform_e-mail",
-      "target": "andrew-anglin",
-      "type": "platform_to_character_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "tanya-gersh",
-      "target": "platform_e-mail",
-      "type": "character_to_platform_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "platform_twitter",
-      "target": "andrew-anglin",
-      "type": "platform_to_character_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
-      "mediaImpact": "",
-      "virality": "",
-      "mediaCoverage": "",
-      "linkType": "destinateur"
-    },
-    {
-      "source": "tanya-gersh",
-      "target": "platform_twitter",
-      "type": "character_to_platform_forced",
-      "isDirect": "Direct",
-      "relationType": "harcèlement",
       "linkType": "destinateur"
     }
   ]

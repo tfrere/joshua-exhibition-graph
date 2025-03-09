@@ -4,45 +4,93 @@ import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import MovableNode from "./MovableNode";
 
-// Composant pour un simple trait entre deux nœuds
-const SimpleLine = ({ sourceNode, targetNode, color = "#FFFFFF" }) => {
+// Composant pour une ligne avec flèche directionnelle entre deux nœuds
+const ArrowLine = ({ sourceNode, targetNode, color = "#FFFFFF" }) => {
   const lineRef = useRef();
+  const arrowRef = useRef();
+  const arrowSize = 1; // Taille de la flèche
 
-  // Mettre à jour la position de la ligne à chaque frame pour suivre les nœuds
+  // Mettre à jour la position de la ligne et de la flèche à chaque frame
   useFrame(() => {
-    if (lineRef.current) {
-      // Mettre à jour la géométrie de la ligne
-      const points = [
-        new THREE.Vector3(sourceNode.x, sourceNode.y, sourceNode.z),
-        new THREE.Vector3(targetNode.x, targetNode.y, targetNode.z),
-      ];
+    if (lineRef.current && arrowRef.current) {
+      // Points pour la ligne
+      const sourcePoint = new THREE.Vector3(
+        sourceNode.x,
+        sourceNode.y,
+        sourceNode.z
+      );
+      const targetPoint = new THREE.Vector3(
+        targetNode.x,
+        targetNode.y,
+        targetNode.z
+      );
 
-      // Recréer la géométrie de la ligne avec les nouvelles positions
+      // Mettre à jour la géométrie de la ligne
+      const points = [sourcePoint, targetPoint];
       const geometry = new THREE.BufferGeometry().setFromPoints(points);
       lineRef.current.geometry.dispose();
       lineRef.current.geometry = geometry;
+
+      // Calculer la direction et position pour la flèche
+      const direction = new THREE.Vector3()
+        .subVectors(targetPoint, sourcePoint)
+        .normalize();
+      const arrowPosition = new THREE.Vector3().addVectors(
+        sourcePoint,
+        new THREE.Vector3().copy(direction).multiplyScalar(
+          sourcePoint.distanceTo(targetPoint) * 0.7 // Positionner la flèche à 70% du chemin
+        )
+      );
+
+      // Orienter la flèche dans la direction du lien
+      arrowRef.current.position.copy(arrowPosition);
+
+      // Calculer la rotation pour que la flèche pointe dans la bonne direction
+      const quaternion = new THREE.Quaternion();
+      // Rotation nécessaire pour que le cône pointe le long de l'axe Z
+      quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0), // Orientation par défaut du cône (axe Y)
+        direction // Direction vers le nœud cible
+      );
+      arrowRef.current.setRotationFromQuaternion(quaternion);
     }
   });
 
   return (
-    <line ref={lineRef}>
-      <bufferGeometry
-        attach="geometry"
-        args={[
-          new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(sourceNode.x, sourceNode.y, sourceNode.z),
-            new THREE.Vector3(targetNode.x, targetNode.y, targetNode.z),
-          ]),
+    <group>
+      <line ref={lineRef}>
+        <bufferGeometry
+          attach="geometry"
+          args={[
+            new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(sourceNode.x, sourceNode.y, sourceNode.z),
+              new THREE.Vector3(targetNode.x, targetNode.y, targetNode.z),
+            ]),
+          ]}
+        />
+        <lineBasicMaterial
+          attach="material"
+          color={color}
+          linewidth={1}
+          transparent={true}
+          opacity={0.8}
+        />
+      </line>
+      <mesh
+        ref={arrowRef}
+        position={[
+          sourceNode.x + (targetNode.x - sourceNode.x) * 0.7,
+          sourceNode.y + (targetNode.y - sourceNode.y) * 0.7,
+          sourceNode.z + (targetNode.z - sourceNode.z) * 0.7,
         ]}
-      />
-      <lineBasicMaterial
-        attach="material"
-        color={color}
-        linewidth={1}
-        transparent={true}
-        opacity={0.6}
-      />
-    </line>
+      >
+        <coneGeometry
+          args={[arrowSize * 0.5, arrowSize, 8]}
+          rotation={[Math.PI / 2, 0, 0]}
+        />
+        <meshBasicMaterial color={color} />
+      </mesh>
+    </group>
   );
 };
 
@@ -90,7 +138,7 @@ const MovableGraph = ({ data }) => {
         target={[0, 0, 0]}
       />
 
-      {/* Rendu de tous les liens avec des traits simples */}
+      {/* Rendu de tous les liens avec des flèches directionnelles */}
       {data.links.map((link, index) => {
         const sourceNode = nodeMap[link.source];
         const targetNode = nodeMap[link.target];
@@ -101,7 +149,7 @@ const MovableGraph = ({ data }) => {
         const linkColor = link.color || "#FFFFFF";
 
         return (
-          <SimpleLine
+          <ArrowLine
             key={`link-${link.id || `${link.source}-${link.target}-${index}`}`}
             sourceNode={sourceNode}
             targetNode={targetNode}

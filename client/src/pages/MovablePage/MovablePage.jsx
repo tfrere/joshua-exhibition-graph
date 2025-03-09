@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useState, useEffect, useRef } from "react";
 import MovableGraph from "./components/MovableGraph";
+import GridReferences from "./components/GridReferences";
 import Posts from "../HomePage/components/Posts/Posts";
 import "./MovablePage.css";
 
@@ -26,6 +27,12 @@ const MovablePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showPosts, setShowPosts] = useState(true);
   const graphInstanceRef = useRef(null);
+
+  // Ajout des états pour les paramètres de la grille
+  const [showGrid, setShowGrid] = useState(true);
+  const [rotationInterval, setRotationInterval] = useState(20);
+  const [maxRotation, setMaxRotation] = useState(180);
+  const [gridOpacity, setGridOpacity] = useState(0.4);
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -71,6 +78,11 @@ const MovablePage = () => {
   // Fonction pour basculer l'affichage des posts
   const togglePosts = () => {
     setShowPosts(!showPosts);
+  };
+
+  // Fonction pour basculer l'affichage de la grille
+  const toggleGrid = () => {
+    setShowGrid(!showGrid);
   };
 
   // Fonction pour exporter les données spatialisées
@@ -262,18 +274,6 @@ const MovablePage = () => {
         </div>
       )}
 
-      <div className="instructions">
-        <h2>Mode Manipulation</h2>
-        <p>Cliquez sur un nœud pour le sélectionner et le manipuler</p>
-        <p>
-          Utilisez la touche Shift pour changer de mode (déplacer, pivoter,
-          redimensionner)
-        </p>
-        <button className="toggle-button" onClick={togglePosts}>
-          {showPosts ? "Masquer les posts" : "Afficher les posts"}
-        </button>
-      </div>
-
       {/* Bouton d'exportation */}
       <button
         className="export-button"
@@ -307,38 +307,21 @@ const MovablePage = () => {
         {graphData && graphData.nodes && graphData.links && (
           <MovableGraph ref={graphInstanceRef} data={graphData} />
         )}
-        {/* Ajouter une sphère transparente de taille 250 centrée en 0,0,0 */}
-        <mesh
-          position={[0, 0, 0]}
-          onPointerOver={(e) => e.stopPropagation()}
-          onPointerOut={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <sphereGeometry args={[250, 32, 32]} />
-          <meshStandardMaterial color={"#888888"} transparent opacity={0.4} />
-        </mesh>
-        <mesh
-          position={[0, 0, 0]}
-          onPointerOver={(e) => e.stopPropagation()}
-          onPointerOut={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <sphereGeometry args={[150, 32, 32]} />
-          <meshStandardMaterial color={"#888888"} transparent opacity={0.5} />
-        </mesh>
-        <mesh
-          position={[0, 0, 0]}
-          onPointerOver={(e) => e.stopPropagation()}
-          onPointerOut={(e) => e.stopPropagation()}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <sphereGeometry args={[10, 32, 32]} />
-          <meshStandardMaterial color={"#888888"} transparent opacity={1} />
-        </mesh>
+
+        {/* Utilisation du nouveau composant GridReferences */}
+        {showGrid && (
+          <GridReferences
+            rotationInterval={rotationInterval}
+            maxRotation={maxRotation}
+            circleRadii={[50, 100, 150, 200, 250]}
+            opacity={gridOpacity}
+          />
+        )}
+
         {/* Afficher les posts si les données sont disponibles */}
-        {/* {showPosts && Array.isArray(postsData) && postsData.length > 0 && (
+        {showPosts && Array.isArray(postsData) && postsData.length > 0 && (
           <Posts data={postsData} />
-        )} */}
+        )}
       </Canvas>
     </div>
   );

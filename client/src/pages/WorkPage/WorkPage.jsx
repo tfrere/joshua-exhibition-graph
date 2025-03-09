@@ -391,7 +391,7 @@ const WorkPage = () => {
           }}
         /> */}
         <ForceGraph ref={getGraphRef} />
-        <PostsRenderer />
+        {/* <PostsRenderer /> */}
         <EffectComposer>
           <Bloom
             intensity={0.5}
