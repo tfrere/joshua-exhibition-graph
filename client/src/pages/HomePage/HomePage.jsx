@@ -1,9 +1,14 @@
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, SpotLight, Stats } from "@react-three/drei";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as THREE from "three";
 import Graph from "./components/Graph.jsx";
 import Posts from "./components/Posts.jsx";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import {
+  EffectComposer,
+  Bloom,
+  DepthOfField,
+} from "@react-three/postprocessing";
 import { useControls } from "leva";
 import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
@@ -59,8 +64,20 @@ const HomePage = () => {
   }, []);
 
   // Configurer tous les contrôles avec Leva
-  const { debug, backgroundColor, cameraConfig } = useControls({
+  const {
+    debug,
+    backgroundColor,
+    cameraConfig,
+    hasPosts,
+    hasBloom,
+    hasGraph,
+    hasDepthOfField,
+  } = useControls({
     debug: true,
+    hasPosts: true,
+    hasBloom: true,
+    hasGraph: false,
+    hasDepthOfField: true,
     backgroundColor: "#000000",
   });
 
@@ -89,22 +106,31 @@ const HomePage = () => {
         <ambientLight intensity={1.2} />
 
         {/* Afficher le graphe si les données sont disponibles et valides */}
-        {graphData && graphData.nodes && graphData.links && (
+        {hasGraph && graphData && graphData.nodes && graphData.links && (
           <Graph data={graphData} />
         )}
-        {Array.isArray(postsData) && postsData.length > 0 && (
-          <Posts data={postsData} />
-        )}
+        {hasPosts && postsData && <Posts data={postsData} />}
 
         <EffectComposer>
-          <Bloom
-            intensity={0.5}
-            luminanceThreshold={0.2}
-            luminanceSmoothing={0.2}
-          />
+          {hasBloom && (
+            <Bloom
+              intensity={0.5}
+              luminanceThreshold={0.2}
+              luminanceSmoothing={0.2}
+            />
+          )}
           {/* <Pixelation
             granularity={3} // pixel granularity
           /> */}
+          {hasDepthOfField && (
+            <DepthOfField
+              focusDistance={10} // where to focu
+              focusRange={30}
+              focalLength={1.8} // focal length
+              // worldFocusDistance={1}
+              bokehScale={5} // bokeh size
+            />
+          )}
         </EffectComposer>
       </Canvas>
     </div>

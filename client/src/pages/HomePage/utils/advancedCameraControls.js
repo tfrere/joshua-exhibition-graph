@@ -11,7 +11,7 @@ export const CAMERA_POSITIONS = [
 // Configuration par défaut pour le mode vol
 export const DEFAULT_FLIGHT_CONFIG = {
   maxSpeed: 500,
-  acceleration: 300,
+  acceleration: 1000,
   deceleration: 0.95,
   rotationSpeed: 2.0,
   deadzone: 0.1,

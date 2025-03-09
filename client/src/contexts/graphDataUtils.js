@@ -92,14 +92,29 @@ export function generateGraphData(rawData, options = {}) {
       type: "character",
       val: 20,
       color: character.isJoshua ? "#FF5733" : "#333333", // Highlight Joshua characters
+
+      // Transfert direct des propriétés du personnage sans underscore
       isJoshua: character.isJoshua,
-      _thematic: character.thematic,
-      _career: character.career,
-      _genre: character.genre,
-      _polarisation: character.polarisation,
-      _sources: Array.isArray(character.sources)
+      biography: character.biography,
+      mostViralContent: character.mostViralContent,
+      displayName: character.displayName,
+      aliases: character.aliases,
+      fictionOrImpersonation: character.fictionOrImpersonation,
+      platform: character.platform,
+      thematic: character.thematic,
+      career: character.career,
+      genre: character.genre,
+      polarisation: character.polarisation,
+      cercle: character.cercle,
+      politicalSphere: character.politicalSphere,
+      sources: Array.isArray(character.sources)
         ? character.sources.map((src) => sourceNormalizationMap.get(src) || src)
         : [],
+      totalPosts: character.totalPosts,
+      hasEnoughPostsToUseInFrequencyPosts:
+        character.hasEnoughPostsToUseInFrequencyPosts,
+      hasEnoughTextToMakeWordcloud: character.hasEnoughTextToMakeWordcloud,
+      topWords: character.topWords,
     };
   });
 

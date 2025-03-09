@@ -58,19 +58,19 @@ const CustomForceGraph = forwardRef(
       const getPositionFromId = (id, index, axis) => {
         // Convertir l'ID en chaîne de caractères pour le hachage
         const idString = String(id || `generated_${index}`);
-        
+
         // On utilise une approche simple de hachage pour générer un nombre entre 0 et 1
         // basé sur différentes parties de l'ID pour chaque axe
         let hash = 0;
         // On utilise des multiplieurs différents pour chaque axe pour éviter les alignements
-        const multiplier = axis === 'x' ? 1 : axis === 'y' ? 2 : 3;
-        
+        const multiplier = axis === "x" ? 1 : axis === "y" ? 2 : 3;
+
         for (let i = 0; i < idString.length; i++) {
           const char = idString.charCodeAt(i);
           // On utilise un algorithme de hachage simple
           hash = ((hash << 5) - hash + char * multiplier) | 0;
         }
-        
+
         // Normaliser entre -1 et 1
         const normalized = (hash % 1000) / 500 - 1;
         // Étendre à la plage -100 à 100
@@ -81,15 +81,15 @@ const CustomForceGraph = forwardRef(
       const nodesData = graphData.nodes.map((node, index) => {
         // S'assurer que chaque nœud a un ID unique (utilisé pour les liens)
         const nodeId = node.id || `generated_${index}`;
-        
+
         return {
           ...node,
           // Assurer qu'il y a toujours un ID
           id: nodeId,
           // Utiliser notre fonction déterministe pour les positions initiales
-          x: getPositionFromId(nodeId, index, 'x'),
-          y: getPositionFromId(nodeId, index, 'y'),
-          z: getPositionFromId(nodeId, index, 'z'),
+          x: getPositionFromId(nodeId, index, "x"),
+          y: getPositionFromId(nodeId, index, "y"),
+          z: getPositionFromId(nodeId, index, "z"),
           // Stocker les positions originales si elles existaient
           originalX: node.x,
           originalY: node.y,
@@ -177,15 +177,36 @@ const CustomForceGraph = forwardRef(
     useImperativeHandle(ref, () => ({
       // Récupérer les positions actuelles des nœuds
       getNodesPositions: () => {
-        return nodesData.map((node) => ({
-          id: node.id,
-          slug: node.slug,
-          x: node.x,
-          y: node.y,
-          z: node.z,
-          isJoshua: node.isJoshua,
-          type: node.type,
-        }));
+        return nodesData.map((node) => {
+          return {
+            id: node.id,
+            slug: node.slug,
+            x: node.x,
+            y: node.y,
+            z: node.z,
+            isJoshua: node.isJoshua,
+            type: node.type,
+            // Propriétés du personnage
+            biography: node.biography,
+            mostViralContent: node.mostViralContent,
+            displayName: node.displayName,
+            aliases: node.aliases,
+            fictionOrImpersonation: node.fictionOrImpersonation,
+            platform: node.platform,
+            thematic: node.thematic,
+            career: node.career,
+            genre: node.genre,
+            polarisation: node.polarisation,
+            cercle: node.cercle,
+            politicalSphere: node.politicalSphere,
+            sources: node.sources,
+            totalPosts: node.totalPosts,
+            hasEnoughPostsToUseInFrequencyPosts:
+              node.hasEnoughPostsToUseInFrequencyPosts,
+            hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+            topWords: node.topWords,
+          };
+        });
       },
       // Vérifier si la simulation est stabilisée
       isStabilized: () => isStabilized.current,
@@ -236,7 +257,7 @@ const CustomForceGraph = forwardRef(
 
         // La simulation 3D met automatiquement à jour les positions x, y, z
         // Nous n'avons plus besoin de calculer manuellement les forces 3D
-        nodesData.forEach(node => {
+        nodesData.forEach((node) => {
           // Limiter la vitesse maximale
           const maxVelocity = 5 * simulationSpeed;
           node.vx = Math.min(Math.max(node.vx || 0, -maxVelocity), maxVelocity);
@@ -244,7 +265,8 @@ const CustomForceGraph = forwardRef(
           node.vz = Math.min(Math.max(node.vz || 0, -maxVelocity), maxVelocity);
 
           // Calculer le mouvement pour cette itération
-          totalMovement += Math.abs(node.vx) + Math.abs(node.vy) + Math.abs(node.vz);
+          totalMovement +=
+            Math.abs(node.vx) + Math.abs(node.vy) + Math.abs(node.vz);
         });
 
         // Détecter la stabilisation basée sur le mouvement total

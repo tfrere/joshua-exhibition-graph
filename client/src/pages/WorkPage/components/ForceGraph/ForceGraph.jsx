@@ -90,6 +90,25 @@ export const ForceGraphUI = ({ graphRef }) => {
           z: node.z,
           isJoshua: node.isJoshua,
           type: node.type,
+          // Inclure toutes les autres propriétés directement
+          biography: node.biography,
+          mostViralContent: node.mostViralContent,
+          displayName: node.displayName,
+          aliases: node.aliases,
+          fictionOrImpersonation: node.fictionOrImpersonation,
+          platform: node.platform,
+          thematic: node.thematic,
+          career: node.career,
+          genre: node.genre,
+          polarisation: node.polarisation,
+          cercle: node.cercle,
+          politicalSphere: node.politicalSphere,
+          sources: node.sources,
+          totalPosts: node.totalPosts,
+          hasEnoughPostsToUseInFrequencyPosts:
+            node.hasEnoughPostsToUseInFrequencyPosts,
+          hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+          topWords: node.topWords,
         })),
         links: graphData.links.map((link) => ({
           source:
@@ -287,6 +306,29 @@ const ForceGraphComponent = forwardRef((props, ref) => {
                   y: nodeObj.position.y,
                   z: nodeObj.position.z,
                   value: node.value,
+                  type: node.type,
+                  isJoshua: node.isJoshua,
+                  // Propriétés du personnage
+                  slug: node.slug,
+                  biography: node.biography,
+                  mostViralContent: node.mostViralContent,
+                  displayName: node.displayName,
+                  aliases: node.aliases,
+                  fictionOrImpersonation: node.fictionOrImpersonation,
+                  platform: node.platform,
+                  thematic: node.thematic,
+                  career: node.career,
+                  genre: node.genre,
+                  polarisation: node.polarisation,
+                  cercle: node.cercle,
+                  politicalSphere: node.politicalSphere,
+                  sources: node.sources,
+                  totalPosts: node.totalPosts,
+                  hasEnoughPostsToUseInFrequencyPosts:
+                    node.hasEnoughPostsToUseInFrequencyPosts,
+                  hasEnoughTextToMakeWordcloud:
+                    node.hasEnoughTextToMakeWordcloud,
+                  topWords: node.topWords,
                 };
               }
 
@@ -308,6 +350,29 @@ const ForceGraphComponent = forwardRef((props, ref) => {
                     y: d3Node.y || 0,
                     z: d3Node.z || 0,
                     value: node.value,
+                    type: node.type,
+                    isJoshua: node.isJoshua,
+                    // Propriétés du personnage
+                    slug: node.slug,
+                    biography: node.biography,
+                    mostViralContent: node.mostViralContent,
+                    displayName: node.displayName,
+                    aliases: node.aliases,
+                    fictionOrImpersonation: node.fictionOrImpersonation,
+                    platform: node.platform,
+                    thematic: node.thematic,
+                    career: node.career,
+                    genre: node.genre,
+                    polarisation: node.polarisation,
+                    cercle: node.cercle,
+                    politicalSphere: node.politicalSphere,
+                    sources: node.sources,
+                    totalPosts: node.totalPosts,
+                    hasEnoughPostsToUseInFrequencyPosts:
+                      node.hasEnoughPostsToUseInFrequencyPosts,
+                    hasEnoughTextToMakeWordcloud:
+                      node.hasEnoughTextToMakeWordcloud,
+                    topWords: node.topWords,
                   };
                 }
               }
@@ -321,6 +386,28 @@ const ForceGraphComponent = forwardRef((props, ref) => {
                 y: node.y || node.coordinates?.y || 0,
                 z: node.z || node.coordinates?.z || 0,
                 value: node.value,
+                type: node.type,
+                isJoshua: node.isJoshua,
+                // Propriétés du personnage
+                slug: node.slug,
+                biography: node.biography,
+                mostViralContent: node.mostViralContent,
+                displayName: node.displayName,
+                aliases: node.aliases,
+                fictionOrImpersonation: node.fictionOrImpersonation,
+                platform: node.platform,
+                thematic: node.thematic,
+                career: node.career,
+                genre: node.genre,
+                polarisation: node.polarisation,
+                cercle: node.cercle,
+                politicalSphere: node.politicalSphere,
+                sources: node.sources,
+                totalPosts: node.totalPosts,
+                hasEnoughPostsToUseInFrequencyPosts:
+                  node.hasEnoughPostsToUseInFrequencyPosts,
+                hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+                topWords: node.topWords,
               };
             });
           }
@@ -336,6 +423,28 @@ const ForceGraphComponent = forwardRef((props, ref) => {
               y: node.y || node.coordinates?.y || 0,
               z: node.z || node.coordinates?.z || 0,
               value: node.value,
+              type: node.type,
+              isJoshua: node.isJoshua,
+              // Propriétés du personnage
+              slug: node.slug,
+              biography: node.biography,
+              mostViralContent: node.mostViralContent,
+              displayName: node.displayName,
+              aliases: node.aliases,
+              fictionOrImpersonation: node.fictionOrImpersonation,
+              platform: node.platform,
+              thematic: node.thematic,
+              career: node.career,
+              genre: node.genre,
+              polarisation: node.polarisation,
+              cercle: node.cercle,
+              politicalSphere: node.politicalSphere,
+              sources: node.sources,
+              totalPosts: node.totalPosts,
+              hasEnoughPostsToUseInFrequencyPosts:
+                node.hasEnoughPostsToUseInFrequencyPosts,
+              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+              topWords: node.topWords,
             };
           });
         } catch (error) {
@@ -345,15 +454,39 @@ const ForceGraphComponent = forwardRef((props, ref) => {
           );
 
           // Dernier recours: utiliser les données du contexte directement
-          return graphData.nodes.map((node) => ({
-            id: node.id,
-            group: node.group,
-            name: node.name,
-            x: node.x || node.coordinates?.x || 0,
-            y: node.y || node.coordinates?.y || 0,
-            z: node.z || node.coordinates?.z || 0,
-            value: node.value,
-          }));
+          return graphData.nodes.map((node) => {
+            return {
+              id: node.id,
+              group: node.group,
+              name: node.name,
+              x: node.x || node.coordinates?.x || 0,
+              y: node.y || node.coordinates?.y || 0,
+              z: node.z || node.coordinates?.z || 0,
+              value: node.value,
+              type: node.type,
+              isJoshua: node.isJoshua,
+              // Propriétés du personnage
+              slug: node.slug,
+              biography: node.biography,
+              mostViralContent: node.mostViralContent,
+              displayName: node.displayName,
+              aliases: node.aliases,
+              fictionOrImpersonation: node.fictionOrImpersonation,
+              platform: node.platform,
+              thematic: node.thematic,
+              career: node.career,
+              genre: node.genre,
+              polarisation: node.polarisation,
+              cercle: node.cercle,
+              politicalSphere: node.politicalSphere,
+              sources: node.sources,
+              totalPosts: node.totalPosts,
+              hasEnoughPostsToUseInFrequencyPosts:
+                node.hasEnoughPostsToUseInFrequencyPosts,
+              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+              topWords: node.topWords,
+            };
+          });
         }
       },
 

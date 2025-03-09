@@ -65,8 +65,8 @@ const WorkPage = () => {
     // centraux avec un effet voronoi, qui crée des clusters distincts
     useVoronoi: true, // Active/désactive la passe bvoronoi
     perlinScale: 0.05,
-    perlinAmplitude: 12, // Augmenté pour plus de variation 3D
-    dilatationFactor: 1.8,
+    perlinAmplitude: 2, // Augmenté pour plus de variation 3D
+    dilatationFactor: 1.2,
 
     // Coloration des posts
     useUniqueColorsPerCharacter: true,
@@ -74,7 +74,7 @@ const WorkPage = () => {
     // === PASSE 2: FLOWFIELD ===
     // Cette passe anime les positions des posts à travers un champ de vecteurs
     // pour créer des motifs organiques et naturels
-    useFlowfield: true, // Active/désactive la passe flowfield
+    useFlowfield: false, // Active/désactive la passe flowfield
     flowFrames: 100,
     flowScale: 0.02,
     flowStrength: 5,
@@ -152,15 +152,40 @@ const WorkPage = () => {
         console.log("Méthode de secours pour les noeuds");
 
         if (hasGraphData) {
-          nodesWithPositions = graphData.nodes.map((node) => ({
-            id: node.id,
-            group: node.group || 0,
-            name: node.name || "",
-            x: node.coordinates?.x ?? node.x ?? 0,
-            y: node.coordinates?.y ?? node.y ?? 0,
-            z: node.coordinates?.z ?? node.z ?? 0,
-            value: node.value || 1,
-          }));
+          nodesWithPositions = graphData.nodes.map((node) => {
+            // Créer un objet qui contient toutes les propriétés du nœud
+            return {
+              id: node.id,
+              group: node.group || 0,
+              name: node.name || "",
+              x: node.coordinates?.x ?? node.x ?? 0,
+              y: node.coordinates?.y ?? node.y ?? 0,
+              z: node.coordinates?.z ?? node.z ?? 0,
+              value: node.value || 1,
+              type: node.type,
+              isJoshua: node.isJoshua,
+              // Inclure toutes les autres propriétés directement
+              slug: node.slug,
+              biography: node.biography,
+              mostViralContent: node.mostViralContent,
+              displayName: node.displayName,
+              aliases: node.aliases,
+              fictionOrImpersonation: node.fictionOrImpersonation,
+              platform: node.platform,
+              thematic: node.thematic,
+              career: node.career,
+              genre: node.genre,
+              polarisation: node.polarisation,
+              cercle: node.cercle,
+              politicalSphere: node.politicalSphere,
+              sources: node.sources,
+              totalPosts: node.totalPosts,
+              hasEnoughPostsToUseInFrequencyPosts:
+                node.hasEnoughPostsToUseInFrequencyPosts,
+              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
+              topWords: node.topWords,
+            };
+          });
           console.log(
             `Récupéré ${nodesWithPositions.length} noeuds depuis graphData`
           );
@@ -333,27 +358,23 @@ const WorkPage = () => {
       <Canvas camera={{ position: [0, 0, 500] }}>
         {debug && <Stats />}
         <color attach="background" args={[backgroundColor]} />
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          makeDefault={true}
-        />
+        <OrbitControls enablePan={true} enableZoom={true} makeDefault={true} />
         {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
         {/* Contrôleur de caméra avancé avec modes orbite et vol */}
-        <AdvancedCameraController config={cameraConfig} />
+        {/* <AdvancedCameraController config={cameraConfig} /> */}
         {/* <CustomForceGraph
           ref={forceGraphRef}
           nodeSize={5}
           linkWidth={0.5}
-          chargeStrength={-500}
+          chargeStrength={1}
           centerStrength={1}
-          linkStrength={2}
-          linkDistance={70}
-          simulationSpeed={0.1}
+          linkStrength={0.7}
+          linkDistance={10}
+          zStrength={1}
+          simulationSpeed={1}
           collisionStrength={5}
-          cooldownTime={5000}
+          cooldownTime={10000}
           onGraphStabilized={() => {
             console.log(
               "Le graphe est stabilisé, mise à jour des positions des posts..."

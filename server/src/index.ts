@@ -34,6 +34,17 @@ interface SharedState {
   closestNodeId?: number;
   closestNodeName?: string;
   closestNodePosition?: [number, number, number];
+  activeNode?: ActiveNode;
+}
+
+// Interface pour le nœud actif
+interface ActiveNode {
+  id: string;
+  slug: string;
+  name?: string;
+  x?: number;
+  y?: number;
+  z?: number;
 }
 
 let currentState: SharedState = {
@@ -46,6 +57,11 @@ io.on("connection", (socket) => {
 
   socket.emit("initialState", currentState);
 
+  // Si un nœud actif existe déjà, l'envoyer au nouveau client
+  if (currentState.activeNode) {
+    socket.emit("activeNodeUpdated", currentState.activeNode);
+  }
+
   socket.on("updateState", (newState: SharedState) => {
     currentState = newState;
     socket.broadcast.emit("stateUpdated", newState);
@@ -56,6 +72,15 @@ io.on("connection", (socket) => {
         `Nœud le plus proche : ${newState.closestNodeName} (ID: ${newState.closestNodeId})`
       );
     }
+  });
+
+  // Gérer les mises à jour du nœud actif
+  socket.on("updateActiveNode", (node: ActiveNode) => {
+    console.log(
+      `Nœud actif mis à jour: ${node.name || node.slug} (ID: ${node.id})`
+    );
+    currentState.activeNode = node;
+    socket.broadcast.emit("activeNodeUpdated", node);
   });
 
   socket.on("disconnect", () => {

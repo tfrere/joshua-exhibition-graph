@@ -456,12 +456,19 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         args={[camera, gl.domElement]}
         enableDamping
         dampingFactor={0.25}
-        rotateSpeed={0.5}
+        // rotateSpeed={0.5}
+        // enablePan={false}
+        // minZoom={0.5}
+        // maxZoom={2}
+        minDistance={650}
+        maxDistance={650}
+        enableZoom={true}
+        enablePan={true}
         enabled={mode === CAMERA_MODES.ORBIT && !isTransitioning}
-        autoRotate={
-          autoRotateEnabled && mode === CAMERA_MODES.ORBIT && !isTransitioning
-        }
-        autoRotateSpeed={AUTO_ROTATE_SPEED * 10}
+        // autoRotate={
+        //   autoRotateEnabled && mode === CAMERA_MODES.ORBIT && !isTransitioning
+        // }
+        // autoRotateSpeed={AUTO_ROTATE_SPEED * 10}
       />
     </>
   );
