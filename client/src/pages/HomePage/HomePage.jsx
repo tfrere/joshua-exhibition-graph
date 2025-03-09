@@ -8,8 +8,9 @@ import {
   EffectComposer,
   Bloom,
   DepthOfField,
+  ToneMapping,
 } from "@react-three/postprocessing";
-import { useControls } from "leva";
+import { useControls, folder } from "leva";
 import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
@@ -72,13 +73,50 @@ const HomePage = () => {
     hasBloom,
     hasGraph,
     hasDepthOfField,
+    hasToneMapping,
+    // Paramètres de DepthOfField
+    focusDistance,
+    focusRange,
+    focalLength,
+    bokehScale,
   } = useControls({
     debug: true,
     hasPosts: true,
-    hasBloom: true,
-    hasGraph: false,
-    hasDepthOfField: true,
+    hasBloom: false,
+    hasGraph: true,
+    hasDepthOfField: false,
+    hasToneMapping: false,
     backgroundColor: "#000000",
+    "Depth of Field": folder({
+      focusDistance: {
+        value: 10,
+        min: 0,
+        max: 50,
+        step: 0.1,
+        label: "Distance de focus",
+      },
+      focusRange: {
+        value: 30,
+        min: 0,
+        max: 100,
+        step: 1,
+        label: "Plage de focus",
+      },
+      focalLength: {
+        value: 1.8,
+        min: 0.1,
+        max: 5,
+        step: 0.1,
+        label: "Longueur focale",
+      },
+      bokehScale: {
+        value: 5,
+        min: 0,
+        max: 20,
+        step: 0.1,
+        label: "Échelle du bokeh",
+      },
+    }),
   });
 
   return (
@@ -112,6 +150,12 @@ const HomePage = () => {
         {hasPosts && postsData && <Posts data={postsData} />}
 
         <EffectComposer>
+          {hasToneMapping && (
+            <ToneMapping
+              mode={THREE.ACESFilmicToneMapping}
+              exposure={0.5}
+            />
+          )}
           {hasBloom && (
             <Bloom
               intensity={0.5}
@@ -124,11 +168,10 @@ const HomePage = () => {
           /> */}
           {hasDepthOfField && (
             <DepthOfField
-              focusDistance={10} // where to focu
-              focusRange={30}
-              focalLength={1.8} // focal length
-              // worldFocusDistance={1}
-              bokehScale={5} // bokeh size
+              focusDistance={focusDistance}
+              focusRange={focusRange}
+              focalLength={focalLength}
+              bokehScale={bokehScale}
             />
           )}
         </EffectComposer>
