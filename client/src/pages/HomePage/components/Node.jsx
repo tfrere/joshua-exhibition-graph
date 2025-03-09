@@ -3,7 +3,6 @@ import { useFrame, useLoader } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
-import { activeNodeRef } from "./activeNodeRef";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
 const NodeSphere = ({ size, color, isSelected }) => {
@@ -211,15 +210,6 @@ const Node = ({ node, onClick, isSelected }) => {
   const { useImage, svgData, svgBounds } = useSVGLoader(
     node.isJoshua ? "character" : node.name
   );
-
-  // Vérifier si ce nœud est le nœud actif
-  useFrame(() => {
-    const shouldBeActive =
-      activeNodeRef.current && activeNodeRef.current.id === node.id;
-    if (shouldBeActive !== isActive) {
-      setIsActive(shouldBeActive);
-    }
-  });
 
   // Couleurs et propriétés visuelles
   const defaultColor = isSelected ? "#ff9500" : "#0088ff";
