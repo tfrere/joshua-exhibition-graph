@@ -41,6 +41,7 @@ export const createNodeObject = (node) => {
 
     // Essayer de charger une texture si node.name existe, mais sans bloquer le graphe
     if (node.name) {
+      console.log(`Chargement de la texture pour ${node.name}`);
       try {
         const textureLoader = new THREE.TextureLoader();
         textureLoader.load(
@@ -176,7 +177,7 @@ export const createNodeObject = (node) => {
     context.fillStyle = "#FFFFFF";
 
     // Initial placeholder text (will be updated in render loop)
-    context.fillText(node.name || "Sans nom", canvas.width / 2, 40);
+    context.fillText(node.id || "Sans nom", canvas.width / 2, 40);
 
     const texture = new THREE.CanvasTexture(canvas);
     const textMaterial = new THREE.MeshBasicMaterial({
@@ -206,7 +207,7 @@ export const createNodeObject = (node) => {
       texture,
       lastUpdate: 0,
       nodeId: node.id,
-      nodeName: node.name || "Sans nom",
+      nodeName: node.id || "Sans nom",
     };
 
     // Optimiser les mises à jour du texte - limiter à 5 FPS

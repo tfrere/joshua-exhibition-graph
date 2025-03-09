@@ -2,7 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useState, useEffect, useRef } from "react";
 import MovableGraph from "./components/MovableGraph";
-import Posts from "../HomePage/components/Posts";
+import Posts from "../HomePage/components/Posts/Posts";
 import "./MovablePage.css";
 
 // Fonction utilitaire pour télécharger un fichier JSON
@@ -301,19 +301,44 @@ const MovablePage = () => {
       >
         <Stats />
         <color attach="background" args={["#000000"]} />
-
         {/* Éclairage */}
         <ambientLight intensity={1.2} />
-
         {/* Afficher le graphe si les données sont disponibles et valides */}
         {graphData && graphData.nodes && graphData.links && (
           <MovableGraph ref={graphInstanceRef} data={graphData} />
         )}
-
+        {/* Ajouter une sphère transparente de taille 250 centrée en 0,0,0 */}
+        <mesh
+          position={[0, 0, 0]}
+          onPointerOver={(e) => e.stopPropagation()}
+          onPointerOut={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <sphereGeometry args={[250, 32, 32]} />
+          <meshStandardMaterial color={"#888888"} transparent opacity={0.4} />
+        </mesh>
+        <mesh
+          position={[0, 0, 0]}
+          onPointerOver={(e) => e.stopPropagation()}
+          onPointerOut={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <sphereGeometry args={[150, 32, 32]} />
+          <meshStandardMaterial color={"#888888"} transparent opacity={0.5} />
+        </mesh>
+        <mesh
+          position={[0, 0, 0]}
+          onPointerOver={(e) => e.stopPropagation()}
+          onPointerOut={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <sphereGeometry args={[10, 32, 32]} />
+          <meshStandardMaterial color={"#888888"} transparent opacity={1} />
+        </mesh>
         {/* Afficher les posts si les données sont disponibles */}
-        {showPosts && Array.isArray(postsData) && postsData.length > 0 && (
+        {/* {showPosts && Array.isArray(postsData) && postsData.length > 0 && (
           <Posts data={postsData} />
-        )}
+        )} */}
       </Canvas>
     </div>
   );

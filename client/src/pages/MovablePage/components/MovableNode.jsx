@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
-const NodeSphere = ({ size, color, isSelected }) => {
+const NodeSphere = ({ size, color, isSelected, transparent = false }) => {
   return (
     <>
       <sphereGeometry args={[size * 3 || 0.5, 32, 32]} />
@@ -15,6 +15,8 @@ const NodeSphere = ({ size, color, isSelected }) => {
         metalness={0.8}
         emissive={isSelected ? "#FFF" : "#FFF"}
         emissiveIntensity={0.5}
+        transparent={transparent}
+        opacity={transparent ? 0.3 : 1.0}
       />
     </>
   );
@@ -74,37 +76,33 @@ const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
 // Composant pour afficher un label/texte
 const NodeLabel = ({ text, size, isSelected, isActive }) => {
   return (
-    <group position={[0, size + 0.3, 0]}>
+    <group position={[0, size * 3 + 0.3, 0]}>
       <Billboard>
         <group>
           {/* Background plane for better text visibility */}
-          {(isActive || isSelected) && (
-            <mesh position={[0, 0, -0.01]}>
-              <planeGeometry args={[text.length * 0.25 + 0.3, 0.5]} />
-              <meshBasicMaterial
-                color="#000000"
-                transparent
-                opacity={0.5}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )}
+          <mesh position={[0, 0, -0.01]}>
+            <planeGeometry args={[text.length * 0.25 + 0.3, 0.5]} />
+            <meshBasicMaterial
+              color="#000000"
+              transparent
+              opacity={0.5}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
 
-          {/* Text with improved visibility */}
-          {(isActive || isSelected) && (
-            <Text
-              fontSize={2}
-              color={"#ffffff"}
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.2}
-              outlineColor="#000000"
-              outlineBlur={0.2}
-              position={[0, 0, 0]}
-            >
-              {text}
-            </Text>
-          )}
+          {/* Text with improved visibility - now always visible */}
+          <Text
+            fontSize={2}
+            color={"#ffffff"}
+            anchorX="center"
+            anchorY="middle"
+            outlineWidth={0.2}
+            outlineColor="#000000"
+            outlineBlur={0.2}
+            position={[0, 0, 0]}
+          >
+            {text}
+          </Text>
         </group>
       </Billboard>
     </group>
@@ -408,23 +406,25 @@ const MovableNode = ({
         onClick={handleClick}
         position={[localPosition.x, localPosition.y, localPosition.z]}
       >
-        {/* Utiliser un SVG s'il est disponible, sinon utiliser une sphère */}
-        {useImage && svgData ? (
+        {/* Toujours afficher une sphère pour interagir, même si un SVG est présent */}
+        <NodeSphere
+          size={nodeSize * 0.7} // Taille augmentée pour faciliter l'interaction
+          color={isSelected ? "#ff9500" : "#0088ff"}
+          isSelected={isSelected}
+          transparent={useImage && svgData}
+        />
+
+        {/* Afficher le SVG si disponible */}
+        {useImage && svgData && (
           <NodeSVG
             svgData={svgData}
             svgBounds={svgBounds}
             scale={svgScale}
             isSelected={isSelected}
           />
-        ) : (
-          <NodeSphere
-            size={nodeSize}
-            color={nodeColor}
-            isSelected={isSelected}
-          />
         )}
 
-        {/* Ajouter le label */}
+        {/* Ajouter le label - maintenant toujours visible */}
         <NodeLabel
           text={displayText}
           size={nodeSize}

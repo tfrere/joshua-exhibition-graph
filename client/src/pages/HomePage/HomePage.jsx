@@ -2,8 +2,8 @@ import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useState, useEffect } from "react";
 import Graph from "./components/Graph.jsx";
-import Posts from "./components/Posts.jsx";
-import { useControls } from "leva";
+import Posts from "./components/Posts/Posts.jsx";
+import { useControls, folder } from "leva";
 import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
@@ -16,7 +16,7 @@ const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
   const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Configuration de Leva - Options générales
   const [generalControls] = useControls(() => ({
     debug: true,
@@ -79,8 +79,9 @@ const HomePage = () => {
 
       {/* Indicateur de connexion de manette */}
       <GamepadIndicator />
-      
+
       <Canvas
+        shadows
         camera={{ position: [0, 0, 500], fov: 50, near: 0.1, far: 1000000 }}
       >
         {generalControls.debug && <Stats />}
@@ -89,13 +90,26 @@ const HomePage = () => {
         <AdvancedCameraController />
 
         {/* Éclairage */}
-        <ambientLight intensity={1.2} />
+        <ambientLight intensity={0.5} />
+
+        {/* Lumière ponctuelle centrale optimisée */}
+        <pointLight
+          position={[0, 0, 0]}
+          intensity={100}
+          distance={60000}
+          decay={0.1}
+          color="pink"
+          castShadow
+          shadow-mapSize-width={128}
+          shadow-mapSize-height={128}
+        />
 
         {/* Afficher le graphe si les données sont disponibles et valides */}
-        {generalControls.hasGraph && graphData && graphData.nodes && graphData.links && (
-          <Graph data={graphData} />
-        )}
-        
+        {generalControls.hasGraph &&
+          graphData &&
+          graphData.nodes &&
+          graphData.links && <Graph data={graphData} />}
+
         {/* Afficher les posts si activés et disponibles */}
         {generalControls.hasPosts && postsData && <Posts data={postsData} />}
 
