@@ -224,16 +224,15 @@ const MovablePage = () => {
       // 5. Préparer les données des posts si disponibles
       if (hasPostsData) {
         spatializedPosts = postsData.map((post) => {
-          const coords = post.coordinates || {};
 
           return {
             id: post.id,
             postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
             slug: post.slug || "",
             impact: post.impact || 0,
-            x: coords.x || 0,
-            y: coords.y || 0,
-            z: coords.z || 0,
+            x: post.x || 0,
+            y: post.y || 0,
+            z: post.z || 0,
             // isJoshuaCharacter supprimé
           };
         });
