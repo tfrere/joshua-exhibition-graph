@@ -1,0 +1,3661 @@
+{
+  "nodes": [
+    {
+      "id": "central",
+      "type": "central",
+      "name": "Joshua Goldberg",
+      "label": "Joshua Goldberg",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Agent du chaos nihiliste",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Gauche progressiste",
+      "biography": null,
+      "aliases": [
+        "Joshua Goldberg"
+      ]
+    },
+    {
+      "id": "24-129-100-84",
+      "type": "character",
+      "name": "24-129-100-84",
+      "label": "24-129-100-84",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "24-129-100-84"
+      ]
+    },
+    {
+      "id": "platform_wikipedia",
+      "type": "platform",
+      "name": "wikipedia",
+      "label": "wikipedia"
+    },
+    {
+      "id": "4krapsucks",
+      "type": "character",
+      "name": "4KrapSucks",
+      "label": "4KrapSucks",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "4KrapSucks"
+      ]
+    },
+    {
+      "id": "platform_anime-news-network",
+      "type": "platform",
+      "name": "anime-news-network",
+      "label": "anime-news-network"
+    },
+    {
+      "id": "66-177-73-91",
+      "type": "character",
+      "name": "66-177-73-91",
+      "label": "66-177-73-91",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur intellectuel",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "66-177-73-91"
+      ]
+    },
+    {
+      "id": "76-106-245-93",
+      "type": "character",
+      "name": "76-106-245-93",
+      "label": "76-106-245-93",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur intellectuel",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "76-106-245-93"
+      ]
+    },
+    {
+      "id": "amina-blackberry",
+      "type": "character",
+      "name": "Amina Blackberry",
+      "label": "Amina Blackberry",
+      "isJoshua": true,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Conservatrice",
+      "career": "Blogueur / Chroniqueur",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "AminaBlackberry",
+        "Amina Blackberry",
+        "Blackberry_Rosemary"
+      ]
+    },
+    {
+      "id": "platform_reddit",
+      "type": "platform",
+      "name": "reddit",
+      "label": "reddit"
+    },
+    {
+      "id": "platform_twitter",
+      "type": "platform",
+      "name": "twitter",
+      "label": "twitter"
+    },
+    {
+      "id": "aryan-heights",
+      "type": "character",
+      "name": "Aryan Heights",
+      "label": "Aryan Heights",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Propagandiste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Aryan Heights"
+      ]
+    },
+    {
+      "id": "platform_stormfront",
+      "type": "platform",
+      "name": "stormfront",
+      "label": "stormfront"
+    },
+    {
+      "id": "australi-witness",
+      "type": "character",
+      "name": "Australi Witness",
+      "label": "Australi Witness",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Faux radical djihadiste",
+      "career": "Recruteur terroriste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Islamisme radical",
+      "biography": "« AustralianWitness », se faisant passer pour un djihadiste, était en réalité Joshua Goldberg, semant le chaos en ligne. Le canular révéla l'influence d'un individu usant de fausses identités.",
+      "aliases": [
+        "AustraliWitness",
+        "AusSecret",
+        "\"AusSecret, AustraliWitness\""
+      ]
+    },
+    {
+      "id": "platform_justpaste.it",
+      "type": "platform",
+      "name": "JustPaste.it",
+      "label": "JustPaste.it"
+    },
+    {
+      "id": "platform_facebook",
+      "type": "platform",
+      "name": "facebook",
+      "label": "facebook"
+    },
+    {
+      "id": "platform_surespot",
+      "type": "platform",
+      "name": "surespot",
+      "label": "surespot"
+    },
+    {
+      "id": "platform_8chan",
+      "type": "platform",
+      "name": "8chan",
+      "label": "8chan"
+    },
+    {
+      "id": "blaze-it-flaggot",
+      "type": "character",
+      "name": "Blaze It Flaggot",
+      "label": "Blaze It Flaggot",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Otaku",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": "Blaze It Flaggot, possiblement un alias humoristique sans traces notables en ligne, illustre la volatilité du web où des pseudonymes éphémères apparaissent et disparaissent, laissant un mystère.",
+      "aliases": [
+        "Blaze_It_Flaggot"
+      ]
+    },
+    {
+      "id": "bw-anime-fan",
+      "type": "character",
+      "name": "Bw Anime Fan",
+      "label": "Bw Anime Fan",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Bw Anime Fan",
+        "b-w-anime-fan"
+      ]
+    },
+    {
+      "id": "chuck-e-jesus",
+      "type": "character",
+      "name": "Chuck E Jesus",
+      "label": "Chuck E Jesus",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Libertarien absolutiste de la liberté d’expression",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Chuck-E-Jesus"
+      ]
+    },
+    {
+      "id": "death-to-sjws",
+      "type": "character",
+      "name": "Death to SJWs",
+      "label": "Death to SJWs",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Propagandiste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Death_to_SJWs"
+      ]
+    },
+    {
+      "id": "dinah-silverstein",
+      "type": "character",
+      "name": "Dinah Silverstein",
+      "label": "Dinah Silverstein",
+      "isJoshua": true,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Extrême gauche",
+      "career": "Blogueur / Chroniqueur",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": [
+        "Dinah Silverstein"
+      ]
+    },
+    {
+      "id": "platform_times-of-israel",
+      "type": "platform",
+      "name": "times-of-israel",
+      "label": "times-of-israel"
+    },
+    {
+      "id": "dr-shlomo-goldstein",
+      "type": "character",
+      "name": "Dr Shlomo Goldstein",
+      "label": "Dr Shlomo Goldstein",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Nationaliste radical pro-Israël",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Dr_Shlomo_Goldstein"
+      ]
+    },
+    {
+      "id": "ryoko-tamada",
+      "type": "character",
+      "name": "Ryoko Tamada",
+      "label": "Ryoko Tamada",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "Blogueur / Chroniqueur",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": "﻿Ryoko Tamada est une jeune Japonaise souffrant de dépression, qui rêve de partir vivre aux États-Unis. En ligne, elle adopte une identité plus combative sous le pseudonyme DreamerRyoko sur Twitter. Là, elle devient une figure controversée, passionnée par la défense de la liberté d'expression et farouchement opposée à toute forme de censure, qu’elle associe aux législations sur le « discours de haine ».\nSa lutte pour la liberté d'expression semble être une extension de ses propres désirs d'émancipation et de quête d'une existence plus libre à l'étranger. Elle critique vigoureusement les mouvements progressistes et les groupes des droits de l’homme, qu'elle accuse de vouloir imposer une vision autoritaire de la société. Ses tweets, souvent incisifs et provocateurs, ciblent fréquemment les politiques occidentales, notamment en Europe et aux États-Unis, ainsi que des institutions internationales comme l’ONU.\nCette tension entre ses luttes personnelles et ses prises de position publiques crée un contraste frappant : derrière son ton acerbe et polémique se cache une jeune femme en proie à des sentiments d'isolement, de mal-être, et à une aspiration profonde de trouver un endroit où elle pourrait se sentir libre et comprise. Son rêve américain devient alors une métaphore de cette quête d’évasion, mais aussi un paradoxe, puisqu’elle critique précisément les sociétés vers lesquelles elle souhaite s'exiler.\nEn ligne, DreamerRyoko engage souvent des débats houleux avec des personnalités médiatiques et des commentateurs politiques, utilisant sa plateforme comme un exutoire à sa frustration. Pourtant, en dehors de ce personnage public, Ryoko demeure une jeune femme vulnérable, cherchant à échapper à sa réalité oppressante et à bâtir une nouvelle vie ailleurs.",
+      "aliases": [
+        "DreamerRyoko",
+        "RyokoTamada"
+      ]
+    },
+    {
+      "id": "platform_e-mail",
+      "type": "platform",
+      "name": "e-mail",
+      "label": "e-mail"
+    },
+    {
+      "id": "emily-americana",
+      "type": "character",
+      "name": "Emily Americana",
+      "label": "Emily Americana",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Emily_Americana"
+      ]
+    },
+    {
+      "id": "emily-goldstein",
+      "type": "character",
+      "name": "Emily Goldstein",
+      "label": "Emily Goldstein",
+      "isJoshua": true,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Extrême gauche",
+      "career": "Blogueur / Chroniqueur",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": [
+        "emily-goldstein"
+      ]
+    },
+    {
+      "id": "platform_thoughtcatalog",
+      "type": "platform",
+      "name": "thoughtcatalog",
+      "label": "thoughtcatalog"
+    },
+    {
+      "id": "europe-hates-niggers",
+      "type": "character",
+      "name": "Europe Hates Niggers",
+      "label": "Europe Hates Niggers",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Europe_Hates_Niggers"
+      ]
+    },
+    {
+      "id": "european-88",
+      "type": "character",
+      "name": "European 88",
+      "label": "European 88",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "European88"
+      ]
+    },
+    {
+      "id": "flappy-brd",
+      "type": "character",
+      "name": "Flappy BRD",
+      "label": "Flappy BRD",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême gauche",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": [
+        "FlappyBRD"
+      ]
+    },
+    {
+      "id": "gas-the-kikes",
+      "type": "character",
+      "name": "Gas the Kikes",
+      "label": "Gas the Kikes",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Gas-the-kikes"
+      ]
+    },
+    {
+      "id": "hadiyo-elmi",
+      "type": "character",
+      "name": "Hadiyo Elmi",
+      "label": "Hadiyo Elmi",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême gauche",
+      "career": "Militante",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": [
+        "Hadiyo Elmi"
+      ]
+    },
+    {
+      "id": "id-c9uafs7u",
+      "type": "character",
+      "name": "ID:C9Uafs7U",
+      "label": "ID:C9Uafs7U",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "ID:c9Uafs7U"
+      ]
+    },
+    {
+      "id": "platform_4plebs",
+      "type": "platform",
+      "name": "4plebs",
+      "label": "4plebs"
+    },
+    {
+      "id": "island-angel",
+      "type": "character",
+      "name": "Island Angel",
+      "label": "Island Angel",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur intellectuel",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Island_Angel"
+      ]
+    },
+    {
+      "id": "kill-all-pakis",
+      "type": "character",
+      "name": "Kill All Pakis",
+      "label": "Kill All Pakis",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Kill_All_Pakis"
+      ]
+    },
+    {
+      "id": "kill-all-sjws",
+      "type": "character",
+      "name": "Kill All SJWs",
+      "label": "Kill All SJWs",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême droite",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Kill_All_SJWs"
+      ]
+    },
+    {
+      "id": "le-cancer-kin",
+      "type": "character",
+      "name": "Le Cancer Kin",
+      "label": "Le Cancer Kin",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "Le_Cancer-kin"
+      ]
+    },
+    {
+      "id": "madotsuki-the-dreamer",
+      "type": "character",
+      "name": "Madotsuki The Dreamer",
+      "label": "Madotsuki The Dreamer",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Cinéma",
+      "career": "Critique de cinéma",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Madotsuki_the_Dreamer",
+        "madotsuki-the-dreamer"
+      ]
+    },
+    {
+      "id": "platform_imdb",
+      "type": "platform",
+      "name": "imdb",
+      "label": "imdb"
+    },
+    {
+      "id": "platform_filmboards",
+      "type": "platform",
+      "name": "filmboards",
+      "label": "filmboards"
+    },
+    {
+      "id": "may-may-poster",
+      "type": "character",
+      "name": "May May Poster",
+      "label": "May May Poster",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Propagandiste",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "MayMayPoster"
+      ]
+    },
+    {
+      "id": "platform_adult swim",
+      "type": "platform",
+      "name": "Adult Swim",
+      "label": "Adult Swim"
+    },
+    {
+      "id": "metacanadian-420",
+      "type": "character",
+      "name": "Metacanadian 420",
+      "label": "Metacanadian 420",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême gauche",
+      "career": "Commentateur",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": [
+        "metacanadian_420"
+      ]
+    },
+    {
+      "id": "metropolis-forever",
+      "type": "character",
+      "name": "Metropolis Forever",
+      "label": "Metropolis Forever",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "Commentateur",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "MetropolisForever",
+        "Metropolisforever",
+        "metropolisforever",
+        "Metropolisforever_2"
+      ]
+    },
+    {
+      "id": "platform_mail",
+      "type": "platform",
+      "name": "Mail",
+      "label": "Mail"
+    },
+    {
+      "id": "platform_deviantart",
+      "type": "platform",
+      "name": "deviantart",
+      "label": "deviantart"
+    },
+    {
+      "id": "platform_bluelight",
+      "type": "platform",
+      "name": "bluelight",
+      "label": "bluelight"
+    },
+    {
+      "id": "platform_badmovies",
+      "type": "platform",
+      "name": "badmovies",
+      "label": "badmovies"
+    },
+    {
+      "id": "platform_ytmnd",
+      "type": "platform",
+      "name": "ytmnd",
+      "label": "ytmnd"
+    },
+    {
+      "id": "platform_bluwiki",
+      "type": "platform",
+      "name": "bluwiki",
+      "label": "bluwiki"
+    },
+    {
+      "id": "platform_tezukainenglish",
+      "type": "platform",
+      "name": "tezukainenglish",
+      "label": "tezukainenglish"
+    },
+    {
+      "id": "platform_digitpress",
+      "type": "platform",
+      "name": "digitpress",
+      "label": "digitpress"
+    },
+    {
+      "id": "platform_animesuki",
+      "type": "platform",
+      "name": "animesuki",
+      "label": "animesuki"
+    },
+    {
+      "id": "platform_criterion",
+      "type": "platform",
+      "name": "criterion",
+      "label": "criterion"
+    },
+    {
+      "id": "platform_the-west-australian",
+      "type": "platform",
+      "name": "the-west-australian",
+      "label": "the-west-australian"
+    },
+    {
+      "id": "michael-slay",
+      "type": "character",
+      "name": "Michael Slay",
+      "label": "Michael Slay",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Blogueur / Chroniqueur",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "michaelslay",
+        "Michael Slay",
+        "European88"
+      ]
+    },
+    {
+      "id": "platform_medium",
+      "type": "platform",
+      "name": "medium",
+      "label": "medium"
+    },
+    {
+      "id": "platform_dailystormer",
+      "type": "platform",
+      "name": "dailystormer",
+      "label": "dailystormer"
+    },
+    {
+      "id": "micronesia-gal",
+      "type": "character",
+      "name": "Micronesia Gal",
+      "label": "Micronesia Gal",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Otaku",
+      "career": "",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Micronesia_Gal"
+      ]
+    },
+    {
+      "id": "moon-metropolis",
+      "type": "character",
+      "name": "Moon Metropolis",
+      "label": "Moon Metropolis",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contradicteur libertarien",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "MoonMetropolis",
+        "moonmetropolis"
+      ]
+    },
+    {
+      "id": "platform_wordpress",
+      "type": "platform",
+      "name": "wordpress",
+      "label": "wordpress"
+    },
+    {
+      "id": "platform_wrong-planet",
+      "type": "platform",
+      "name": "wrong-planet",
+      "label": "wrong-planet"
+    },
+    {
+      "id": "platform_disqus",
+      "type": "platform",
+      "name": "disqus",
+      "label": "disqus"
+    },
+    {
+      "id": "platform_lastfm",
+      "type": "platform",
+      "name": "lastfm",
+      "label": "lastfm"
+    },
+    {
+      "id": "platform_breitbart",
+      "type": "platform",
+      "name": "breitbart",
+      "label": "breitbart"
+    },
+    {
+      "id": "mouthful-of-grandpa",
+      "type": "character",
+      "name": "Mouthful of Grandpa",
+      "label": "Mouthful of Grandpa",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême droite",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Mouthful_of_Grandpa"
+      ]
+    },
+    {
+      "id": "naruto-2-0",
+      "type": "character",
+      "name": "Naruto 2 0",
+      "label": "Naruto 2 0",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Provocateur extrême",
+      "career": "",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "naruto-2-0"
+      ]
+    },
+    {
+      "id": "nuke-europe",
+      "type": "character",
+      "name": "Nuke Europe",
+      "label": "Nuke Europe",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême droite",
+      "career": "Propagandiste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "Nuke_Europe"
+      ]
+    },
+    {
+      "id": "pineapple-10",
+      "type": "character",
+      "name": "Pineapple 10",
+      "label": "Pineapple 10",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Otaku",
+      "career": "Youtubeur",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Libertarisme",
+      "biography": null,
+      "aliases": [
+        "pineapple69",
+        "pineapple10"
+      ]
+    },
+    {
+      "id": "platform_youtube",
+      "type": "platform",
+      "name": "youtube",
+      "label": "youtube"
+    },
+    {
+      "id": "the-old-jacobite-2",
+      "type": "character",
+      "name": "The Old Jacobite 2",
+      "label": "The Old Jacobite 2",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Cinéma",
+      "career": "Critique de cinéma",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": [
+        "theoldjacobite2"
+      ]
+    },
+    {
+      "id": "wake-up-white-man",
+      "type": "character",
+      "name": "Wake Up White Man",
+      "label": "Wake Up White Man",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Propagandiste",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "1",
+      "politicalSphere": "Extrême gauche",
+      "biography": "« Wake Up White Man est un alias suprémaciste incitant à la haine sur des forums néonazis. Il propage l'idée du \"grand remplacement\" et encourage la radicalisation. »",
+      "aliases": [
+        "WakeUpWhiteMan",
+        "Wake_Up_White_Man"
+      ]
+    },
+    {
+      "id": "platform_vnn",
+      "type": "platform",
+      "name": "vnn",
+      "label": "vnn"
+    },
+    {
+      "id": "tanya-cohen",
+      "type": "character",
+      "name": "Tanya Cohen",
+      "label": "Tanya Cohen",
+      "isJoshua": true,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Extrême gauche",
+      "career": "Blogueuse politique",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "1",
+      "politicalSphere": "Extrême droite",
+      "biography": "Tanya Cohen, militante en ligne pour une réglementation des discours haineux. Vraie activiste ou alias fictif créé pour polariser le débat ? Ses textes défendent des lois anti-haine inspirées de l'Australie/Canada, suscitant de vives controverses.",
+      "aliases": [
+        "xTanyaCohenx",
+        "tanya-cohen",
+        "TanyaCohen1",
+        "Dreambug"
+      ]
+    },
+    {
+      "id": "platform_dailykos",
+      "type": "platform",
+      "name": "dailykos",
+      "label": "dailykos"
+    },
+    {
+      "id": "platform_daily-kos",
+      "type": "platform",
+      "name": "daily-kos",
+      "label": "daily-kos"
+    },
+    {
+      "id": "platform_techdirt",
+      "type": "platform",
+      "name": "techdirt",
+      "label": "techdirt"
+    },
+    {
+      "id": "alice-pooley",
+      "type": "character",
+      "name": "Alice Pooley",
+      "label": "Alice Pooley",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "Alice Pooley, activiste en ligne controversée. Défend des causes sociales, critique les discriminations. Admirée pour sa franchise ou jugée excessive. Symbolise un militantisme 2.0 fait d'interpellations directes pour plus d'égalité.",
+      "aliases": []
+    },
+    {
+      "id": "andrew-anglin",
+      "type": "character",
+      "name": "Andrew Anglin",
+      "label": "Andrew Anglin",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Influenceur Alt-Right / Troll",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Extrême droite",
+      "biography": "« Andrew Anglin, fondateur néonazi du Daily Stormer, propage des discours antisémites et suprémacistes, exemplifiant la radicalisation haineuse en ligne malgré multiples poursuites. »",
+      "aliases": []
+    },
+    {
+      "id": "ben-garrison",
+      "type": "character",
+      "name": "Ben Garrison",
+      "label": "Ben Garrison",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Caricature politique",
+      "career": "Caricaturiste politique Alt-Right",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Ben Garrison, caricaturiste américain conservateur, pro-Trump, dépeint élites et institutions en cibles satiriques. Ses dessins, parfois récupérés par des extrémistes, nourrissent controverses. »",
+      "aliases": []
+    },
+    {
+      "id": "bindi-cole",
+      "type": "character",
+      "name": "Bindi Cole",
+      "label": "Bindi Cole",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Identité",
+      "career": "Artiste / Militante anti-racisme",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Artiste wathaurong, Bindi Cole interroge racisme et spiritualité dans ses photographies, valorisant l'identité autochtone et la quête de reconnaissance en Australie. »",
+      "aliases": []
+    },
+    {
+      "id": "bill-leak",
+      "type": "character",
+      "name": "Bill Leak",
+      "label": "Bill Leak",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Caricature",
+      "career": "Caricaturiste conservateur",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Caricaturiste australien polémique, Bill Leak confrontait l'opinion par ses dessins incisifs. Accusé de racisme, il défendait la satire comme pilier de la liberté d'expression. »",
+      "aliases": []
+    },
+    {
+      "id": "caitlin-roper",
+      "type": "character",
+      "name": "Caitlin Roper",
+      "label": "Caitlin Roper",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Féminisme",
+      "career": "Activiste féministe",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Extrême gauche",
+      "biography": "« Caitlin Roper, militante australienne de Collective Shout, lutte contre la sexualisation et la pornographie, accusant l'industrie culturelle de banaliser la violence et d'objectiver les femmes. »",
+      "aliases": []
+    },
+    {
+      "id": "chiara-zaffino",
+      "type": "character",
+      "name": "Chiara Zaffino",
+      "label": "Chiara Zaffino",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Journaliste australienne, Chiara Zaffino s'attache à dévoiler les discriminations et les injustices sociales, soutenant que l'information est un levier essentiel de changement sociétal. »",
+      "aliases": []
+    },
+    {
+      "id": "cyndi-lavrenci",
+      "type": "character",
+      "name": "Cyndi Lavrenci",
+      "label": "Cyndi Lavrenci",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Cyndi Lavrenci est une militante australienne engagée contre la violence domestique et pour l'égalité des sexes, réclamant tolérance zéro et politiques publiques renforcées. »",
+      "aliases": []
+    },
+    {
+      "id": "elise-potaka",
+      "type": "character",
+      "name": "Elise Potaka",
+      "label": "Elise Potaka",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Journaliste d'investigation, Elise Potaka révèle corruption et abus institutionnels. Elle défend la transparence, focalisant aussi sur les droits autochtones et les enjeux écologiques. »",
+      "aliases": []
+    },
+    {
+      "id": "elton-simpson",
+      "type": "character",
+      "name": "Elton Simpson",
+      "label": "Elton Simpson",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Terrorisme",
+      "career": "Terroriste jihadiste",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Islamisme radical",
+      "biography": "« Elton Simpson, lié à l'État islamique, a tenté de perpétrer une attaque à Garland en 2015 avant d'être abattu, suscitant des débats sur la radicalisation en ligne. »",
+      "aliases": []
+    },
+    {
+      "id": "grant-taylor",
+      "type": "character",
+      "name": "Grant Taylor",
+      "label": "Grant Taylor",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "jilian-c-york",
+      "type": "character",
+      "name": "Jilian C. York",
+      "label": "Jilian C. York",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Liberté d’expression",
+      "career": "Activiste / Journaliste",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Jilian C. York, militante des droits numériques à l'EFF, défend la liberté d'expression en ligne et lutte contre la censure. Elle alerte sur la surveillance étatique et la responsabilité des plateformes. »",
+      "aliases": []
+    },
+    {
+      "id": "jim-berry-fbi",
+      "type": "character",
+      "name": "Jim Berry (FBI)",
+      "label": "Jim Berry (FBI)",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Agent",
+      "career": "Autorité (FBI)",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Jim Berry (FBI), agent de contre-terrorisme, a œuvré dans la cybersurveillance pour déjouer des menaces intérieures, reflétant le délicat",
+      "aliases": []
+    },
+    {
+      "id": "junaid-thorne",
+      "type": "character",
+      "name": "Junaid Thorne",
+      "label": "Junaid Thorne",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Radicalisme",
+      "career": "Prédicateur radical islamiste",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Islamisme radical",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "josh-bornstein",
+      "type": "character",
+      "name": "Josh Bornstein",
+      "label": "Josh Bornstein",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Droit",
+      "career": "Avocat / Victime de trolling",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Gauche progressiste",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "lindsay-campbell-fbi",
+      "type": "character",
+      "name": "Lindsay Campbell (FBI)",
+      "label": "Lindsay Campbell (FBI)",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Agent",
+      "career": "Autorité (FBI)",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "larry-pickering",
+      "type": "character",
+      "name": "Larry Pickering",
+      "label": "Larry Pickering",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "caricature",
+      "career": "Caricaturiste politique",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "luke-mcmahon",
+      "type": "character",
+      "name": "Luke McMahon",
+      "label": "Luke McMahon",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Justice",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "mariam-veiszadeh",
+      "type": "character",
+      "name": "Mariam Veiszadeh",
+      "label": "Mariam Veiszadeh",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Inclusion",
+      "career": "Activiste / Cible de trolling",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Mariam Veiszadeh, avocate australienne d'origine afghane, combat l'islamophobie via l'Islamophobia Register. Malgré des menaces, elle milite pour la tolérance et la protection des droits des musulmans. »",
+      "aliases": []
+    },
+    {
+      "id": "mike-wendling",
+      "type": "character",
+      "name": "Mike Wendling",
+      "label": "Mike Wendling",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Désinformation",
+      "career": "Journaliste (BBC)",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Mike Wendling, journaliste BBC, étudie l'extrémisme numérique et l'alt-right. Il met en garde contre la désinformation et la radicalisation facilitées par les réseaux sociaux. »",
+      "aliases": []
+    },
+    {
+      "id": "milo-yiannopoulos",
+      "type": "character",
+      "name": "Milo Yiannopoulos",
+      "label": "Milo Yiannopoulos",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Controverse",
+      "career": "Influenceur Alt-Right / Journaliste",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Milo Yiannopoulos, polémiste britannique ex-Breitbart, critique féminisme et militants LGBTQ+, se disant défenseur de la liberté d'expression. Banni de Twitter pour harcèlement, il polarise le débat conservateur. »",
+      "aliases": []
+    },
+    {
+      "id": "nadir-soofi",
+      "type": "character",
+      "name": "Nadir Soofi",
+      "label": "Nadir Soofi",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Terrorisme",
+      "career": "Terroriste jihadiste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Islamisme radical",
+      "biography": "« Nadir Soofi, complice d'Elton Simpson, a participé à une tentative d'attentat à Garland en 2015. Abattu sur place, il illustre la radicalisation locale liée à la propagande extrémiste en ligne. »",
+      "aliases": []
+    },
+    {
+      "id": "nikki",
+      "type": "character",
+      "name": "Nikki",
+      "label": "Nikki",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "",
+      "career": "Amie Joshua",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "pamela-geller",
+      "type": "character",
+      "name": "Pamela Geller",
+      "label": "Pamela Geller",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Islamophobie",
+      "career": "Activiste anti-islam / Journaliste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "peter-wallace",
+      "type": "character",
+      "name": "Peter Wallace",
+      "label": "Peter Wallace",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Journalisme",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "rita-katz",
+      "type": "character",
+      "name": "Rita Katz",
+      "label": "Rita Katz",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Contre-terrorisme",
+      "career": "Analyste renseignement / SITE",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "rita-panahi",
+      "type": "character",
+      "name": "Rita Panahi",
+      "label": "Rita Panahi",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Conservatisme",
+      "career": "Journaliste conservatrice",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "shaun-king",
+      "type": "character",
+      "name": "Shaun King",
+      "label": "Shaun King",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Black Lives Matter",
+      "career": "Journaliste / Activiste ",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Extrême gauche",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "tom-minear",
+      "type": "character",
+      "name": "Tom Minear",
+      "label": "Tom Minear",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Politique",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "weev-andrew-auernheimer",
+      "type": "character",
+      "name": "Weev (Andrew Auernheimer)",
+      "label": "Weev (Andrew Auernheimer)",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Hacker / Troll ",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "elon-musk",
+      "type": "character",
+      "name": "Elon Musk",
+      "label": "Elon Musk",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Entrepreneur",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "dean-saxton",
+      "type": "character",
+      "name": "dean-saxton",
+      "label": "dean-saxton",
+      "isJoshua": false,
+      "fictionOrImpersonation": "impersonation",
+      "thematic": "Modérateur",
+      "career": "Reddit Moderator",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "fbi-as-wilayaks",
+      "type": "character",
+      "name": "FBI as wilayahks",
+      "label": "FBI as wilayahks",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Agent double",
+      "career": "Autorité (FBI) / Alias en ligne",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "afp-federal-agent-as-mohamadmo7",
+      "type": "character",
+      "name": "AFP Federal Agent as mohamadmo7",
+      "label": "AFP Federal Agent as mohamadmo7",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Agent double",
+      "career": "Autorité (AFP) / Alias en ligne",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "nathan-sykes",
+      "type": "character",
+      "name": "Nathan Sykes",
+      "label": "Nathan Sykes",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "naomi-wolf",
+      "type": "character",
+      "name": "Naomi Wolf",
+      "label": "Naomi Wolf",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Libertés civiles",
+      "career": "Auteure",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "chris-lavergne",
+      "type": "character",
+      "name": "Chris Lavergne (Thought Catalog)",
+      "label": "Chris Lavergne (Thought Catalog)",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Culture",
+      "career": "Média en ligne",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "« Chris Lavergne, fondateur de Thought Catalog, promeut l'expression libre à travers des récits personnels, mais le site suscite aussi des controverses pour ses contenus polémiques. »",
+      "aliases": []
+    },
+    {
+      "id": "mike-masnick",
+      "type": "character",
+      "name": "Mike Masnick (Techdirt)",
+      "label": "Mike Masnick (Techdirt)",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Technologie",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Extrême droite",
+      "biography": "« Mike Masnick, fondateur de Techdirt, défend un Internet libre en critiquant les lois sur le copyright et les brevets abusifs, promouvant l'innovation ouverte. »",
+      "aliases": []
+    },
+    {
+      "id": "tanya-gersh",
+      "type": "character",
+      "name": "Tanya Gersh ",
+      "label": "Tanya Gersh ",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Harcèlement",
+      "career": "Agente Immobilière",
+      "genre": "féminin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "steve-bannon",
+      "type": "character",
+      "name": "Steve Bannon",
+      "label": "Steve Bannon",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Néo-nazi",
+      "career": "Politicien",
+      "genre": "masculin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "alec-baldwin",
+      "type": "character",
+      "name": "Alec Baldwin",
+      "label": "Alec Baldwin",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Divertissement",
+      "career": "Acteur",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": "2",
+      "politicalSphere": "Extrême droite",
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "nancy-goldstein",
+      "type": "character",
+      "name": "Nancy Goldstein",
+      "label": "Nancy Goldstein",
+      "isJoshua": false,
+      "fictionOrImpersonation": "fiction",
+      "thematic": "Politique",
+      "career": "Journaliste",
+      "genre": "féminin",
+      "polarisation": "gauche",
+      "cercle": "2",
+      "politicalSphere": "Non catégorisé",
+      "biography": "Nancy Goldstein, journaliste et auteure, a contribué au HuffPost avant 2015. Publiée dans The Guardian, The Atlantic, The Nation, NPR et Politico, elle couvrait des sujets variés. Le HuffPost, créé comme alternative progressiste, a bénéficié de sa plume.",
+      "aliases": []
+    },
+    {
+      "id": "james-taranto-wsj",
+      "type": "character",
+      "name": "James Taranto",
+      "label": "James Taranto",
+      "isJoshua": false,
+      "fictionOrImpersonation": "",
+      "thematic": "Économie",
+      "career": "Journaliste",
+      "genre": "masculin",
+      "polarisation": "droite",
+      "cercle": null,
+      "politicalSphere": null,
+      "biography": null,
+      "aliases": []
+    },
+    {
+      "id": "platform_sluthate",
+      "type": "platform",
+      "name": "sluthate",
+      "label": "sluthate"
+    }
+  ],
+  "links": [
+    {
+      "source": "central",
+      "target": "24-129-100-84",
+      "type": "central_to_character"
+    },
+    {
+      "source": "24-129-100-84",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "4krapsucks",
+      "type": "central_to_character"
+    },
+    {
+      "source": "4krapsucks",
+      "target": "platform_anime-news-network",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "66-177-73-91",
+      "type": "central_to_character"
+    },
+    {
+      "source": "66-177-73-91",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "76-106-245-93",
+      "type": "central_to_character"
+    },
+    {
+      "source": "76-106-245-93",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "amina-blackberry",
+      "type": "central_to_character"
+    },
+    {
+      "source": "amina-blackberry",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "amina-blackberry",
+      "target": "platform_twitter",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "aryan-heights",
+      "type": "central_to_character"
+    },
+    {
+      "source": "aryan-heights",
+      "target": "platform_stormfront",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "australi-witness",
+      "type": "central_to_character"
+    },
+    {
+      "source": "australi-witness",
+      "target": "platform_justpaste.it",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "australi-witness",
+      "target": "platform_facebook",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "australi-witness",
+      "target": "platform_surespot",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "australi-witness",
+      "target": "platform_twitter",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "australi-witness",
+      "target": "platform_8chan",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "blaze-it-flaggot",
+      "type": "central_to_character"
+    },
+    {
+      "source": "blaze-it-flaggot",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "bw-anime-fan",
+      "type": "central_to_character"
+    },
+    {
+      "source": "bw-anime-fan",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "chuck-e-jesus",
+      "type": "central_to_character"
+    },
+    {
+      "source": "chuck-e-jesus",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "death-to-sjws",
+      "type": "central_to_character"
+    },
+    {
+      "source": "death-to-sjws",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "dinah-silverstein",
+      "type": "central_to_character"
+    },
+    {
+      "source": "dinah-silverstein",
+      "target": "platform_times-of-israel",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "dr-shlomo-goldstein",
+      "type": "central_to_character"
+    },
+    {
+      "source": "dr-shlomo-goldstein",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "ryoko-tamada",
+      "type": "central_to_character"
+    },
+    {
+      "source": "ryoko-tamada",
+      "target": "platform_twitter",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "ryoko-tamada",
+      "target": "platform_e-mail",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "emily-americana",
+      "type": "central_to_character"
+    },
+    {
+      "source": "emily-americana",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "emily-goldstein",
+      "type": "central_to_character"
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "platform_thoughtcatalog",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "emily-goldstein",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Amplification de Fake News",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "europe-hates-niggers",
+      "type": "central_to_character"
+    },
+    {
+      "source": "europe-hates-niggers",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "european-88",
+      "type": "central_to_character"
+    },
+    {
+      "source": "central",
+      "target": "flappy-brd",
+      "type": "central_to_character"
+    },
+    {
+      "source": "flappy-brd",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "gas-the-kikes",
+      "type": "central_to_character"
+    },
+    {
+      "source": "gas-the-kikes",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "hadiyo-elmi",
+      "type": "central_to_character"
+    },
+    {
+      "source": "hadiyo-elmi",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "id-c9uafs7u",
+      "type": "central_to_character"
+    },
+    {
+      "source": "id-c9uafs7u",
+      "target": "platform_4plebs",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "island-angel",
+      "type": "central_to_character"
+    },
+    {
+      "source": "island-angel",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "kill-all-pakis",
+      "type": "central_to_character"
+    },
+    {
+      "source": "kill-all-pakis",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "kill-all-sjws",
+      "type": "central_to_character"
+    },
+    {
+      "source": "kill-all-sjws",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "le-cancer-kin",
+      "type": "central_to_character"
+    },
+    {
+      "source": "le-cancer-kin",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "madotsuki-the-dreamer",
+      "type": "central_to_character"
+    },
+    {
+      "source": "madotsuki-the-dreamer",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "madotsuki-the-dreamer",
+      "target": "platform_imdb",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "madotsuki-the-dreamer",
+      "target": "platform_filmboards",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "may-may-poster",
+      "type": "central_to_character"
+    },
+    {
+      "source": "may-may-poster",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "may-may-poster",
+      "target": "platform_adult swim",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "metacanadian-420",
+      "type": "central_to_character"
+    },
+    {
+      "source": "metacanadian-420",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "metropolis-forever",
+      "type": "central_to_character"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_mail",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_deviantart",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_bluelight",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_badmovies",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_ytmnd",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_bluwiki",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_tezukainenglish",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_digitpress",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_animesuki",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_criterion",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_e-mail",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_the-west-australian",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "metropolis-forever",
+      "target": "platform_reddit",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "michael-slay",
+      "type": "central_to_character"
+    },
+    {
+      "source": "michael-slay",
+      "target": "platform_medium",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "michael-slay",
+      "target": "platform_dailystormer",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "michael-slay",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "michael-slay",
+      "target": "platform_stormfront",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "micronesia-gal",
+      "type": "central_to_character"
+    },
+    {
+      "source": "micronesia-gal",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "moon-metropolis",
+      "type": "central_to_character"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_wordpress",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_medium",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_wrong-planet",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_twitter",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_disqus",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_lastfm",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_e-mail",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_thoughtcatalog",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "moon-metropolis",
+      "target": "platform_breitbart",
+      "type": "character_to_platform",
+      "isDirect": "indirect",
+      "relationType": "Allié",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "mouthful-of-grandpa",
+      "type": "central_to_character"
+    },
+    {
+      "source": "mouthful-of-grandpa",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "naruto-2-0",
+      "type": "central_to_character"
+    },
+    {
+      "source": "naruto-2-0",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "nuke-europe",
+      "type": "central_to_character"
+    },
+    {
+      "source": "nuke-europe",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "pineapple-10",
+      "type": "central_to_character"
+    },
+    {
+      "source": "pineapple-10",
+      "target": "platform_youtube",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "the-old-jacobite-2",
+      "type": "central_to_character"
+    },
+    {
+      "source": "the-old-jacobite-2",
+      "target": "platform_wikipedia",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "wake-up-white-man",
+      "type": "central_to_character"
+    },
+    {
+      "source": "wake-up-white-man",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "wake-up-white-man",
+      "target": "platform_stormfront",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "wake-up-white-man",
+      "target": "platform_vnn",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "central",
+      "target": "tanya-cohen",
+      "type": "central_to_character"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_reddit",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_dailykos",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_thoughtcatalog",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_twitter",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_daily-kos",
+      "type": "character_to_platform",
+      "isDirect": "michael-slay",
+      "relationType": "Ennemi",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "tanya-cohen",
+      "target": "platform_techdirt",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "luke-mcmahon",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "linkType": ""
+    },
+    {
+      "source": "naomi-wolf",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_dailystormer",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_e-mail",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "central",
+      "target": "platform_times-of-israel",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "platform_twitter",
+      "type": "character_to_platform",
+      "isDirect": "Indirect",
+      "relationType": "Enquête FBI",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "central",
+      "target": "platform_facebook",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "platform_e-mail",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "central",
+      "target": "platform_reddit",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "platform_sluthate",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "platform_stormfront",
+      "type": "character_to_platform",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "central",
+      "target": "platform_thoughtcatalog",
+      "type": "character_to_platform"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "josh-bornstein",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "australi-witness",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elton-simpson",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Incitation Terroriste",
+      "mediaImpact": "10",
+      "virality": "50K+ RTs / Médias majeurs",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "nadir-soofi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Incitation Terroriste",
+      "mediaImpact": "10",
+      "virality": "50K+ RTs / Médias internationaux",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "pamela-geller",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "7",
+      "virality": "Modérément repris dans les médias",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "jim-berry-fbi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "8",
+      "virality": "Traqué publiquement",
+      "mediaCoverage": "Forte",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "bindi-cole",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ciblage & Harcèlement",
+      "mediaImpact": "4",
+      "virality": "Modérément viral",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "bill-leak",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "5",
+      "virality": "Quelques mentions dans les médias",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "larry-pickering",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Menace de Mort",
+      "mediaImpact": "5",
+      "virality": "Caricatures attaquées en ligne",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "rita-katz",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "9",
+      "virality": "Fort impact sur les enquêtes",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_surespot",
+      "target": "afp-federal-agent-as-mohamadmo7",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_surespot",
+      "target": "fbi-as-wilayaks",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_surespot",
+      "target": "fbi-as-wilayaks",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_times-of-israel",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "jilian-c-york",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Couverture partielle",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "jilian-c-york",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Couverture partielle",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "peter-wallace",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "moon-metropolis",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "european-88",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "moon-metropolis",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "death-to-sjws",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elon-musk",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Amplification de Fake News",
+      "mediaImpact": "9",
+      "virality": "Mentionné indirectement dans des affaires",
+      "mediaCoverage": "Très forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "hadiyo-elmi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "european-88",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_twitter",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "european-88",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Instrumentalisation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_times-of-israel",
+      "target": "josh-bornstein",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "10",
+      "virality": "Scandale médiatisé, retrait d’articles",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "lindsay-campbell-fbi",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Enquête FBI",
+      "mediaImpact": "8",
+      "virality": "Couverture modérée",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "9",
+      "virality": "Articles dans médias mainstream",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_facebook",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "9",
+      "virality": "Articles dans médias mainstream",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "luke-mcmahon",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Enquête",
+      "mediaImpact": "9",
+      "virality": "Grande couverture médiatique",
+      "mediaCoverage": "Forte",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_facebook",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_facebook",
+      "target": "junaid-thorne",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "8",
+      "virality": "Modérément viral",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "ben-garrison",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "6",
+      "virality": "5K RTs, niche Alt-Right",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "caitlin-roper",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "5",
+      "virality": "Ciblage par faux comptes",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_sluthate",
+      "target": "dean-saxton",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "nathan-sykes",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "nathan-sykes",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "nancy-goldstein",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Usurpation d’Identité",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_sluthate",
+      "target": "dean-saxton",
+      "type": "platform_to_character",
+      "isDirect": "",
+      "relationType": "",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "cyndi-lavrenci",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Trollé sous faux nom",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "grant-taylor",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "8",
+      "virality": "Présent dans les médias",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "grant-taylor",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "8",
+      "virality": "Présent dans les médias",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_the-west-australian",
+      "target": "grant-taylor",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "8",
+      "virality": "Présent dans les médias",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "tom-minear",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Enquête médiatique modérée",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "emily-americana",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "amina-blackberry",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "death-to-sjws",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Ciblage & Harcèlement",
+      "mediaImpact": "9",
+      "virality": "10K RTs / Articles niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "andrew-anglin",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Infiltration",
+      "mediaImpact": "7",
+      "virality": "Publication sur site néo-nazi influent",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "hadiyo-elmi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "hadiyo-elmi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "emily-americana",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "emily-americana",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "nuke-europe",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "nuke-europe",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_stormfront",
+      "target": "australi-witness",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "australi-witness",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "australi-witness",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "milo-yiannopoulos",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Collaboration Désinformation",
+      "mediaImpact": "7",
+      "virality": "Fort engagement Reddit / Twitter",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "shaun-king",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "6",
+      "virality": "10K RTs",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "luke-mcmahon",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "elise-potaka",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "mike-wendling",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Couverture internationale",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "weev-andrew-auernheimer",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Collaboration Désinformation",
+      "mediaImpact": "6",
+      "virality": "Influent dans niche extrême-droite",
+      "mediaCoverage": "Faible",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "chiara-zaffino",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Article niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "alice-pooley",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "6",
+      "virality": "Publication niche",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "peter-wallace",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "8",
+      "virality": "Couverture dans des journaux nationaux",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "peter-wallace",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "8",
+      "virality": "Couverture dans des journaux nationaux",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "rita-panahi",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "7",
+      "virality": "Menace en ligne",
+      "mediaCoverage": "Forte",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "nikki",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Amie",
+      "mediaImpact": "5",
+      "virality": "Relation de proximité, influence directe",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "nikki",
+      "type": "platform_to_character",
+      "isDirect": "Indirect",
+      "relationType": "Amie",
+      "mediaImpact": "5",
+      "virality": "Relation de proximité, influence directe",
+      "mediaCoverage": "Moyenne",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "emily-americana",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "tanya-cohen",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "amina-blackberry",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_reddit",
+      "target": "death-to-sjws",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "chris-lavergne",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Instrumentalisation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_breitbart",
+      "target": "steve-bannon",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "alec-baldwin",
+      "type": "platform_to_character",
+      "isDirect": "indirect",
+      "relationType": "Allié",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "mariam-veiszadeh",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Instrumentalisation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_thoughtcatalog",
+      "target": "james-taranto-wsj",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Désinformation Médiatique",
+      "mediaImpact": "5",
+      "virality": "Confusion médiatique",
+      "mediaCoverage": "Modérée",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "michael-slay",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_daily-kos",
+      "target": "pamela-geller",
+      "type": "platform_to_character",
+      "isDirect": "michael-slay",
+      "relationType": "Ennemi",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_techdirt",
+      "target": "mike-masnick",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "australi-witness",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Enquête",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": ""
+    },
+    {
+      "source": "platform_twitter",
+      "target": "nathan-sykes",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "josh-bornstein",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "Manipulation",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinataire"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "andrew-anglin",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "andrew-anglin",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "andrew-anglin",
+      "type": "platform_to_character",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_dailystormer",
+      "target": "andrew-anglin",
+      "type": "platform_to_character_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_dailystormer",
+      "type": "character_to_platform_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_e-mail",
+      "target": "andrew-anglin",
+      "type": "platform_to_character_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_e-mail",
+      "type": "character_to_platform_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "platform_twitter",
+      "target": "andrew-anglin",
+      "type": "platform_to_character_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "mediaImpact": "",
+      "virality": "",
+      "mediaCoverage": "",
+      "linkType": "destinateur"
+    },
+    {
+      "source": "tanya-gersh",
+      "target": "platform_twitter",
+      "type": "character_to_platform_forced",
+      "isDirect": "Direct",
+      "relationType": "harcèlement",
+      "linkType": "destinateur"
+    }
+  ]
+}
