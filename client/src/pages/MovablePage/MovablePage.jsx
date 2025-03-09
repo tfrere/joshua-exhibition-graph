@@ -217,31 +217,31 @@ const MovablePage = () => {
         "spatialized_nodes_and_links.data.json"
       );
 
-      // Création de l'export des posts
-      // ------------------------------------------------
-      let spatializedPosts = [];
+      // // Création de l'export des posts
+      // // ------------------------------------------------
+      // let spatializedPosts = [];
 
-      // 5. Préparer les données des posts si disponibles
-      if (hasPostsData) {
-        spatializedPosts = postsData.map((post) => {
+      // // 5. Préparer les données des posts si disponibles
+      // if (hasPostsData) {
+      //   spatializedPosts = postsData.map((post) => {
 
-          return {
-            id: post.id,
-            postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
-            slug: post.slug || "",
-            impact: post.impact || 0,
-            x: post.x || 0,
-            y: post.y || 0,
-            z: post.z || 0,
-            // isJoshuaCharacter supprimé
-          };
-        });
-        console.log(`Préparé ${spatializedPosts.length} posts pour l'export`);
-      }
+      //     return {
+      //       id: post.id,
+      //       postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
+      //       slug: post.slug || "",
+      //       impact: post.impact || 0,
+      //       x: post.x || 0,
+      //       y: post.y || 0,
+      //       z: post.z || 0,
+      //       // isJoshuaCharacter supprimé
+      //     };
+      //   });
+      //   console.log(`Préparé ${spatializedPosts.length} posts pour l'export`);
+      // }
 
-      // 6. Exporter le deuxième fichier (posts)
-      console.log(`Export des posts: ${spatializedPosts.length}`);
-      downloadJSON(spatializedPosts, "spatialized_posts.data.json");
+      // // 6. Exporter le deuxième fichier (posts)
+      // console.log(`Export des posts: ${spatializedPosts.length}`);
+      // downloadJSON(spatializedPosts, "spatialized_posts.data.json");
 
       // 7. Afficher un message de confirmation
       alert(`Exportation terminée!
