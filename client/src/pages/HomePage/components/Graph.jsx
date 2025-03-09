@@ -4,16 +4,15 @@ import * as THREE from "three";
 import Node from "./Node";
 import { Link, ArcLink } from "./Link";
 import {
-  activeNodeRef,
-  joshuaNodesRef,
-  updateActiveNode,
+  activePostRef,
+  updateActivePost,
   initSocketSync,
-} from "./activeNodeRef";
+} from "./activePostRef";
 
-// Composant qui gère la détection du noeud le plus proche de la caméra
-const NearestNodeDetector = ({ nodes }) => {
+// Composant qui gère la détection du post le plus proche de la caméra
+const NearestPostDetector = ({ data, posts }) => {
   const { camera } = useThree();
-  const prevNearestNodeRef = React.useRef(null);
+  const prevNearestPostRef = React.useRef(null);
   // Limiter les mises à jour pour améliorer les performances
   const frameCountRef = React.useRef(0);
   const UPDATE_INTERVAL = 1; // Nombre de frames entre chaque mise à jour
@@ -21,11 +20,53 @@ const NearestNodeDetector = ({ nodes }) => {
 
   // Initialiser la connexion socket
   useEffect(() => {
+    console.log("NearestPostDetector - Initialisation de la connexion socket");
     initSocketSync();
   }, []);
 
+  // Log initial pour vérifier les données reçues
+  useEffect(() => {
+    console.log("NearestPostDetector - Posts reçus:", posts);
+    if (posts && posts.length > 0) {
+      console.log("Premier post:", posts[0]);
+      // Vérifier si les posts ont des coordonnées
+      const postsWithCoordinates = posts.filter(
+        (post) =>
+          (post.x !== undefined &&
+            post.y !== undefined &&
+            post.z !== undefined) ||
+          (post.coordinates && post.coordinates.x !== undefined)
+      );
+      console.log(
+        `Posts avec coordonnées: ${postsWithCoordinates.length}/${posts.length}`
+      );
+
+      // Vérifier si les posts ont un postUID
+      const postsWithUID = posts.filter((post) => post.postUID !== undefined);
+      console.log(`Posts avec postUID: ${postsWithUID.length}/${posts.length}`);
+
+      // Si certains posts n'ont pas de postUID, ajouter un avertissement
+      if (postsWithUID.length < posts.length) {
+        console.warn(
+          "Certains posts n'ont pas de postUID, ce qui empêchera la détection correcte."
+        );
+        const postsWithoutUID = posts.filter(
+          (post) => post.postUID === undefined
+        );
+        console.log("Exemple de post sans postUID:", postsWithoutUID[0]);
+      }
+    }
+  }, [posts]);
+
   useFrame(() => {
-    if (!nodes || nodes.length === 0) return;
+    if (!posts || posts.length === 0) {
+      // Si pas de posts, on log une fois toutes les 100 frames
+      if (frameCountRef.current % 100 === 0) {
+        console.log("NearestPostDetector - Aucun post disponible");
+      }
+      frameCountRef.current += 1;
+      return;
+    }
 
     // Mettre à jour uniquement toutes les X frames pour optimiser les performances
     frameCountRef.current += 1;
@@ -34,7 +75,7 @@ const NearestNodeDetector = ({ nodes }) => {
     // Position de la caméra
     const cameraPosition = camera.position.clone();
 
-    // Créer un point situé 20 unités devant la caméra dans la direction où elle regarde
+    // Créer un point situé 50 unités devant la caméra dans la direction où elle regarde
     const targetPosition = new THREE.Vector3();
 
     // Direction dans laquelle la caméra regarde (vecteur unitaire)
@@ -43,66 +84,76 @@ const NearestNodeDetector = ({ nodes }) => {
 
     // Calcul de la position cible: position caméra + (direction * distance)
     targetPosition.copy(cameraPosition);
-    targetPosition.addScaledVector(cameraDirection, 50); // 20 unités devant dans la direction de la caméra
+    targetPosition.addScaledVector(cameraDirection, 50);
 
     // Mettre à jour la référence de position pour la sphère
     targetPositionRef.current.copy(targetPosition);
 
-    // Debug visuel (optionnel)
-    // console.log("Position caméra:", cameraPosition);
-    // console.log("Position cible:", targetPosition);
-
-    // Trouver le noeud le plus proche
-    let nearestNode = null;
+    // Trouver le post le plus proche
+    let nearestPost = null;
     let minDistance = Infinity;
 
-    // Parcourir tous les noeuds avec isJoshua=true
-    const joshuaNodes = [];
+    posts.forEach((post) => {
+      // Vérifier si le post a des coordonnées valides
+      if (!post) return;
 
-    nodes.forEach((node) => {
-      // Vérifier si le nœud a la propriété isJoshua à true
-      if (node.isJoshua !== true) return;
-
-      const nodePosition = new THREE.Vector3(
-        node.x || 0,
-        node.y || 0,
-        node.z || 0
+      const postPosition = new THREE.Vector3(
+        post.x !== undefined
+          ? post.x
+          : post.coordinates
+          ? post.coordinates.x
+          : 0,
+        post.y !== undefined
+          ? post.y
+          : post.coordinates
+          ? post.coordinates.y
+          : 0,
+        post.z !== undefined
+          ? post.z
+          : post.coordinates
+          ? post.coordinates.z
+          : 0
       );
 
-      // Éviter de créer des objets inutiles pour chaque frame
-      const nodeWithPosition = {
-        ...node,
-        position: { x: node.x || 0, y: node.y || 0, z: node.z || 0 },
-      };
+      // Log pour debugging (une fois toutes les 100 frames)
+      if (frameCountRef.current % 100 === 0 && post === posts[0]) {
+        console.log("Position du premier post:", postPosition);
+        console.log("Position cible:", targetPosition);
+        console.log("Propriétés de position du premier post:", {
+          directX: post.x,
+          directY: post.y,
+          directZ: post.z,
+          coordinates: post.coordinates,
+        });
+      }
 
-      joshuaNodes.push(nodeWithPosition);
+      // Calculer la distance entre le point cible et le post
+      const distance = targetPosition.distanceTo(postPosition);
 
-      // Calculer la distance entre le point cible et le noeud
-      const distance = targetPosition.distanceTo(nodePosition);
-
-      // Mettre à jour le noeud le plus proche
+      // Mettre à jour le post le plus proche
       if (distance < minDistance) {
         minDistance = distance;
-        nearestNode = node;
+        nearestPost = post;
       }
     });
 
-    // Mettre à jour le joshuaNodesRef moins fréquemment
-    if (frameCountRef.current % (UPDATE_INTERVAL * 5) === 0) {
-      joshuaNodesRef.current = joshuaNodes;
+    // Log pour debugging (une fois toutes les 100 frames)
+    if (frameCountRef.current % 100 === 0) {
+      console.log("Post le plus proche trouvé:", nearestPost);
+      console.log("Distance minimale:", minDistance);
     }
 
-    // Si le noeud le plus proche a changé, le logger et mettre à jour la référence partagée
+    // Si le post le plus proche a changé, le logger et mettre à jour la référence partagée
     if (
-      nearestNode &&
-      (!prevNearestNodeRef.current ||
-        prevNearestNodeRef.current.id !== nearestNode.id)
+      nearestPost &&
+      (!prevNearestPostRef.current ||
+        prevNearestPostRef.current.postUID !== nearestPost.postUID)
     ) {
-      console.log("Noeud actif le plus proche:", nearestNode);
-      prevNearestNodeRef.current = nearestNode;
+      console.log("Post actif le plus proche:", nearestPost);
+      prevNearestPostRef.current = nearestPost;
 
       // Mettre à jour la référence partagée et envoyer via socket
-      updateActiveNode(nearestNode);
+      updateActivePost(nearestPost);
     }
   });
 
@@ -126,7 +177,7 @@ const NearestNodeDetector = ({ nodes }) => {
   };
 
   // Rendu de la sphère cible
-  return <TargetSphere />;
+  // return <TargetSphere />;
 };
 
 // Main Graph component
@@ -145,10 +196,23 @@ const Graph = ({ data }) => {
     nodeMap[node.id] = node;
   });
 
+  // S'assurer que data contient des posts en les extrayant de postsData du contexte
+  // Si postsData est disponible dans props, l'utiliser
+  const postsData = data.posts || [];
+
+  // Log pour déboguer
+  useEffect(() => {
+    console.log("Graph - Données reçues:", data);
+    console.log("Graph - Posts disponibles:", postsData.length);
+    if (postsData.length > 0) {
+      console.log("Graph - Exemple de post:", postsData[0]);
+    }
+  }, [data, postsData]);
+
   return (
     <group>
-      {/* Détecteur de noeud le plus proche */}
-      <NearestNodeDetector nodes={data.nodes} />
+      {/* Détecteur de post le plus proche */}
+      <NearestPostDetector data={data} posts={postsData} />
 
       {/* Render all links */}
       {data.links.map((link, index) => {

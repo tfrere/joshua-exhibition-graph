@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect } from "react";
 import { useData } from "../../contexts/DataContext";
 import {
-  activeNodeRef,
+  activePostRef,
   initSocketSync,
   addEventListener,
   removeEventListener,
-} from "../HomePage/components/activeNodeRef";
+} from "../HomePage/components/activePostRef";
 
 function PostPage() {
   const { graphData, isLoadingGraph, graphError, postsData } = useData();
@@ -20,8 +20,8 @@ function PostPage() {
   }, []);
 
   // Fonction pour charger les données du personnage actif
-  const fetchCharacterData = async (activeNode) => {
-    if (!activeNode || !activeNode.slug) {
+  const fetchCharacterData = async (activePost) => {
+    if (!activePost || !activePost.slug) {
       setActiveCharacterData(null);
       setIsLoading(false);
       return;
@@ -33,7 +33,7 @@ function PostPage() {
       // Si les données du graphe sont déjà chargées via le contexte, les utiliser
       if (graphData && graphData.nodes && graphData.nodes.length > 0) {
         const characterNode = graphData.nodes.find(
-          (node) => node.slug === activeNode.slug
+          (node) => node.slug === activePost.slug
         );
         if (characterNode) {
           console.log("Personnage actif trouvé:", characterNode);
@@ -41,15 +41,15 @@ function PostPage() {
         } else {
           console.warn(
             "Personnage actif non trouvé dans les données du graphe:",
-            activeNode.slug
+            activePost.slug
           );
 
           // Essayer de charger depuis database.data.json comme fallback
-          await loadFromDatabase(activeNode);
+          await loadFromDatabase(activePost);
         }
       } else {
         // Sinon, charger les données de database.data.json directement
-        await loadFromDatabase(activeNode);
+        await loadFromDatabase(activePost);
       }
     } catch (error) {
       console.error(
@@ -62,7 +62,7 @@ function PostPage() {
   };
 
   // Fonction pour charger les données depuis database.data.json
-  const loadFromDatabase = async (activeNode) => {
+  const loadFromDatabase = async (activePost) => {
     const response = await fetch("/data/database.data.json");
     if (!response.ok) {
       throw new Error(
@@ -77,9 +77,9 @@ function PostPage() {
       "personnages"
     );
 
-    if (activeNode && activeNode.slug) {
+    if (activePost && activePost.slug) {
       const characterData = databaseData.find(
-        (char) => char.slug === activeNode.slug
+        (char) => char.slug === activePost.slug
       );
       if (characterData) {
         console.log(
@@ -90,7 +90,7 @@ function PostPage() {
       } else {
         console.warn(
           "Personnage actif non trouvé dans la base de données:",
-          activeNode.slug
+          activePost.slug
         );
         setActiveCharacterData(null);
       }
@@ -100,63 +100,46 @@ function PostPage() {
     }
   };
 
-  // Écouter les changements de nœud actif et charger les données
-  useEffect(() => {
-    // Charger les données initiales
-    fetchCharacterData(activeNodeRef.current);
+  // Fonction pour trouver le post à afficher
+  const findCurrentPost = (postUID) => {
+    if (!postsData || !postUID) return null;
 
-    // Fonction de rappel pour les mises à jour du nœud actif
-    const handleActiveNodeChange = (node) => {
-      console.log("Événement de changement de nœud actif reçu:", node);
-      fetchCharacterData(node);
+    return postsData.find((post) => post.postUID === postUID);
+  };
+
+  // Écouter les changements du post actif
+  useEffect(() => {
+    const handleActivePostChange = (post) => {
+      console.log("Mise à jour du post actif:", post);
+      if (!post) return;
+
+      fetchCharacterData(post);
+
+      // Essayer de trouver le post complet dans postsData
+      const fullPost = findCurrentPost(post.postUID);
+      if (fullPost) {
+        setHighImpactPost(fullPost);
+      } else {
+        // Si on ne trouve pas le post dans postsData, utiliser les données de base
+        setHighImpactPost(post);
+      }
     };
 
     // Ajouter l'écouteur d'événement
-    addEventListener("activeNodeChanged", handleActiveNodeChange);
+    addEventListener("activePostChanged", handleActivePostChange);
+
+    // Vérifier si un post est déjà actif
+    if (activePostRef.current) {
+      handleActivePostChange(activePostRef.current);
+    } else {
+      setIsLoading(false);
+    }
 
     // Nettoyer l'écouteur d'événement lors du démontage
     return () => {
-      removeEventListener("activeNodeChanged", handleActiveNodeChange);
+      removeEventListener("activePostChanged", handleActivePostChange);
     };
-  }, [graphData]);
-
-  // Trouver le post avec le plus d'impact lorsque le personnage actif change
-  useEffect(() => {
-    if (
-      activeCharacterData &&
-      activeCharacterData.slug &&
-      postsData &&
-      postsData.length > 0
-    ) {
-      // Filtrer les posts qui appartiennent au personnage actif
-      const characterPosts = postsData.filter(
-        (post) => post.slug === activeCharacterData.slug
-      );
-
-      if (characterPosts.length > 0) {
-        console.log(
-          `${characterPosts.length} posts trouvés pour ${
-            activeCharacterData.displayName || activeCharacterData.slug
-          }`
-        );
-
-        // Trouver le post avec le plus d'impact
-        const highestImpactPost = characterPosts.reduce((highest, current) => {
-          const currentImpact = current.impact || 0;
-          const highestImpact = highest.impact || 0;
-          return currentImpact > highestImpact ? current : highest;
-        }, characterPosts[0]);
-
-        console.log("Post avec le plus d'impact:", highestImpactPost);
-        setHighImpactPost(highestImpactPost);
-      } else {
-        console.log("Aucun post trouvé pour ce personnage");
-        setHighImpactPost(null);
-      }
-    } else {
-      setHighImpactPost(null);
-    }
-  }, [activeCharacterData, postsData]);
+  }, [postsData]);
 
   // Afficher un message de chargement
   if (isLoading) {

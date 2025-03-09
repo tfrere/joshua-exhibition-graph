@@ -1,12 +1,13 @@
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { activeNodeRef, initSocketSync } from "./activeNodeRef";
+import { activePostRef, initSocketSync } from "./activePostRef";
 
 // Type de données pour les posts (pour référence)
 /**
  * @typedef {Object} Post
  * @property {string} id - ID unique du post
+ * @property {number} postUID - UID unique du post
  * @property {string} slug - Slug du post
  * @property {string} content - Contenu du post
  *
@@ -27,9 +28,14 @@ import { activeNodeRef, initSocketSync } from "./activeNodeRef";
  */
 
 const SIZE = 1;
+const ACTIVE_POST_SIZE = 35; // Taille du post actif - augmentée pour être plus visible
 const MIN_IMPACT_SIZE = 3;
 const MAX_IMPACT_SIZE = 8;
 const USE_IMPACT_SIZE = true;
+const ACTIVE_POST_COLOR = [1.0, 0, 0]; // Couleur rouge vif pour le post actif
+const POST_ACTIVATION_DURATION = 1.0; // Durée de la transition en secondes
+const PROXIMITY_THRESHOLD = 100.0; // Distance à partir de laquelle les points commencent à réduire (défaut: 100.0)
+const MIN_DISTANCE = 10.0; // Distance à laquelle les points disparaissent complètement (défaut: 20.0)
 
 // Constantes pour l'animation
 const ANIMATION_AMPLITUDE = 1.5; // Amplitude maximale du mouvement en unités (réduite pour un effet plus subtil)
@@ -108,11 +114,12 @@ const fragmentShader = `
  * @param {number} [props.idleMovementSpeedVariation=IDLE_MOVEMENT_SPEED_VARIATION] - Variation de la vitesse du mouvement permanent (défaut: 0.4)
  * @param {number} [props.idleMovementMaxDistance=IDLE_MOVEMENT_MAX_DISTANCE] - Distance maximale (en unités) que les points peuvent s'éloigner de leur position d'origine (défaut: 15)
  * @param {number} [props.transitionDuration=TRANSITION_DURATION] - Durée de la transition entre l'explosion et l'oscillation (défaut: 1.0)
+ * @param {number} [props.activationDuration=POST_ACTIVATION_DURATION] - Durée de la transition en secondes (défaut: 1.0)
  */
 export function Posts({
   data,
-  proximityThreshold = 100.0,
-  minDistance = 20.0,
+  proximityThreshold = PROXIMITY_THRESHOLD,
+  minDistance = MIN_DISTANCE,
   animationAmplitude = ANIMATION_AMPLITUDE,
   animationSpeed = ANIMATION_SPEED,
   sizeVariationFactor = SIZE_VARIATION_FACTOR,
@@ -123,17 +130,27 @@ export function Posts({
   idleMovementSpeedVariation = IDLE_MOVEMENT_SPEED_VARIATION,
   idleMovementMaxDistance = IDLE_MOVEMENT_MAX_DISTANCE,
   transitionDuration = TRANSITION_DURATION,
+  activationDuration = POST_ACTIVATION_DURATION,
 }) {
   const pointsRef = useRef();
   const { camera } = useThree();
-  // Cette variable est conservée pour maintenir la compatibilité avec d'autres composants
-  // mais elle n'aura plus d'impact sur l'affichage des points
-  const [activeNodeSlug, setActiveNodeSlug] = useState(null);
+
+  // On va suivre le post actif
+  const [activePostUID, setActivePostUID] = useState(null);
+  // État précédent pour détecter les changements
+  const prevActivePostUIDRef = useRef(null);
 
   // Références pour stocker les positions originales des points
   const originalPositions = useRef([]);
   // Référence pour stocker les tailles originales
   const originalSizes = useRef([]);
+  // Référence pour stocker les couleurs originales
+  const originalColors = useRef([]);
+
+  // Références pour l'animation de transition du post actif
+  const transitionProgressRef = useRef({}); // Progrès de transition pour chaque post
+  const activationTimeRef = useRef({}); // Temps de début de transition pour chaque post
+  const prevActivePostRef = useRef(null); // Post précédemment actif
 
   // Référence pour le temps d'animation
   const timeRef = useRef(0);
@@ -158,13 +175,46 @@ export function Posts({
     timeRef.current = 0;
   }, [data]);
 
-  // Surveiller les changements de activeNodeRef pour mettre à jour le slug actif
-  // Conservé pour compatibilité avec d'autres fonctionnalités
+  // Surveiller les changements de activePostRef pour mettre à jour le post actif
   useFrame(() => {
-    const newSlug = activeNodeRef.current ? activeNodeRef.current.slug : null;
-    if (newSlug !== activeNodeSlug) {
-      console.log("Slug du nœud actif mis à jour:", newSlug);
-      setActiveNodeSlug(newSlug);
+    const newPostUID = activePostRef.current
+      ? activePostRef.current.postUID
+      : null;
+    if (newPostUID !== activePostUID) {
+      console.log("UID du post actif mis à jour:", newPostUID);
+
+      // Stocker l'ancien post actif
+      prevActivePostRef.current = activePostUID;
+
+      // Pour chaque post, initialiser l'état de transition si nécessaire
+      if (data) {
+        data.forEach((post) => {
+          const postUID = post.postUID;
+
+          // Si c'est le nouveau post actif et qu'il n'était pas actif avant
+          if (
+            postUID === newPostUID &&
+            postUID !== prevActivePostUIDRef.current
+          ) {
+            // Démarrer l'animation d'activation
+            transitionProgressRef.current[postUID] = 0; // Commencer à 0
+            activationTimeRef.current[postUID] = timeRef.current; // Mémoriser le temps de départ
+          }
+          // Si c'était le post actif et qu'il ne l'est plus
+          else if (
+            postUID === prevActivePostUIDRef.current &&
+            postUID !== newPostUID
+          ) {
+            // Démarrer l'animation de désactivation
+            transitionProgressRef.current[postUID] = 1; // Commencer à 1 (complètement actif)
+            activationTimeRef.current[postUID] = timeRef.current; // Mémoriser le temps de départ
+          }
+        });
+      }
+
+      // Mettre à jour la référence pour la prochaine fois
+      prevActivePostUIDRef.current = newPostUID;
+      setActivePostUID(newPostUID);
     }
   });
 
@@ -193,6 +243,9 @@ export function Posts({
 
   // Animation des points
   useFrame((state, delta) => {
+    // Mettre à jour le temps global
+    timeRef.current += delta;
+
     // Si on a pas encore finit l'explosion
     if (!explosionCompleteRef.current) {
       // Mettre à jour le progrès de l'explosion
@@ -207,11 +260,10 @@ export function Posts({
       }
     } else {
       // Incrémenter le temps pour l'animation et le temps post-explosion
-      timeRef.current += delta * animationSpeed;
       postExplosionTimeRef.current += delta;
     }
 
-    // Animer les points
+    // Animer les points et gérer les transitions d'activation
     if (
       pointsRef.current &&
       pointsRef.current.geometry &&
@@ -219,17 +271,17 @@ export function Posts({
       originalPositions.current.length > 0
     ) {
       const positions = pointsRef.current.geometry.attributes.position.array;
+      const colors = pointsRef.current.geometry.attributes.color.array;
+      const sizes = pointsRef.current.geometry.attributes.size.array;
 
-      // Animer également les tailles si l'attribut existe
-      const hasSizes =
-        pointsRef.current.geometry.attributes.size !== undefined &&
-        originalSizes.current.length > 0;
-      const sizes = hasSizes
-        ? pointsRef.current.geometry.attributes.size.array
-        : null;
+      for (let i = 0; i < positions.length / 3; i++) {
+        const post = data[i];
+        if (!post || !post.postUID) continue;
 
-      for (let i = 0; i < positions.length; i += 3) {
-        const index = i / 3;
+        const postUID = post.postUID;
+        const index = i; // Index pour l'animation
+
+        // Récupérer les fréquences d'animation pour ce point
         const frequencies = pointFrequenciesRef.current[index] || {
           x1: 0.5,
           x2: 0.3,
@@ -242,73 +294,11 @@ export function Posts({
           phaseZ: 0,
         };
 
-        // Créer un décalage unique pour chaque point basé sur son index
-        // Cela fait que certains points explosent plus tôt que d'autres
-        const indexOffset =
-          (Math.sin(index * 0.1) * 0.5 + 0.5) * explosionStagger;
-        const individualProgress = Math.min(
-          1.0,
-          (explosionProgressRef.current - indexOffset) / (1.0 - indexOffset)
-        );
+        // Position du point dans le tableau
+        const posIndex = i * 3;
 
-        if (!explosionCompleteRef.current) {
-          // N'animer que si le progrès individuel est positif
-          if (individualProgress > 0) {
-            // Utiliser uniquement des fonctions d'easing sans rebond
-            // Alterner entre différentes fonctions pour varier légèrement l'effet
-            const easedProgress =
-              index % 2 === 0
-                ? easeOutExpo(individualProgress)
-                : easeOutCubic(individualProgress);
-
-            // Calculer une trajectoire légèrement courbée pendant l'explosion
-            // Trajectoires plus douces et directes
-            const curveFactorX = Math.sin(index * 0.3) * explosionPathVariation;
-            const curveFactorY = Math.cos(index * 0.5) * explosionPathVariation;
-            const curveFactorZ = Math.sin(index * 0.7) * explosionPathVariation;
-
-            // Courbe plus douce, avec moins d'amplitude au milieu
-            const arcFactor =
-              Math.sin(individualProgress * Math.PI) * explosionArcFactor;
-
-            // Calculer la position avec la courbe
-            positions[i] =
-              originalPositions.current[i] * easedProgress +
-              curveFactorX * arcFactor * Math.abs(originalPositions.current[i]);
-            positions[i + 1] =
-              originalPositions.current[i + 1] * easedProgress +
-              curveFactorY *
-                arcFactor *
-                Math.abs(originalPositions.current[i + 1]);
-            positions[i + 2] =
-              originalPositions.current[i + 2] * easedProgress +
-              curveFactorZ *
-                arcFactor *
-                Math.abs(originalPositions.current[i + 2]);
-
-            // Modifier aussi la taille pendant l'explosion si possible
-            if (hasSizes) {
-              // Effet de grossissement puis réduction à la taille normale
-              // Les points sont plus gros au début de leur trajectoire
-              const sizeFactor =
-                1.0 + (1.0 - easedProgress) * sizeVariationFactor;
-              sizes[index] = originalSizes.current[index] * sizeFactor;
-            }
-          } else {
-            // Garder le point à la position 0 s'il n'a pas encore commencé à exploser
-            positions[i] = 0;
-            positions[i + 1] = 0;
-            positions[i + 2] = 0;
-
-            // Taille minimum avant l'explosion
-            if (hasSizes) {
-              sizes[index] = originalSizes.current[index] * 0.5;
-            }
-          }
-        } else {
-          // Animation d'oscillation après l'explosion complète
-          // Utiliser les fréquences uniques pour chaque point pour un mouvement plus naturel
-
+        // Si l'explosion est complète, animer les mouvements oscillants
+        if (explosionCompleteRef.current) {
           // Calculer les déplacements pour chaque axe
           const moveX =
             Math.sin(timeRef.current * frequencies.x1 + frequencies.phaseX) *
@@ -351,44 +341,139 @@ export function Posts({
             const scaleFactor = idleMovementMaxDistance / totalDistance;
 
             // Appliquer le mouvement avec la limite et la transition progressive
-            positions[i] =
-              originalPositions.current[i] +
+            positions[posIndex] =
+              originalPositions.current[posIndex] +
               moveX * scaleFactor * transitionFactor;
-            positions[i + 1] =
-              originalPositions.current[i + 1] +
+            positions[posIndex + 1] =
+              originalPositions.current[posIndex + 1] +
               moveY * scaleFactor * transitionFactor;
-            positions[i + 2] =
-              originalPositions.current[i + 2] +
+            positions[posIndex + 2] =
+              originalPositions.current[posIndex + 2] +
               moveZ * scaleFactor * transitionFactor;
           } else {
             // Appliquer le mouvement tel quel s'il est dans les limites, avec la transition
-            positions[i] =
-              originalPositions.current[i] + moveX * transitionFactor;
-            positions[i + 1] =
-              originalPositions.current[i + 1] + moveY * transitionFactor;
-            positions[i + 2] =
-              originalPositions.current[i + 2] + moveZ * transitionFactor;
+            positions[posIndex] =
+              originalPositions.current[posIndex] + moveX * transitionFactor;
+            positions[posIndex + 1] =
+              originalPositions.current[posIndex + 1] +
+              moveY * transitionFactor;
+            positions[posIndex + 2] =
+              originalPositions.current[posIndex + 2] +
+              moveZ * transitionFactor;
+          }
+        } else if (explosionProgressRef.current > 0) {
+          // Code pour gérer l'explosion initiale
+          // Créer un décalage unique pour chaque point basé sur son index
+          const indexOffset =
+            (Math.sin(index * 0.1) * 0.5 + 0.5) * explosionStagger;
+          const individualProgress = Math.min(
+            1.0,
+            (explosionProgressRef.current - indexOffset) / (1.0 - indexOffset)
+          );
+
+          // N'animer que si le progrès individuel est positif
+          if (individualProgress > 0) {
+            // Utiliser uniquement des fonctions d'easing sans rebond
+            const easedProgress =
+              index % 2 === 0
+                ? easeOutExpo(individualProgress)
+                : easeOutCubic(individualProgress);
+
+            // Calculer une trajectoire légèrement courbée pendant l'explosion
+            const curveFactorX = Math.sin(index * 0.3) * explosionPathVariation;
+            const curveFactorY = Math.cos(index * 0.5) * explosionPathVariation;
+            const curveFactorZ = Math.sin(index * 0.7) * explosionPathVariation;
+
+            // Courbe plus douce, avec moins d'amplitude au milieu
+            const arcFactor =
+              Math.sin(individualProgress * Math.PI) * explosionArcFactor;
+
+            // Calculer la position avec la courbe
+            positions[posIndex] =
+              originalPositions.current[posIndex] * easedProgress +
+              curveFactorX *
+                arcFactor *
+                Math.abs(originalPositions.current[posIndex]);
+            positions[posIndex + 1] =
+              originalPositions.current[posIndex + 1] * easedProgress +
+              curveFactorY *
+                arcFactor *
+                Math.abs(originalPositions.current[posIndex + 1]);
+            positions[posIndex + 2] =
+              originalPositions.current[posIndex + 2] * easedProgress +
+              curveFactorZ *
+                arcFactor *
+                Math.abs(originalPositions.current[posIndex + 2]);
+
+            // Effet de taille pendant l'explosion
+            const sizeFactor =
+              1.0 + (1.0 - easedProgress) * sizeVariationFactor;
+            // Ne pas écraser la taille si c'est un post actif animé
+            if (!(postUID in transitionProgressRef.current)) {
+              sizes[i] = originalSizes.current[i] * sizeFactor;
+            }
+          } else {
+            // Garder le point à la position 0 s'il n'a pas encore commencé à exploser
+            positions[posIndex] = 0;
+            positions[posIndex + 1] = 0;
+            positions[posIndex + 2] = 0;
+
+            // Taille minimum avant l'explosion
+            if (!(postUID in transitionProgressRef.current)) {
+              sizes[i] = originalSizes.current[i] * 0.5;
+            }
+          }
+        }
+
+        // Gérer l'animation de transition pour ce post
+        if (postUID in transitionProgressRef.current) {
+          const isActivating = postUID === activePostUID;
+          const startTime = activationTimeRef.current[postUID] || 0;
+          const elapsedTime = timeRef.current - startTime;
+          const progress = Math.min(1, elapsedTime / activationDuration);
+
+          // Mettre à jour le progrès en fonction de la direction (activation ou désactivation)
+          if (isActivating) {
+            transitionProgressRef.current[postUID] = progress;
+          } else {
+            transitionProgressRef.current[postUID] = 1 - progress;
           }
 
-          // Transition progressive pour la taille aussi
-          if (hasSizes) {
-            // Ajouter une légère pulsation à la taille pour plus de dynamisme
-            const pulseFactor =
-              1.0 +
-              Math.sin(timeRef.current * 0.5 + index * 0.2) *
-                0.1 *
-                transitionFactor;
-            sizes[index] = originalSizes.current[index] * pulseFactor;
+          // Si l'animation est terminée et que c'est une désactivation, supprimer l'entrée
+          if (progress >= 1 && !isActivating) {
+            delete transitionProgressRef.current[postUID];
+            delete activationTimeRef.current[postUID];
           }
+
+          // Appliquer l'effet d'easing pour une animation plus fluide
+          const easedProgress = easeOutCubic(
+            transitionProgressRef.current[postUID]
+          );
+
+          // Interpoler la taille entre la normale et la taille active
+          let normalSize = originalSizes.current[i];
+          const targetSize = isActivating ? ACTIVE_POST_SIZE : normalSize;
+          sizes[i] = normalSize + (targetSize - normalSize) * easedProgress;
+
+          // Interpoler la couleur entre la normale et la couleur active
+          const colorIndex = i * 3;
+          const originalR = originalColors.current[colorIndex];
+          const originalG = originalColors.current[colorIndex + 1];
+          const originalB = originalColors.current[colorIndex + 2];
+
+          colors[colorIndex] =
+            originalR + (ACTIVE_POST_COLOR[0] - originalR) * easedProgress;
+          colors[colorIndex + 1] =
+            originalG + (ACTIVE_POST_COLOR[1] - originalG) * easedProgress;
+          colors[colorIndex + 2] =
+            originalB + (ACTIVE_POST_COLOR[2] - originalB) * easedProgress;
         }
       }
 
+      // Indiquer que les attributs ont changé
+      pointsRef.current.geometry.attributes.color.needsUpdate = true;
+      pointsRef.current.geometry.attributes.size.needsUpdate = true;
       pointsRef.current.geometry.attributes.position.needsUpdate = true;
-
-      // Mettre à jour l'attribut size si nécessaire
-      if (hasSizes) {
-        pointsRef.current.geometry.attributes.size.needsUpdate = true;
-      }
     }
   });
 
@@ -409,12 +494,12 @@ export function Posts({
     return new THREE.CanvasTexture(canvas);
   }, []);
 
-  // Créer les géométries et matériaux pour tous les points (plus de distinction actif/inactif)
+  // Créer les géométries et matériaux pour tous les points
   const [geometry, material] = useMemo(() => {
     if (!data || data.length === 0) return [null, null];
 
     // Récupérer le slug du nœud actif pour le logging uniquement
-    const currentActiveNodeSlug = activeNodeSlug;
+    const currentActivePostUID = activePostUID;
 
     // Créer les positions, couleurs et tailles pour tous les points
     const positions = [];
@@ -451,13 +536,19 @@ export function Posts({
         return;
       }
 
-      // Déterminer la couleur
+      // Vérifier si ce post est le post actif
+      const isActivePost = post.postUID === currentActivePostUID;
+
+      // Déterminer la couleur - toujours utiliser la couleur originale ici
+      // L'animation de couleur sera gérée dans useFrame
       const r = post.color && post.color.length >= 3 ? post.color[0] : 1.0;
       const g = post.color && post.color.length >= 3 ? post.color[1] : 1.0;
       const b = post.color && post.color.length >= 3 ? post.color[2] : 1.0;
 
-      // Déterminer la taille
+      // Déterminer la taille - toujours utiliser la taille normale ici
+      // L'animation de taille sera gérée dans useFrame
       let size;
+
       if (
         USE_IMPACT_SIZE &&
         post.impact !== undefined &&
@@ -466,38 +557,40 @@ export function Posts({
       ) {
         // Limiter l'impact entre 1 et 500
         const impactValue = Math.max(1, Math.min(500, post.impact));
-        // Conversion logarithmique de l'impact en taille pour une meilleure distribution visuelle
+        // Conversion logarithmique de l'impact en taille
         const normalizedImpact = Math.log(impactValue) / Math.log(500);
         // Mise à l'échelle entre MIN_IMPACT_SIZE et MAX_IMPACT_SIZE
         size =
           MIN_IMPACT_SIZE +
           normalizedImpact * (MAX_IMPACT_SIZE - MIN_IMPACT_SIZE);
       } else {
-        // Taille standard avec légère variation aléatoire si impact non utilisé
-        size = 10 + Math.random() * 5;
+        // Taille standard
+        size = SIZE;
       }
 
-      // Taille finale avec le facteur global
-      size = size * SIZE;
-
-      // Ajouter ce point aux tableaux (indépendamment du nœud actif)
+      // Ajouter ce point aux tableaux
       positions.push(x, y, z);
       colors.push(r, g, b);
       sizes.push(size);
 
-      // Conserver la logique de comptage pour les logs mais ne plus l'utiliser pour le rendu
-      if (currentActiveNodeSlug && post.slug === currentActiveNodeSlug) {
-        // Juste pour le comptage dans les logs
+      if (isActivePost) {
+        console.log(
+          `Post actif ajouté aux points: position=(${x}, ${y}, ${z}), taille initiale=${size}`
+        );
+
+        // Initialiser l'état de transition pour le post actif
+        transitionProgressRef.current[post.postUID] = 0;
+        activationTimeRef.current[post.postUID] = 0;
       }
     });
 
-    // Si nous avons un nœud actif, logger le nombre de posts correspondants (pour information seulement)
-    if (currentActiveNodeSlug) {
+    // Si nous avons un nœud actif, logger le nombre de posts correspondants
+    if (currentActivePostUID) {
       const matchingCount = data.filter(
-        (post) => post && post.slug === currentActiveNodeSlug
+        (post) => post && post.postUID === currentActivePostUID
       ).length;
       console.log(
-        `Posts correspondant au slug "${currentActiveNodeSlug}": ${matchingCount}/${data.length}`
+        `Posts correspondant au UID "${currentActivePostUID}": ${matchingCount}/${data.length}`
       );
     }
 
@@ -511,8 +604,9 @@ export function Posts({
       geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
       geo.setAttribute("size", new THREE.Float32BufferAttribute(sizes, 1));
 
-      // Sauvegarder les positions originales pour l'animation
+      // Sauvegarder les positions, couleurs et tailles originales pour l'animation
       originalPositions.current = [...positions];
+      originalColors.current = [...colors];
       originalSizes.current = [...sizes];
     }
 
@@ -530,7 +624,7 @@ export function Posts({
     });
 
     return [geo, mat];
-  }, [data, pointTexture, proximityThreshold, minDistance, activeNodeSlug]);
+  }, [data, pointTexture, proximityThreshold, minDistance, activePostUID]);
 
   // Ne rien afficher si pas de données
   if (!data || data.length === 0 || !material) {

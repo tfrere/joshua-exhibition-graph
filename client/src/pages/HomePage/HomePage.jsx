@@ -35,7 +35,6 @@ const HomePage = () => {
 
       // Validation basique des données du graphe
       if (graphJsonData && graphJsonData.nodes && graphJsonData.links) {
-        setGraphData(graphJsonData);
         console.log("Données du graphe chargées:", graphJsonData);
       } else {
         console.error("Format de données du graphe invalide:", graphJsonData);
@@ -47,10 +46,37 @@ const HomePage = () => {
 
       // Validation basique des données des posts
       if (Array.isArray(postsJsonData)) {
-        setPostsData(postsJsonData);
-        console.log("Données des posts chargées:", postsJsonData);
+        // Hack temporaire: s'assurer que tous les posts ont un postUID
+        const processedPostsData = postsJsonData.map((post, index) => {
+          if (post.postUID === undefined) {
+            // Générer un postUID unique basé sur l'index + un offset élevé pour éviter les conflits
+            const generatedUID = 1000000 + index;
+            console.log(
+              `Hack temporaire: Généré postUID=${generatedUID} pour post.id=${post.id}`
+            );
+            return {
+              ...post,
+              postUID: generatedUID,
+            };
+          }
+          return post;
+        });
+
+        setPostsData(processedPostsData);
+        console.log("Données des posts chargées:", processedPostsData);
+
+        // Ajouter les posts au graphData pour que le détecteur puisse y accéder
+        if (graphJsonData) {
+          graphJsonData.posts = processedPostsData;
+          setGraphData(graphJsonData);
+          console.log("Posts ajoutés au graphData:", graphJsonData);
+        }
       } else {
         console.error("Format de données des posts invalide:", postsJsonData);
+
+        if (graphJsonData) {
+          setGraphData(graphJsonData);
+        }
       }
     } catch (error) {
       console.error("Erreur lors du chargement des données JSON:", error);
@@ -119,6 +145,23 @@ const HomePage = () => {
     }),
   });
 
+  // Log quand graphData ou postsData changent
+  useEffect(() => {
+    if (graphData) {
+      console.log("GraphData mis à jour:", graphData);
+      console.log(
+        "Posts dans graphData:",
+        graphData.posts ? graphData.posts.length : 0
+      );
+    }
+  }, [graphData]);
+
+  useEffect(() => {
+    if (postsData) {
+      console.log("PostsData mis à jour:", postsData.length);
+    }
+  }, [postsData]);
+
   return (
     <div className="canvas-container">
       {isLoading && (
@@ -151,10 +194,7 @@ const HomePage = () => {
 
         <EffectComposer>
           {hasToneMapping && (
-            <ToneMapping
-              mode={THREE.ACESFilmicToneMapping}
-              exposure={0.5}
-            />
+            <ToneMapping mode={THREE.ACESFilmicToneMapping} exposure={0.5} />
           )}
           {hasBloom && (
             <Bloom

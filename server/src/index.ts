@@ -35,6 +35,7 @@ interface SharedState {
   closestNodeName?: string;
   closestNodePosition?: [number, number, number];
   activeNode?: ActiveNode;
+  activePost?: ActivePost;
 }
 
 // Interface pour le nœud actif
@@ -42,6 +43,17 @@ interface ActiveNode {
   id: string;
   slug: string;
   name?: string;
+  x?: number;
+  y?: number;
+  z?: number;
+}
+
+// Interface pour le post actif
+interface ActivePost {
+  id: string;
+  postUID: number;
+  slug: string;
+  impact?: number;
   x?: number;
   y?: number;
   z?: number;
@@ -60,6 +72,11 @@ io.on("connection", (socket) => {
   // Si un nœud actif existe déjà, l'envoyer au nouveau client
   if (currentState.activeNode) {
     socket.emit("activeNodeUpdated", currentState.activeNode);
+  }
+
+  // Si un post actif existe déjà, l'envoyer au nouveau client
+  if (currentState.activePost) {
+    socket.emit("activePostUpdated", currentState.activePost);
   }
 
   socket.on("updateState", (newState: SharedState) => {
@@ -81,6 +98,15 @@ io.on("connection", (socket) => {
     );
     currentState.activeNode = node;
     socket.broadcast.emit("activeNodeUpdated", node);
+  });
+
+  // Gérer les mises à jour du post actif
+  socket.on("updateActivePost", (post: ActivePost) => {
+    console.log(
+      `Post actif mis à jour: ${post.id} (UID: ${post.postUID}, Slug: ${post.slug})`
+    );
+    currentState.activePost = post;
+    socket.broadcast.emit("activePostUpdated", post);
   });
 
   socket.on("disconnect", () => {

@@ -92,7 +92,7 @@ const NodeLabel = ({ text, size, isSelected, isActive }) => {
           )}
 
           {/* Text with improved visibility - uniquement pour les nœuds actifs */}
-          {isActive && (
+          {true && (
             <Text
               fontSize={2}
               font={"/fonts/caveat.ttf"}
