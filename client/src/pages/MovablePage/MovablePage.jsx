@@ -274,6 +274,93 @@ const MovablePage = () => {
         </div>
       )}
 
+      {/* Tooltip d'aide */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          left: "20px",
+          padding: "10px 15px",
+          backgroundColor: "rgba(0, 0, 0, 0.7)",
+          color: "white",
+          borderRadius: "4px",
+          fontSize: "14px",
+          zIndex: 1000,
+          maxWidth: "300px",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+        }}
+      >
+        <p style={{ margin: "0 0 5px 0" }}>
+          <strong>Sélection multiple :</strong>
+        </p>
+        <ul style={{ margin: "0 0 10px 0", paddingLeft: "20px" }}>
+          <li>
+            Utilisez <strong>Shift + Clic</strong> pour sélectionner plusieurs
+            nœuds
+          </li>
+          <li>Le dernier nœud sélectionné devient le point de contrôle</li>
+          <li>Déplacer ce point de contrôle déplace tout le groupe ensemble</li>
+        </ul>
+
+        <p style={{ margin: "0 0 5px 0" }}>
+          <strong>Légende des couleurs :</strong>
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#0088ff",
+                marginRight: "8px",
+                borderRadius: "50%",
+              }}
+            ></span>
+            Non sélectionné
+          </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#ffcc00",
+                marginRight: "8px",
+                borderRadius: "50%",
+              }}
+            ></span>
+            Sélectionné
+          </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#9900ff",
+                marginRight: "8px",
+                borderRadius: "50%",
+              }}
+            ></span>
+            Multi-sélectionné
+          </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "12px",
+                height: "12px",
+                backgroundColor: "#ff9500",
+                marginRight: "8px",
+                borderRadius: "50%",
+              }}
+            ></span>
+            Point de contrôle actif
+          </div>
+        </div>
+      </div>
+
       {/* Bouton d'exportation */}
       <button
         className="export-button"

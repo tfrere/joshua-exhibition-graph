@@ -9,6 +9,9 @@ import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import PostProcessingEffects from "./components/PostProcessingEffects.jsx";
+import GridReferences from "./components/GridReferences.jsx";
+import AmbientSound from "./components/Audio/AmbientSound.jsx";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 
 import "./HomePage.css";
 
@@ -16,14 +19,6 @@ const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
   const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Configuration de Leva - Options générales
-  const [generalControls] = useControls(() => ({
-    debug: true,
-    hasPosts: true,
-    hasGraph: true,
-    backgroundColor: "#000000",
-  }));
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -68,6 +63,9 @@ const HomePage = () => {
 
   return (
     <div className="canvas-container">
+      {/* Composant de son d'ambiance */}
+      <AmbientSound />
+
       {isLoading && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
@@ -77,15 +75,23 @@ const HomePage = () => {
       {/* Interface utilisateur en dehors du Canvas */}
       <NavigationUI />
 
+      {/* Afficher les références de grille si activées */}
+      <GridReferences
+        rotationInterval={20}
+        maxRotation={180}
+        circleRadii={[50, 100, 150, 200, 250]}
+        opacity={1}
+      />
+
       {/* Indicateur de connexion de manette */}
       <GamepadIndicator />
 
       <Canvas
         shadows
-        camera={{ position: [0, 0, 500], fov: 50, near: 0.1, far: 1000000 }}
+        camera={{ position: [0, 0, 600], fov: 50, near: 0.1, far: 1000000 }}
       >
-        {generalControls.debug && <Stats />}
-        <color attach="background" args={[generalControls.backgroundColor]} />
+        <Stats />
+        <color attach="background" args={["#000000"]} />
 
         <AdvancedCameraController />
 
@@ -98,23 +104,25 @@ const HomePage = () => {
           intensity={100}
           distance={60000}
           decay={0.1}
-          color="pink"
+          color="blue"
           castShadow
           shadow-mapSize-width={128}
           shadow-mapSize-height={128}
         />
 
         {/* Afficher le graphe si les données sont disponibles et valides */}
-        {generalControls.hasGraph &&
-          graphData &&
-          graphData.nodes &&
-          graphData.links && <Graph data={graphData} />}
+        {graphData && graphData.nodes && graphData.links && (
+          <Graph data={graphData} postsData={postsData} />
+        )}
 
         {/* Afficher les posts si activés et disponibles */}
-        {generalControls.hasPosts && postsData && <Posts data={postsData} />}
+        {postsData && <Posts data={postsData} />}
 
         {/* Effets de post-processing dans un composant séparé */}
-        <PostProcessingEffects />
+        {/* <PostProcessingEffects /> */}
+        {/* <EffectComposer>
+          <Bloom intensity={0.2} threshold={0.1} radius={0.1} amount={0.1} />
+        </EffectComposer> */}
       </Canvas>
     </div>
   );

@@ -1,4 +1,11 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useImperativeHandle,
+  forwardRef,
+  useCallback,
+} from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -95,25 +102,198 @@ const ArrowLine = ({ sourceNode, targetNode, color = "#FFFFFF" }) => {
 };
 
 // Composant principal du graphe
-const MovableGraph = ({ data }) => {
-  const [selectedNode, setSelectedNode] = useState(null);
+const MovableGraph = forwardRef(({ data }, ref) => {
+  // États pour la sélection et les positions
+  const [selectedNodes, setSelectedNodes] = useState([]);
+  const [activeNodeId, setActiveNodeId] = useState(null); // Nœud actif pour TransformControls
   const [nodePositions, setNodePositions] = useState({});
+  const [initialPositions, setInitialPositions] = useState({}); // Positions initiales avant déplacement
+  const [isMovingGroup, setIsMovingGroup] = useState(false);
+
   const controlsRef = useRef();
   const { camera } = useThree();
 
-  // Gérer le clic sur un nœud
-  const handleNodeClick = (node) => {
-    setSelectedNode(node.id === selectedNode ? null : node.id);
-    console.log(`Node clicked: ${node.label || node.name}`);
-  };
+  // Exposer la méthode getNodesPositions via la réf
+  useImperativeHandle(ref, () => ({
+    getNodesPositions: () => {
+      return data.nodes.map((node) => {
+        // Appliquer les positions personnalisées si elles existent
+        const position = nodePositions[node.id] || {
+          x: node.x,
+          y: node.y,
+          z: node.z,
+        };
+        return {
+          ...node,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+        };
+      });
+    },
+  }));
 
-  // Mettre à jour la position d'un nœud
-  const updateNodePosition = (nodeId, newPosition) => {
-    setNodePositions((prev) => ({
-      ...prev,
-      [nodeId]: newPosition,
-    }));
-  };
+  // Gestion de la sélection de nœuds
+  const handleNodeClick = useCallback(
+    (node, shiftKey) => {
+      console.log("Click sur nœud:", node.id, "Shift:", shiftKey);
+
+      if (shiftKey) {
+        // Mode multi-sélection avec Shift
+        setSelectedNodes((prev) => {
+          const isAlreadySelected = prev.includes(node.id);
+
+          // Si déjà sélectionné, le retirer
+          if (isAlreadySelected) {
+            const newSelection = prev.filter((id) => id !== node.id);
+
+            // Si on retire le nœud actif, mettre à jour activeNodeId
+            if (node.id === activeNodeId) {
+              // Si la sélection n'est pas vide, prendre le dernier nœud comme nœud actif
+              setActiveNodeId(
+                newSelection.length > 0
+                  ? newSelection[newSelection.length - 1]
+                  : null
+              );
+            }
+
+            console.log(
+              "Nœud retiré de la sélection:",
+              node.id,
+              "Nouvelle sélection:",
+              newSelection
+            );
+            return newSelection;
+          }
+          // Sinon l'ajouter et le rendre actif
+          else {
+            // Le nouveau nœud sélectionné devient automatiquement le nœud actif
+            setActiveNodeId(node.id);
+            const newSelection = [...prev, node.id];
+            console.log(
+              "Nœud ajouté à la sélection:",
+              node.id,
+              "Nouvelle sélection:",
+              newSelection
+            );
+            return newSelection;
+          }
+        });
+      } else {
+        // Sélection simple sans Shift
+        const isSingleSelection =
+          selectedNodes.length === 1 && selectedNodes[0] === node.id;
+
+        if (isSingleSelection) {
+          // Désélectionner si déjà sélectionné seul
+          console.log("Désélection du nœud:", node.id);
+          setSelectedNodes([]);
+          setActiveNodeId(null);
+        } else {
+          // Nouvelle sélection unique
+          console.log("Sélection unique du nœud:", node.id);
+          setSelectedNodes([node.id]);
+          setActiveNodeId(node.id);
+        }
+      }
+    },
+    [selectedNodes, activeNodeId]
+  );
+
+  // Début du déplacement d'un nœud
+  const handleTransformStart = useCallback(
+    (nodeId) => {
+      console.log("Début transformation du nœud:", nodeId);
+
+      // Stocker les positions initiales de tous les nœuds sélectionnés
+      const initPositions = {};
+
+      selectedNodes.forEach((id) => {
+        const pos = nodePositions[id] || {
+          x: data.nodes.find((n) => n.id === id)?.x || 0,
+          y: data.nodes.find((n) => n.id === id)?.y || 0,
+          z: data.nodes.find((n) => n.id === id)?.z || 0,
+        };
+
+        initPositions[id] = { ...pos };
+      });
+
+      setInitialPositions(initPositions);
+
+      // Marquer qu'on est en train de déplacer un groupe si nécessaire
+      setIsMovingGroup(selectedNodes.length > 1 && nodeId === activeNodeId);
+
+      // Désactiver les contrôles de caméra pendant la transformation
+      if (controlsRef.current) {
+        controlsRef.current.enabled = false;
+      }
+    },
+    [selectedNodes, nodePositions, activeNodeId, data.nodes]
+  );
+
+  // Fin du déplacement d'un nœud
+  const handleTransformEnd = useCallback((nodeId) => {
+    console.log("Fin transformation du nœud:", nodeId);
+
+    // Réactiver les contrôles de caméra
+    if (controlsRef.current) {
+      controlsRef.current.enabled = true;
+    }
+
+    setIsMovingGroup(false);
+  }, []);
+
+  // Mise à jour de la position d'un nœud
+  const updateNodePosition = useCallback(
+    (nodeId, newPosition) => {
+      // Si ce n'est pas le nœud actif ou qu'on ne déplace pas un groupe, juste mettre à jour ce nœud
+      if (nodeId !== activeNodeId || !isMovingGroup) {
+        setNodePositions((prev) => ({
+          ...prev,
+          [nodeId]: newPosition,
+        }));
+        return;
+      }
+
+      // Si on déplace le nœud actif dans un groupe de sélection
+      console.log("Déplacement groupé depuis le nœud:", nodeId);
+
+      // Calculer le delta par rapport à la position initiale
+      const initialPos = initialPositions[nodeId] || { x: 0, y: 0, z: 0 };
+      const delta = {
+        x: newPosition.x - initialPos.x,
+        y: newPosition.y - initialPos.y,
+        z: newPosition.z - initialPos.z,
+      };
+
+      // Mettre à jour tous les nœuds sélectionnés avec ce delta
+      const newPositions = { ...nodePositions };
+
+      selectedNodes.forEach((id) => {
+        if (id !== nodeId) {
+          const initialNodePos = initialPositions[id] || { x: 0, y: 0, z: 0 };
+          newPositions[id] = {
+            x: initialNodePos.x + delta.x,
+            y: initialNodePos.y + delta.y,
+            z: initialNodePos.z + delta.z,
+          };
+        }
+      });
+
+      // Ajouter la position du nœud actif
+      newPositions[nodeId] = newPosition;
+
+      // Mettre à jour toutes les positions d'un coup
+      setNodePositions(newPositions);
+    },
+    [
+      activeNodeId,
+      isMovingGroup,
+      initialPositions,
+      selectedNodes,
+      nodePositions,
+    ]
+  );
 
   // Créer une map pour accéder rapidement aux nœuds par ID
   const nodeMap = {};
@@ -161,19 +341,26 @@ const MovableGraph = ({ data }) => {
       {/* Rendu de tous les nœuds */}
       {data.nodes.map((node) => {
         node.size = 1;
+        const isSelected = selectedNodes.includes(node.id);
+        const isActiveNode = node.id === activeNodeId;
+
         return (
           <MovableNode
             key={`node-${node.id}`}
             node={node}
-            onClick={handleNodeClick}
-            isSelected={selectedNode === node.id}
+            onClick={(node, shiftKey) => handleNodeClick(node, shiftKey)}
+            isSelected={isSelected}
+            isMultiSelected={selectedNodes.length > 1 && isSelected}
+            isActiveNode={isActiveNode}
             onPositionUpdate={(newPos) => updateNodePosition(node.id, newPos)}
+            onTransformStart={() => handleTransformStart(node.id)}
+            onTransformEnd={() => handleTransformEnd(node.id)}
             controlsRef={controlsRef}
           />
         );
       })}
     </group>
   );
-};
+});
 
 export default MovableGraph;

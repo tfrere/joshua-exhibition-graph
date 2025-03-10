@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
 import { Vector3 } from "three";
+import useSound from "use-sound";
 import {
   CAMERA_POSITIONS,
   CAMERA_MODES,
@@ -66,12 +66,12 @@ const GamepadIndicator = () => {
 };
 
 /**
- * Contrôleur de caméra avancé avec deux modes : orbite et vol libre
+ * Contrôleur de caméra avancé en mode vol libre uniquement
  */
 export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   const { camera, gl } = useThree();
   const controlsRef = useRef(null);
-  const [mode, setMode] = useState(CAMERA_MODES.ORBIT);
+  const [mode, setMode] = useState(CAMERA_MODES.FLIGHT);
   const [positionIndex, setPositionIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const flightController = useRef(null);
@@ -85,12 +85,38 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     endTarget: new Vector3(),
   });
 
-  // Variables pour la rotation automatique
+  // Variables for automatic rotation
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(false);
   const lastInteractionTime = useRef(Date.now());
   const autoRotateTimerId = useRef(null);
-  const AUTO_ROTATE_DELAY = 5000; // 5 secondes avant activation de la rotation auto
-  const AUTO_ROTATE_SPEED = 0.025; // Vitesse de rotation automatique
+  const AUTO_ROTATE_DELAY = 10000; // 10 seconds before auto rotation activation
+  const AUTO_ORBIT_DELAY = 10000; // 10 seconds before orbit mode
+  const AUTO_ROTATE_SPEED = 0.025; // Auto rotation speed
+  const [orbitModeActive, setOrbitModeActive] = useState(false);
+  const orbitTimerId = useRef(null);
+  const orbitAttempted = useRef(false); // Nouvel état pour suivre les tentatives d'activation
+
+  // Paramètres d'orbite et de rotation
+  const ORBIT_SPEED = 0.15; // Vitesse de déplacement orbital (plus la valeur est élevée, plus l'orbite est rapide)
+  const ORBIT_YAW = 0.8; // Vitesse de rotation de la caméra sur elle-même (yaw)
+  const ORBIT_PITCH = 0.02; // Vitesse de tangage vertical (pitch)
+  const ORBIT_ACCELERATION_TIME = 2.0; // Durée en secondes de l'accélération progressive
+
+  // Timers et références pour l'accélération
+  const orbitStartTime = useRef(null);
+
+  // Sound for acceleration
+  const [
+    playAcceleration,
+    { stop: stopAcceleration, sound: accelerationSound },
+  ] = useSound("/sounds/acceleration.mp3", {
+    volume: 0,
+    loop: true,
+    interrupt: false,
+  });
+
+  const accelerationPlaying = useRef(false);
+  const currentAccelerationVolume = useRef(0);
 
   // Récupérer les entrées unifiées (clavier et manette)
   const inputs = useInputs();
@@ -100,10 +126,16 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   useEffect(() => {
     window.__cameraAnimating = false;
     window.__cameraMode = mode;
+    window.__orbitModeActive = false;
+    window.__cameraPosition = null;
+    window.__cameraTarget = null;
 
     return () => {
       window.__cameraAnimating = undefined;
       window.__cameraMode = undefined;
+      window.__orbitModeActive = undefined;
+      window.__cameraPosition = undefined;
+      window.__cameraTarget = undefined;
     };
   }, []);
 
@@ -116,6 +148,41 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   useEffect(() => {
     window.__cameraAnimating = isTransitioning;
   }, [isTransitioning]);
+
+  // Mise à jour de l'état global quand le mode orbite change
+  useEffect(() => {
+    window.__orbitModeActive = orbitModeActive;
+    console.log(
+      "Orbit mode global state updated:",
+      orbitModeActive ? "active" : "inactive"
+    );
+
+    // Si l'orbite est activée, enregistrer le temps de démarrage pour l'accélération
+    if (orbitModeActive) {
+      orbitStartTime.current = Date.now();
+      console.log("Starting orbit acceleration curve");
+    }
+
+    // Si on vient de désactiver le mode orbite, réinitialiser le FlightController
+    // pour éviter que la rotation continue avec l'inertie
+    if (!orbitModeActive && flightController.current) {
+      console.log(
+        "Orbit mode disabled, resetting flight controller rotation velocity"
+      );
+      flightController.current.reset();
+      // Réinitialiser le timer d'accélération
+      orbitStartTime.current = null;
+    }
+
+    // Forcer une vérification supplémentaire après un court délai
+    // pour s'assurer que l'état global est bien synchronisé
+    setTimeout(() => {
+      if (window.__orbitModeActive !== orbitModeActive) {
+        console.log("Fixing orbit mode state synchronization");
+        window.__orbitModeActive = orbitModeActive;
+      }
+    }, 100);
+  }, [orbitModeActive]);
 
   // Configurer le gestionnaire d'entrées
   useEffect(() => {
@@ -131,31 +198,136 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     };
   }, [config]);
 
-  // Fonction pour détecter l'activité de l'utilisateur
-  const detectUserActivity = () => {
-    lastInteractionTime.current = Date.now();
+  // Initialiser la caméra à la position 0 (vue globale à 600 unités)
+  useEffect(() => {
+    if (camera) {
+      // Définir la position initiale de la caméra avec un délai pour permettre
+      // au système de se stabiliser au démarrage
+      console.log("Setting initial camera position");
 
-    // Si la rotation auto est activée, la désactiver
+      // On commence par désactiver toute transition ou orbite
+      transitioning.current.active = false;
+      setIsTransitioning(false);
+      setOrbitModeActive(false);
+
+      // Puis on place la caméra à sa position initiale
+      animateToCameraPosition(0);
+
+      // Une fois la position initiale définie, on démarrer le timer d'inactivité
+      // avec un délai pour éviter les conflits avec la transition initiale
+      setTimeout(() => {
+        console.log("Initializing inactivity timer after startup");
+        detectUserActivity();
+      }, 2000); // Délai de 2 secondes
+    }
+  }, [camera]);
+
+  // Function to detect user activity
+  const detectUserActivity = () => {
+    console.log("User activity detected, resetting timers");
+    lastInteractionTime.current = Date.now();
+    orbitAttempted.current = false; // Réinitialiser également cet état
+
+    // Exposer le temps d'inactivité et le temps restant pour l'interface
+    window.__lastInteractionTime = lastInteractionTime.current;
+    window.__autoOrbitDelay = AUTO_ORBIT_DELAY;
+
+    // If auto rotation or orbit mode is enabled, disable it
     if (autoRotateEnabled) {
       setAutoRotateEnabled(false);
     }
 
-    // Annuler le timer existant et en démarrer un nouveau
-    if (autoRotateTimerId.current) {
-      clearTimeout(autoRotateTimerId.current);
+    if (orbitModeActive) {
+      console.log("Disabling orbit mode due to user activity");
+      setOrbitModeActive(false);
+
+      // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
+      if (flightController.current) {
+        console.log("Resetting flight controller to stop rotation momentum");
+        flightController.current.reset();
+      }
     }
 
-    // Programmer l'activation de la rotation auto après le délai
-    autoRotateTimerId.current = setTimeout(() => {
-      setAutoRotateEnabled(true);
-    }, AUTO_ROTATE_DELAY);
+    // Cancel existing timers
+    if (autoRotateTimerId.current) {
+      clearTimeout(autoRotateTimerId.current);
+      autoRotateTimerId.current = null;
+    }
+
+    if (orbitTimerId.current) {
+      clearTimeout(orbitTimerId.current);
+      orbitTimerId.current = null;
+    }
+
+    // Ne programmer les timers que si on est en mode normal
+    // (pas en transition et pas en mode orbite)
+    if (!transitioning.current.active && !orbitModeActive) {
+      // Program auto rotation activation after delay
+      autoRotateTimerId.current = setTimeout(() => {
+        console.log("Auto-rotation timer expired, checking conditions...");
+        // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
+        if (!transitioning.current.active && !orbitModeActive) {
+          console.log("Activating auto-rotation");
+          setAutoRotateEnabled(true);
+        } else {
+          console.log(
+            "Auto-rotation cancelled - camera in transition or orbit mode"
+          );
+        }
+      }, AUTO_ROTATE_DELAY);
+
+      // Program orbit mode activation after delay
+      orbitTimerId.current = setTimeout(() => {
+        console.log("Orbit timer expired, checking conditions...");
+
+        // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
+        if (!transitioning.current.active && !orbitModeActive) {
+          console.log(
+            "Conditions met - Activating orbit mode after inactivity"
+          );
+          orbitAttempted.current = true;
+
+          // Retour à la position par défaut PUIS activation du mode orbite
+          animateToCameraPosition(0, true); // Le second paramètre indique qu'il faut activer l'orbite après
+        } else {
+          console.log(
+            "Orbit activation cancelled - camera already in transition or orbit mode"
+          );
+          console.log(
+            "  transitioning.current.active:",
+            transitioning.current.active
+          );
+          console.log("  orbitModeActive:", orbitModeActive);
+        }
+      }, AUTO_ORBIT_DELAY);
+
+      console.log(
+        "Auto-rotation timer set to expire in",
+        AUTO_ROTATE_DELAY / 1000,
+        "seconds"
+      );
+      console.log(
+        "Orbit timer set to expire in",
+        AUTO_ORBIT_DELAY / 1000,
+        "seconds"
+      );
+    } else {
+      console.log(
+        "Not scheduling auto-rotation/orbit timers - camera in transition or orbit mode"
+      );
+      console.log(
+        "  transitioning.current.active:",
+        transitioning.current.active
+      );
+      console.log("  orbitModeActive:", orbitModeActive);
+    }
   };
 
-  // Ajouter des écouteurs pour les mouvements de souris et les clics
+  // Add event listeners for mouse movements and clicks
   useEffect(() => {
     const handleMouseActivity = () => detectUserActivity();
 
-    // Ajouter les écouteurs d'événements au niveau de la fenêtre
+    // Add event listeners to window level
     window.addEventListener("mousemove", handleMouseActivity);
     window.addEventListener("mousedown", handleMouseActivity);
     window.addEventListener("mouseup", handleMouseActivity);
@@ -164,9 +336,8 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     window.addEventListener("touchstart", handleMouseActivity);
     window.addEventListener("touchmove", handleMouseActivity);
 
-    // Ajouter spécifiquement des écouteurs au canvas de Three.js
-    // Ces écouteurs sont essentiels car OrbitControls peut capturer les événements
-    // avant qu'ils n'atteignent window
+    // Add specifically to Three.js canvas event listeners
+    // These listeners are essential to detect user interaction
     if (gl && gl.domElement) {
       window.addEventListener("mousemove", handleMouseActivity, {
         passive: true,
@@ -188,18 +359,12 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       });
     }
 
-    // OrbitControls génère également des événements de changement
-    // lorsque l'utilisateur interagit avec lui
-    if (controlsRef.current) {
-      controlsRef.current.addEventListener("change", handleMouseActivity);
-    }
-
-    // Démarrer le timer initial
+    // Start initial timer
     detectUserActivity();
 
-    // Nettoyage lors du démontage
+    // Cleanup on unmount
     return () => {
-      // Nettoyage des écouteurs de la fenêtre
+      // Cleanup window event listeners
       window.removeEventListener("mousemove", handleMouseActivity);
       window.removeEventListener("mousedown", handleMouseActivity);
       window.removeEventListener("mouseup", handleMouseActivity);
@@ -208,7 +373,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       window.removeEventListener("touchstart", handleMouseActivity);
       window.removeEventListener("touchmove", handleMouseActivity);
 
-      // Nettoyage des écouteurs du canvas
+      // Cleanup canvas event listeners
       if (gl && gl.domElement) {
         gl.domElement.removeEventListener("mousemove", handleMouseActivity);
         gl.domElement.removeEventListener("mousedown", handleMouseActivity);
@@ -218,30 +383,58 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         gl.domElement.removeEventListener("wheel", handleMouseActivity);
       }
 
-      // Nettoyage de l'écouteur OrbitControls
-      if (controlsRef.current) {
-        controlsRef.current.removeEventListener("change", handleMouseActivity);
-      }
-
       if (autoRotateTimerId.current) {
         clearTimeout(autoRotateTimerId.current);
       }
     };
-  }, [gl, controlsRef.current]); // Ajouter les dépendances pour recréer les écouteurs si nécessaire
+  }, [gl]); // Add dependencies to recreate listeners if necessary
 
-  // Traiter les entrées unifiées
+  // Handle unified inputs
   useEffect(() => {
-    // Si l'une des entrées a changé, détecter l'activité
-    if (JSON.stringify(inputs) !== JSON.stringify(prevInputs.current)) {
+    // Si on est en mode orbite et que n'importe quelle entrée est détectée, désactiver l'orbite
+    if (orbitModeActive) {
+      const hasAnyInput =
+        inputs.moveForward !== 0 ||
+        inputs.moveRight !== 0 ||
+        inputs.moveUp !== 0 ||
+        inputs.lookHorizontal !== 0 ||
+        inputs.lookVertical !== 0 ||
+        inputs.roll !== 0 ||
+        inputs.toggleMode ||
+        inputs.nextPosition ||
+        inputs.action1 ||
+        inputs.action2;
+
+      if (hasAnyInput) {
+        console.log("User input detected, disabling orbit mode");
+        setOrbitModeActive(false);
+
+        // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
+        if (flightController.current) {
+          console.log("Resetting flight controller to stop rotation momentum");
+          flightController.current.reset();
+        }
+
+        detectUserActivity();
+      }
+    }
+
+    // Si des entrées non-nulles sont détectées, signaler l'activité
+    const hasNonZeroInput =
+      inputs.moveForward !== 0 ||
+      inputs.moveRight !== 0 ||
+      inputs.moveUp !== 0 ||
+      inputs.lookHorizontal !== 0 ||
+      inputs.lookVertical !== 0 ||
+      inputs.roll !== 0 ||
+      inputs.toggleMode ||
+      inputs.nextPosition;
+
+    if (hasNonZeroInput) {
       detectUserActivity();
     }
 
-    // Réagir au changement de mode
-    if (inputs.toggleMode && !prevInputs.current.toggleMode) {
-      toggleMode();
-    }
-
-    // Réagir à la demande de positionnement suivant
+    // React to following position request
     if (
       inputs.nextPosition &&
       !prevInputs.current.nextPosition &&
@@ -251,20 +444,59 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       animateToCameraPosition(nextIndex);
     }
 
-    // Mettre à jour les entrées précédentes
+    // Update previous inputs
     prevInputs.current = { ...inputs };
-  }, [inputs, isTransitioning, positionIndex]);
+  }, [inputs, isTransitioning, positionIndex, orbitModeActive]);
 
-  // Animation par frame pour le mode vol et les transitions
+  // Animation by frame for flight mode and transitions
   useFrame((state, delta) => {
-    // Gérer les transitions de caméra
+    // Exposer les positions de la caméra et de sa cible pour l'interface utilisateur
+    if (camera) {
+      // Exposer la position actuelle
+      window.__cameraPosition = {
+        x: camera.position.x,
+        y: camera.position.y,
+        z: camera.position.z,
+      };
+
+      // Calculer et exposer une approximation de la cible
+      const target = new Vector3(0, 0, -100)
+        .applyQuaternion(camera.quaternion)
+        .add(camera.position);
+      window.__cameraTarget = {
+        x: target.x,
+        y: target.y,
+        z: target.z,
+      };
+
+      // Mise à jour du temps restant avant l'activation de l'auto-orbite
+      // seulement si nous ne sommes ni en transition ni en orbite
+      if (
+        !transitioning.current.active &&
+        !orbitModeActive &&
+        window.__lastInteractionTime
+      ) {
+        const elapsedTime = Date.now() - window.__lastInteractionTime;
+        const remainingTime = Math.max(
+          0,
+          window.__autoOrbitDelay - elapsedTime
+        );
+        window.__timeBeforeAutoOrbit = remainingTime;
+      } else if (transitioning.current.active || orbitModeActive) {
+        // Si en transition ou en orbite, il n'y a pas de compte à rebours
+        window.__timeBeforeAutoOrbit = null;
+      }
+    }
+
+    // Handle camera transitions
     if (transitioning.current.active) {
       const elapsed = (Date.now() - transitioning.current.startTime) / 1000;
       const progress = Math.min(elapsed / transitioning.current.duration, 1);
 
+      // Calculer la nouvelle position et orientation de la caméra
       calculateCameraTransition(
         camera,
-        controlsRef.current,
+        null, // On n'utilise plus controlsRef ici
         {
           position: transitioning.current.startPosition,
           target: transitioning.current.startTarget,
@@ -276,24 +508,134 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         progress
       );
 
+      // Exposer l'état d'animation pour l'interface utilisateur
+      window.__cameraAnimating = true;
+
       if (progress >= 1) {
         transitioning.current.active = false;
         setIsTransitioning(false);
+        window.__cameraAnimating = false;
 
-        // Réinitialiser le gestionnaire d'entrées pour permettre de nouvelles transitions
+        // Une fois la transition terminée, réinitialiser le FlightController pour éviter des mouvements brusques
+        if (flightController.current) {
+          flightController.current.reset();
+        }
+
+        // Reset input handler for allowing new transitions
         const inputManager = getInputManager();
         if (inputManager.inputs.nextPosition) {
           setTimeout(() => {
-            // Force la réinitialisation de l'état nextPosition
+            // Force nextPosition state reset
             inputManager.inputs.nextPosition = false;
             inputManager.notifyListeners();
           }, 100);
         }
       }
     }
-    // Appliquer les contrôles selon le mode actif
-    else if (mode === CAMERA_MODES.FLIGHT && flightController.current) {
-      // En mode vol, appliquer les entrées au contrôleur de vol
+    // Mode orbite automatique
+    else if (orbitModeActive && flightController.current) {
+      // En mode orbite, on applique une rotation lente autour de la sphère
+      // Log moins fréquent pour éviter de saturer la console
+      if (Math.random() < 0.01) {
+        // Log environ 1% du temps pour vérifier que l'orbite est active
+        console.log("Orbit mode active - applying orbital movement");
+      }
+
+      // S'assurer que le mode orbite est correctement reflété dans l'état global
+      window.__orbitModeActive = true;
+
+      // Calculer le facteur d'accélération entre 0 et 1
+      let accelerationFactor = 1.0; // Par défaut, vitesse complète
+
+      if (orbitStartTime.current) {
+        const elapsedTime = (Date.now() - orbitStartTime.current) / 1000; // en secondes
+
+        if (elapsedTime < ORBIT_ACCELERATION_TIME) {
+          // Utiliser une courbe d'accélération cubique (easeInOutCubic)
+          // qui démarre doucement, accélère au milieu, puis ralentit l'accélération vers la fin
+          const progress = elapsedTime / ORBIT_ACCELERATION_TIME;
+
+          // Courbe easeInOutCubic
+          accelerationFactor =
+            progress < 0.5
+              ? 4 * progress * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+          if (Math.random() < 0.05) {
+            // Log occasionnel pour montrer la progression de l'accélération
+            console.log(
+              `Orbit acceleration: ${(accelerationFactor * 100).toFixed(0)}%`
+            );
+          }
+        } else {
+          // Après la période d'accélération, vitesse constante maximale
+          accelerationFactor = 1.0;
+          // On peut réinitialiser la référence pour économiser les calculs
+          orbitStartTime.current = null;
+        }
+      }
+
+      // Appliquer le facteur d'accélération aux paramètres de rotation
+      const orbitInput = {
+        thrust: 0,
+        lateral: 0,
+        upDown: 0,
+        yaw: ORBIT_YAW * accelerationFactor,
+        pitch: ORBIT_PITCH * accelerationFactor,
+        roll: 0,
+      };
+
+      // Calculer un mouvement orbital RÉEL autour du centre
+      // Obtenir la position actuelle par rapport au centre
+      const position = camera.position.clone();
+      const distance = position.length();
+
+      // Maintenir la distance avec le centre (0,0,0)
+      if (Math.abs(distance - 600) > 10) {
+        const direction = position.clone().normalize();
+        const targetPos = direction.multiplyScalar(600);
+        camera.position.lerp(targetPos, 0.05);
+      }
+
+      // ---------- AJOUT DU MOUVEMENT ORBITAL ----------
+      // Créer un mouvement orbital en déplaçant la caméra autour du centre
+      // en plus de la rotation de la caméra elle-même
+
+      // 1. Calculer l'angle actuel dans le plan XZ
+      const angleXZ = Math.atan2(camera.position.x, camera.position.z);
+
+      // 2. Créer un nouvel angle en ajoutant une rotation (plus rapide que le yaw pour un effet visible)
+      // Appliquer également le facteur d'accélération à la vitesse de déplacement orbital
+      const orbitSpeed = ORBIT_SPEED * delta * accelerationFactor;
+      const newAngleXZ = angleXZ + orbitSpeed;
+
+      // 3. Calculer la nouvelle position en conservant la même hauteur et distance
+      const horizontalDistance = Math.sqrt(
+        camera.position.x * camera.position.x +
+          camera.position.z * camera.position.z
+      );
+      const newX = Math.sin(newAngleXZ) * horizontalDistance;
+      const newZ = Math.cos(newAngleXZ) * horizontalDistance;
+
+      // 4. Appliquer la nouvelle position tout en maintenant la hauteur (Y)
+      camera.position.x = newX;
+      camera.position.z = newZ;
+
+      // Fin des ajouts pour le mouvement orbital
+
+      // Appliquer la rotation de la caméra elle-même (pour qu'elle tourne sur elle-même)
+      flightController.current.setInput(orbitInput);
+      flightController.current.update(delta);
+
+      // S'assurer que la caméra pointe toujours vers le centre
+      camera.lookAt(0, 0, 0);
+    }
+    // On est en mode vol, mais pas en transition ni en mode orbite
+    else if (flightController.current && !transitioning.current.active) {
+      // S'assurer que le mode orbite est correctement reflété dans l'état global
+      window.__orbitModeActive = false;
+
+      // In flight mode, apply inputs to flight controller
       const flightInput = {
         thrust: inputs.moveForward,
         lateral: inputs.moveRight,
@@ -303,178 +645,212 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         roll: inputs.roll,
       };
 
+      // Si une entrée est détectée, arrêter l'orbite automatique
+      if (
+        inputs.moveForward !== 0 ||
+        inputs.moveRight !== 0 ||
+        inputs.moveUp !== 0 ||
+        inputs.lookHorizontal !== 0 ||
+        inputs.lookVertical !== 0 ||
+        inputs.roll !== 0
+      ) {
+        if (orbitModeActive) {
+          console.log("User input detected in flight mode - disabling orbit");
+          setOrbitModeActive(false);
+          detectUserActivity();
+        }
+      }
+
       flightController.current.setInput(flightInput);
       flightController.current.update(delta);
 
-      // Si la rotation automatique est activée, appliquer une rotation lente
+      // Exposer l'état d'animation pour l'interface utilisateur
+      window.__cameraAnimating = false;
+
+      // Handle acceleration sound
+      if (flightController.current) {
+        // Calculate movement intensity based on velocity
+        const velocity = flightController.current.velocity;
+        const speed = velocity.length();
+        const maxSpeed = flightController.current.config.maxSpeed;
+
+        // Calculate normalized volume (0 to 1) based on current speed
+        const targetVolume = Math.min(speed / (maxSpeed * 0.5), 1);
+
+        // Smooth volume transition
+        currentAccelerationVolume.current =
+          currentAccelerationVolume.current * 0.95 + targetVolume * 0.05;
+
+        // Play or stop sound based on acceleration
+        if (speed > 0.5 && !accelerationPlaying.current) {
+          playAcceleration();
+          accelerationPlaying.current = true;
+        }
+
+        // Update sound volume
+        if (accelerationSound && accelerationPlaying.current) {
+          accelerationSound.volume(currentAccelerationVolume.current);
+
+          // Stop sound if almost stopped
+          if (speed < 0.5) {
+            stopAcceleration();
+            accelerationPlaying.current = false;
+          }
+        }
+      }
+
+      // If auto rotation is enabled, apply a slow rotation
       if (autoRotateEnabled && !isTransitioning && !flightInput.yaw) {
-        // Ajouter une légère rotation horizontale
+        // Add slight horizontal rotation
         flightController.current.setInput({
           ...flightInput,
           yaw: AUTO_ROTATE_SPEED,
         });
       }
-    } else if (mode === CAMERA_MODES.ORBIT && controlsRef.current) {
-      // En mode orbite, manipuler directement la caméra et les contrôles
-      const orbitControls = controlsRef.current;
-
-      if (orbitControls && !isTransitioning) {
-        // Activer/désactiver la rotation automatique selon l'état
-        orbitControls.autoRotate = autoRotateEnabled;
-        orbitControls.autoRotateSpeed = AUTO_ROTATE_SPEED * 10; // OrbitControls utilise une échelle différente
-
-        // Manipuler la position cible des contrôles d'orbite si l'utilisateur interagit
-        const rotationSpeed = config.rotationSpeed * 0.05;
-        const moveSpeed = 2;
-
-        // Pour les rotations, déplacer la caméra autour du point cible
-        if (Math.abs(inputs.lookHorizontal) > 0) {
-          // Rotation horizontale - déplacer sur l'axe azimutal
-          orbitControls.azimuthAngle += -inputs.lookHorizontal * rotationSpeed;
-        }
-
-        if (Math.abs(inputs.lookVertical) > 0) {
-          // Rotation verticale - déplacer sur l'axe polaire
-          orbitControls.polarAngle += -inputs.lookVertical * rotationSpeed;
-          // Limiter l'angle polaire pour éviter les retournements
-          orbitControls.polarAngle = Math.max(
-            0.1,
-            Math.min(Math.PI - 0.1, orbitControls.polarAngle)
-          );
-        }
-
-        // Pour le zoom avant/arrière, ajuster la distance
-        if (Math.abs(inputs.moveForward) > 0) {
-          const zoomFactor = 1 + inputs.moveForward * 0.05;
-          orbitControls.dolly(zoomFactor > 1 ? 1 / zoomFactor : -zoomFactor);
-        }
-
-        // Pour les déplacements latéraux, ajuster la cible
-        if (Math.abs(inputs.moveRight) > 0 || Math.abs(inputs.moveUp) > 0) {
-          const offset = new Vector3();
-
-          // Calculer la direction droite/gauche par rapport à la caméra
-          if (Math.abs(inputs.moveRight) > 0) {
-            const right = new Vector3(1, 0, 0);
-            right.applyQuaternion(camera.quaternion);
-            right.multiplyScalar(-inputs.moveRight * moveSpeed);
-            offset.add(right);
-          }
-
-          // Calculer la direction haut/bas
-          if (Math.abs(inputs.moveUp) > 0) {
-            const up = new Vector3(0, 1, 0);
-            up.multiplyScalar(inputs.moveUp * moveSpeed);
-            offset.add(up);
-          }
-
-          // Déplacer la cible des contrôles
-          orbitControls.target.add(offset);
-        }
-
-        // Mettre à jour les contrôles
-        orbitControls.update();
-      }
     }
   });
 
-  // Fonction pour basculer entre les modes
-  const toggleMode = () => {
-    const newMode =
-      mode === CAMERA_MODES.ORBIT ? CAMERA_MODES.FLIGHT : CAMERA_MODES.ORBIT;
-
-    // Si on passe en mode orbite, réinitialiser le contrôleur de vol
-    if (newMode === CAMERA_MODES.ORBIT && flightController.current) {
-      flightController.current.reset();
-    }
-
-    setMode(newMode);
-
-    // Réinitialiser le timer de rotation automatique
-    detectUserActivity();
-  };
-
-  // Fonction pour animer vers une position de caméra prédéfinie
-  const animateToCameraPosition = (index) => {
+  // Function to animate to a predefined camera position
+  const animateToCameraPosition = (index, activateOrbitAfter = false) => {
     const targetPos = CAMERA_POSITIONS[index];
     if (!targetPos) return;
 
-    // S'assurer que camera et controls sont disponibles
+    // Ensure camera is available
     if (!camera) {
-      console.error("Camera non disponible pour l'animation");
+      console.error("Camera not available for animation");
       return;
     }
 
-    const currentControls = controlsRef.current;
+    // Si on était en mode orbite, désactiver temporairement pendant la transition
+    const wasOrbiting = orbitModeActive;
+    if (wasOrbiting) {
+      console.log("Temporarily disabling orbit mode during transition");
+      setOrbitModeActive(false);
+    }
 
-    // Initialiser la transition
+    // Marker l'état de transition
+    console.log(
+      `Starting camera transition to position ${index}, activateOrbitAfter:`,
+      activateOrbitAfter
+    );
+    setIsTransitioning(true);
+    window.__cameraAnimating = true;
+
+    // Initialize transition
     const trans = transitioning.current;
     trans.active = true;
     trans.startTime = Date.now();
     trans.startPosition.copy(camera.position);
 
-    // Stocker la cible selon le mode actuel
-    if (mode === CAMERA_MODES.ORBIT && currentControls) {
-      trans.startTarget.copy(currentControls.target);
-    } else {
-      // En mode vol, calculer une position cible devant la caméra
-      trans.startTarget
-        .copy(camera.position)
-        .add(new Vector3(0, 0, -100).applyQuaternion(camera.quaternion));
-    }
+    // Méthode améliorée pour calculer la cible actuelle de la caméra
+    // Projeter un point à 100 unités devant la caméra
+    const direction = new Vector3(0, 0, -100).applyQuaternion(
+      camera.quaternion
+    );
+    trans.startTarget.copy(camera.position).add(direction);
 
+    // Copier les positions cibles finales
     trans.endPosition.copy(targetPos.position);
     trans.endTarget.copy(targetPos.target);
 
+    // Mettre à jour l'état de l'interface utilisateur
     setPositionIndex(index);
     setIsTransitioning(true);
+    window.__cameraAnimating = true;
 
-    // Réinitialiser le timer de rotation automatique
-    detectUserActivity();
+    // En cas de transition vers la position par défaut, afficher un message dans la console
+    if (index === 0) {
+      console.log("Transition vers la vue globale à 600 unités de distance");
+
+      // Si on doit activer l'orbite après la transition, programmer un délai
+      if (activateOrbitAfter) {
+        // Programmer l'activation de l'orbite une fois la transition terminée
+        const orbiteActivationDelay = trans.duration * 1000 + 100;
+        console.log(
+          `Programming orbit activation in ${orbiteActivationDelay}ms after transition`
+        );
+
+        setTimeout(() => {
+          if (!transitioning.current.active) {
+            console.log("Orbit activation - transition completed");
+            setOrbitModeActive(true);
+            // Force update global state immediately
+            window.__orbitModeActive = true;
+          } else {
+            // Si toujours en transition, réessayer dans un moment
+            console.log(
+              "Still transitioning, retrying orbit activation shortly"
+            );
+            setTimeout(() => {
+              console.log("Second attempt at orbit activation");
+              setOrbitModeActive(true);
+              // Force update global state immediately
+              window.__orbitModeActive = true;
+            }, 500);
+          }
+        }, orbiteActivationDelay);
+      }
+    }
+
+    // Ne pas réinitialiser les timers d'inactivité pendant une transition automatique vers l'orbite
+    if (!activateOrbitAfter) {
+      // Reset auto rotation timer
+      detectUserActivity();
+    } else {
+      console.log(
+        "Not resetting activity timers as we're transitioning to orbit mode"
+      );
+    }
   };
 
-  // Initialiser le contrôleur de vol une fois que la caméra est disponible
+  // Initialize flight controller once camera is available
   useEffect(() => {
     if (camera && !flightController.current) {
       flightController.current = new FlightController(camera, config);
-      console.log("Contrôleur de vol initialisé avec la caméra", camera);
+      console.log("Flight controller initialized with camera", camera);
+
+      // Exposer la fonction animateToCameraPosition au niveau global
+      window.__animateToCameraPosition = animateToCameraPosition;
     }
   }, [camera, config]);
 
-  // Mettre à jour la configuration du contrôleur de vol quand elle change
+  // Update flight controller configuration when it changes
   useEffect(() => {
     if (flightController.current) {
       flightController.current.config = config;
     }
   }, [config]);
 
-  return (
-    <>
-      {/* Contrôles d'orbite pour le mode ORBIT */}
-      <OrbitControls
-        ref={controlsRef}
-        args={[camera, gl.domElement]}
-        enableDamping
-        dampingFactor={0.25}
-        // rotateSpeed={0.5}
-        // enablePan={false}
-        // minZoom={0.5}
-        // maxZoom={2}
-        minDistance={650}
-        maxDistance={650}
-        enableZoom={true}
-        enablePan={true}
-        enabled={mode === CAMERA_MODES.ORBIT && !isTransitioning}
-        // autoRotate={
-        //   autoRotateEnabled && mode === CAMERA_MODES.ORBIT && !isTransitioning
-        // }
-        // autoRotateSpeed={AUTO_ROTATE_SPEED * 10}
-      />
-    </>
-  );
+  // Nettoyer la référence globale lors du démontage
+  useEffect(() => {
+    return () => {
+      // Supprimer la référence globale quand le composant est démonté
+      if (window.__animateToCameraPosition === animateToCameraPosition) {
+        window.__animateToCameraPosition = null;
+      }
+
+      // Nettoyer les timers d'autorotation et d'orbite
+      if (autoRotateTimerId.current) {
+        clearTimeout(autoRotateTimerId.current);
+      }
+
+      if (orbitTimerId.current) {
+        clearTimeout(orbitTimerId.current);
+      }
+
+      // Arrêter le son d'accélération
+      if (accelerationPlaying.current) {
+        stopAcceleration();
+        accelerationPlaying.current = false;
+      }
+    };
+  }, [stopAcceleration]);
+
+  // Aucun élément visuel n'est rendu maintenant puisqu'on n'a plus besoin d'OrbitControls
+  return null;
 }
 
-// Exporter le composant GamepadIndicator pour pouvoir l'utiliser dans WorkPage
+// Export GamepadIndicator component for use in WorkPage
 export { GamepadIndicator };
 
 export default AdvancedCameraController;

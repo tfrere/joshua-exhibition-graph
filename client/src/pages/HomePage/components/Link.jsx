@@ -11,6 +11,7 @@ const LinkLine = ({
   linkWidth,
   dashSize,
   gapSize,
+  depth,
 }) => {
   const meshRef = useRef();
 
@@ -45,20 +46,24 @@ const LinkLine = ({
 
     return geometry;
   }, [points, isDashed]);
-
-  // Animation subtile de pulsation
+  // Animation subtile
   useFrame((state) => {
     if (meshRef.current) {
-      // Subtle pulse effect
-      const t = state.clock.getElapsedTime();
-      meshRef.current.material.opacity = THREE.MathUtils.lerp(
-        0.4,
-        0.8,
-        (Math.sin(t * 2) + 1) / 2
-      );
+      const elapsedTime = state.clock.getElapsedTime();
+      const initialDelay = 3; // 3 secondes
+      const depthDelay = 0.6 * depth; // 300ms par depth
+
+      if (elapsedTime < initialDelay + depthDelay) {
+        meshRef.current.material.opacity = 0;
+      } else {
+        meshRef.current.material.opacity = THREE.MathUtils.lerp(
+          0.6,
+          1.0,
+          (elapsedTime - initialDelay - depthDelay) / 1
+        );
+      }
     }
   });
-
   return (
     <line ref={meshRef}>
       <bufferGeometry attach="geometry" {...lineGeometry} />
@@ -104,7 +109,7 @@ const calculateBezierTangent = (p0, p1, p2, t) => {
 };
 
 // Composant pour la flèche au bout du lien
-const LinkArrow = ({ points, linkColor, curve }) => {
+const LinkArrow = ({ points, linkColor, curve, depth }) => {
   const arrowRef = useRef();
 
   // Calculer le système d'axes pour orienter correctement la flèche
@@ -156,11 +161,19 @@ const LinkArrow = ({ points, linkColor, curve }) => {
   // Animation subtile
   useFrame((state) => {
     if (arrowRef.current) {
-      arrowRef.current.material.opacity = THREE.MathUtils.lerp(
-        0.6,
-        1.0,
-        (Math.sin(state.clock.getElapsedTime() * 2) + 1) / 2
-      );
+      const elapsedTime = state.clock.getElapsedTime();
+      const initialDelay = 3; // 3 secondes
+      const depthDelay = 0.3 * depth; // 300ms par depth
+
+      if (elapsedTime < initialDelay + depthDelay) {
+        arrowRef.current.material.opacity = 0.6;
+      } else {
+        arrowRef.current.material.opacity = THREE.MathUtils.lerp(
+          0.6,
+          1.0,
+          (elapsedTime - initialDelay - depthDelay) / 1
+        );
+      }
     }
   });
 
@@ -187,7 +200,7 @@ const LinkArrow = ({ points, linkColor, curve }) => {
 };
 
 // Composant pour le texte affiché le long du lien
-const LinkText = ({ points, linkColor, relationType }) => {
+const LinkText = ({ points, linkColor, relationType, depth }) => {
   const textRef = useRef();
 
   // Calculer la position et l'orientation du texte
@@ -319,13 +332,15 @@ const calculateLinkPoints = (
     .copy(midPoint)
     .add(perpendicularVector.multiplyScalar(distance * arcHeight));
 
-  const translationVector = perpendicularVector.clone().divideScalar(distance * arcHeight / Math.PI / 2)
+  const translationVector = perpendicularVector
+    .clone()
+    .divideScalar((distance * arcHeight) / Math.PI / 2);
 
   // On applique cette translation aux trois points clés
   adjustedSourcePos.add(translationVector);
   controlPoint.add(translationVector);
   adjustedTargetPos.add(translationVector);
-  
+
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
     adjustedSourcePos,
@@ -340,74 +355,12 @@ const calculateLinkPoints = (
   };
 };
 
-// Composant principal Link qui utilise les sous-composants
+// Composant ArcLink - Alternative au composant Link standard avec un arc
 const Link = ({
   link,
   sourceNode,
   targetNode,
-  dashSize = 3, // Taille fixe des tirets
-  gapSize = 3, // Taille fixe des espaces
-  startOffset = 10, // Offset au début du lien (distance depuis le nœud source)
-  endOffset = 10, // Offset à la fin du lien (distance depuis le nœud cible)
-  arcHeight = 0.2, // Intensité de l'arc (0 = ligne droite, >0 = arc plus prononcé)
-}) => {
-  // Determine if the link is dashed (indirect)
-  const isDashed = link.isDirect === "Indirect";
-
-  // Calculate link points with offsets
-  const { points, curve } = useMemo(
-    () =>
-      calculateLinkPoints(
-        sourceNode,
-        targetNode,
-        startOffset,
-        endOffset,
-        arcHeight
-      ),
-    [sourceNode, targetNode, startOffset, endOffset, arcHeight]
-  );
-
-  // Link color
-  const linkColor = useMemo(() => {
-    // Default color
-    return link.color || "#ffffff";
-  }, [link.color]);
-
-  // Link width
-  const linkWidth = useMemo(() => {
-    return link.width || 1;
-  }, [link.width]);
-
-  return (
-    <>
-      {/* Line */}
-      <LinkLine
-        points={points}
-        isDashed={isDashed}
-        linkColor={linkColor}
-        linkWidth={linkWidth}
-        dashSize={dashSize}
-        gapSize={gapSize}
-      />
-
-      {/* Arrow at the end of the link */}
-      <LinkArrow points={points} linkColor={linkColor} curve={curve} />
-
-      {/* Text label in the middle of the link */}
-      <LinkText
-        points={points}
-        linkColor={linkColor}
-        relationType={link.relationType}
-      />
-    </>
-  );
-};
-
-// Composant ArcLink - Alternative au composant Link standard avec un arc
-const ArcLink = ({
-  link,
-  sourceNode,
-  targetNode,
+  depth = 0,
   dashSize = 3,
   gapSize = 3,
   startOffset = 10,
@@ -442,6 +395,7 @@ const ArcLink = ({
       {/* Line */}
       <LinkLine
         points={points}
+        depth={depth}
         isDashed={isDashed}
         linkColor={linkColor}
         linkWidth={linkWidth}
@@ -450,18 +404,22 @@ const ArcLink = ({
       />
 
       {/* Arrow at the end of the link */}
-      <LinkArrow points={points} linkColor={linkColor} curve={curve} />
+      <LinkArrow
+        points={points}
+        linkColor={linkColor}
+        curve={curve}
+        depth={depth}
+      />
 
       {/* Text label in the middle of the link */}
       <LinkText
         points={points}
         linkColor={linkColor}
         relationType={link.type || "relation"}
+        depth={depth}
       />
     </group>
   );
 };
 
-// Exporte les deux composants Link (standard et arc)
-export { Link, ArcLink };
 export default Link;

@@ -22,6 +22,10 @@ export class InputManager {
       action2: false,
     };
 
+    // Entrées séparées pour clavier et manette pour les combiner correctement
+    this.keyboardInputs = { ...this.inputs };
+    this.gamepadInputs = { ...this.inputs };
+
     // Configuration
     this.config = {
       deadzone: 0.1,
@@ -35,7 +39,6 @@ export class InputManager {
     this.previousButtonStates = {};
     this.listeners = [];
     this.gamepadConnected = false;
-    this.inputSource = "keyboard";
 
     // Démarre les écouteurs d'événements
     this.bindEvents();
@@ -54,6 +57,54 @@ export class InputManager {
     for (const listener of this.listeners) {
       listener({ ...this.inputs });
     }
+  }
+
+  // Combiner les entrées du clavier et de la manette
+  combineInputs() {
+    // Entrées analogiques (addition avec limite)
+    this.inputs.moveForward = Math.max(
+      -1,
+      Math.min(
+        1,
+        this.keyboardInputs.moveForward + this.gamepadInputs.moveForward
+      )
+    );
+    this.inputs.moveRight = Math.max(
+      -1,
+      Math.min(1, this.keyboardInputs.moveRight + this.gamepadInputs.moveRight)
+    );
+    this.inputs.moveUp = Math.max(
+      -1,
+      Math.min(1, this.keyboardInputs.moveUp + this.gamepadInputs.moveUp)
+    );
+    this.inputs.lookHorizontal = Math.max(
+      -1,
+      Math.min(
+        1,
+        this.keyboardInputs.lookHorizontal + this.gamepadInputs.lookHorizontal
+      )
+    );
+    this.inputs.lookVertical = Math.max(
+      -1,
+      Math.min(
+        1,
+        this.keyboardInputs.lookVertical + this.gamepadInputs.lookVertical
+      )
+    );
+    this.inputs.roll = Math.max(
+      -1,
+      Math.min(1, this.keyboardInputs.roll + this.gamepadInputs.roll)
+    );
+
+    // Entrées booléennes (combinaison OU)
+    this.inputs.toggleMode =
+      this.keyboardInputs.toggleMode || this.gamepadInputs.toggleMode;
+    this.inputs.nextPosition =
+      this.keyboardInputs.nextPosition || this.gamepadInputs.nextPosition;
+    this.inputs.action1 =
+      this.keyboardInputs.action1 || this.gamepadInputs.action1;
+    this.inputs.action2 =
+      this.keyboardInputs.action2 || this.gamepadInputs.action2;
   }
 
   // Configurer les écouteurs d'événements
@@ -95,21 +146,22 @@ export class InputManager {
     // Gestion d'actions spéciales
     if (event.code === "Tab") {
       event.preventDefault();
-      this.inputs.toggleMode = true;
+      this.keyboardInputs.toggleMode = true;
     }
 
     if (event.code === "Space") {
       event.preventDefault();
       // Seulement activer si ce n'était pas déjà activé
-      if (!this.inputs.nextPosition) {
-        this.inputs.nextPosition = true;
+      if (!this.keyboardInputs.nextPosition) {
+        this.keyboardInputs.nextPosition = true;
       }
     }
 
     // Traiter les entrées après avoir géré les actions spéciales
     this.processKeyboardInput();
 
-    // Notifier les écouteurs pour les actions spéciales
+    // Combiner les entrées et notifier
+    this.combineInputs();
     this.notifyListeners();
   };
 
@@ -118,13 +170,14 @@ export class InputManager {
 
     // Réinitialiser les actions après notification
     if (event.code === "Tab") {
-      this.inputs.toggleMode = false;
+      this.keyboardInputs.toggleMode = false;
     }
 
     if (event.code === "Space") {
       // Délai court pour s'assurer que l'action est bien traitée avant réinitialisation
       setTimeout(() => {
-        this.inputs.nextPosition = false;
+        this.keyboardInputs.nextPosition = false;
+        this.combineInputs();
         this.notifyListeners();
       }, 50);
     }
@@ -135,9 +188,6 @@ export class InputManager {
 
   // Traitement des entrées clavier
   processKeyboardInput() {
-    // Indiquer que la source est le clavier
-    this.inputSource = "keyboard";
-
     // Application des multiplicateurs pour le clavier
     const moveMultiplier = this.config.keyboardMovementMultiplier;
     const lookMultiplier = this.config.keyboardLookMultiplier;
@@ -164,19 +214,20 @@ export class InputManager {
       (this.keysPressed["KeyD"] ? 1 : 0) - (this.keysPressed["KeyA"] ? 1 : 0);
 
     // Appliquer les multiplicateurs appropriés
-    this.inputs.moveForward = rawMoveForward * moveMultiplier;
-    this.inputs.moveRight = rawMoveRight * moveMultiplier;
-    this.inputs.moveUp = rawMoveUp * moveMultiplier;
+    this.keyboardInputs.moveForward = rawMoveForward * moveMultiplier;
+    this.keyboardInputs.moveRight = rawMoveRight * moveMultiplier;
+    this.keyboardInputs.moveUp = rawMoveUp * moveMultiplier;
 
     // Rotation avec ZQSD (second stick) - sensibilité réduite
-    this.inputs.lookHorizontal = rawLookHorizontal * lookMultiplier;
-    this.inputs.lookVertical = rawLookVertical * lookMultiplier;
+    this.keyboardInputs.lookHorizontal = rawLookHorizontal * lookMultiplier;
+    this.keyboardInputs.lookVertical = rawLookVertical * lookMultiplier;
 
     // Roll avec Q/E
-    this.inputs.roll =
+    this.keyboardInputs.roll =
       (this.keysPressed["KeyQ"] ? 1 : 0) - (this.keysPressed["KeyE"] ? 1 : 0);
 
-    // Notifier les écouteurs
+    // Combiner et notifier
+    this.combineInputs();
     this.notifyListeners();
   }
 
@@ -190,8 +241,9 @@ export class InputManager {
     console.log("Manette déconnectée");
     this.gamepadConnected = false;
 
-    // Réinitialiser les entrées
-    this.resetInputs();
+    // Réinitialiser les entrées de la manette
+    this.resetGamepadInputs();
+    this.combineInputs();
     this.notifyListeners();
   };
 
@@ -207,7 +259,8 @@ export class InputManager {
     if (!gamepad) {
       if (this.gamepadConnected) {
         this.gamepadConnected = false;
-        this.resetInputs();
+        this.resetGamepadInputs();
+        this.combineInputs();
         this.notifyListeners();
       }
       return;
@@ -218,36 +271,33 @@ export class InputManager {
       this.gamepadConnected = true;
     }
 
-    // Indiquer que la source est la manette
-    this.inputSource = "gamepad";
-
     // Appliquer une zone morte aux sticks
     const applyDeadzone = (value) =>
       Math.abs(value) > this.config.deadzone ? value : 0;
 
     // Mouvements (stick gauche)
-    this.inputs.moveForward = -applyDeadzone(gamepad.axes[1]);
-    this.inputs.moveRight = applyDeadzone(gamepad.axes[0]);
+    this.gamepadInputs.moveForward = -applyDeadzone(gamepad.axes[1]);
+    this.gamepadInputs.moveRight = applyDeadzone(gamepad.axes[0]);
 
     // Mouvements sur l'axe vertical (gâchettes)
-    this.inputs.moveUp =
+    this.gamepadInputs.moveUp =
       (gamepad.buttons[5]?.value || 0) - (gamepad.buttons[4]?.value || 0);
 
     // Rotation caméra (stick droit)
-    this.inputs.lookHorizontal = applyDeadzone(gamepad.axes[2]);
-    this.inputs.lookVertical = applyDeadzone(gamepad.axes[3]);
+    this.gamepadInputs.lookHorizontal = applyDeadzone(gamepad.axes[2]);
+    this.gamepadInputs.lookVertical = applyDeadzone(gamepad.axes[3]);
 
     // Roll (L1/R1 ou équivalent)
-    this.inputs.roll =
+    this.gamepadInputs.roll =
       (gamepad.buttons[7]?.pressed ? 1 : 0) -
       (gamepad.buttons[6]?.pressed ? 1 : 0);
 
     // Actions (avec gestion d'état pour éviter répétition)
     // Changement de mode (bouton X ou carré)
     if (gamepad.buttons[2]?.pressed && !this.previousButtonStates.mode) {
-      this.inputs.toggleMode = true;
+      this.gamepadInputs.toggleMode = true;
     } else {
-      this.inputs.toggleMode = false;
+      this.gamepadInputs.toggleMode = false;
     }
     this.previousButtonStates.mode = gamepad.buttons[2]?.pressed;
 
@@ -256,29 +306,48 @@ export class InputManager {
       gamepad.buttons[0]?.pressed &&
       !this.previousButtonStates.nextPosition
     ) {
-      this.inputs.nextPosition = true;
+      this.gamepadInputs.nextPosition = true;
     } else {
-      this.inputs.nextPosition = false;
+      this.gamepadInputs.nextPosition = false;
     }
     this.previousButtonStates.nextPosition = gamepad.buttons[0]?.pressed;
 
     // Autres actions
-    this.inputs.action1 = gamepad.buttons[1]?.pressed || false; // B ou cercle
-    this.inputs.action2 = gamepad.buttons[3]?.pressed || false; // Y ou triangle
+    this.gamepadInputs.action1 = gamepad.buttons[1]?.pressed || false; // B ou cercle
+    this.gamepadInputs.action2 = gamepad.buttons[3]?.pressed || false; // Y ou triangle
 
-    // Notifier les écouteurs
+    // Combiner et notifier
+    this.combineInputs();
     this.notifyListeners();
   }
 
-  resetInputs() {
-    // Réinitialiser toutes les entrées à zéro
-    Object.keys(this.inputs).forEach((key) => {
-      if (typeof this.inputs[key] === "number") {
-        this.inputs[key] = 0;
-      } else if (typeof this.inputs[key] === "boolean") {
-        this.inputs[key] = false;
+  resetGamepadInputs() {
+    // Réinitialiser les entrées de la manette à zéro
+    Object.keys(this.gamepadInputs).forEach((key) => {
+      if (typeof this.gamepadInputs[key] === "number") {
+        this.gamepadInputs[key] = 0;
+      } else if (typeof this.gamepadInputs[key] === "boolean") {
+        this.gamepadInputs[key] = false;
       }
     });
+  }
+
+  resetKeyboardInputs() {
+    // Réinitialiser les entrées du clavier à zéro
+    Object.keys(this.keyboardInputs).forEach((key) => {
+      if (typeof this.keyboardInputs[key] === "number") {
+        this.keyboardInputs[key] = 0;
+      } else if (typeof this.keyboardInputs[key] === "boolean") {
+        this.keyboardInputs[key] = false;
+      }
+    });
+  }
+
+  resetInputs() {
+    // Réinitialiser toutes les entrées
+    this.resetGamepadInputs();
+    this.resetKeyboardInputs();
+    this.combineInputs();
   }
 
   // Mettre à jour la configuration

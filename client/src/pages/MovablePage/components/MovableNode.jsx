@@ -5,16 +5,43 @@ import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
-const NodeSphere = ({ size, color, isSelected, transparent = false }) => {
+const NodeSphere = ({
+  size,
+  color,
+  isSelected,
+  isMultiSelected,
+  isActiveNode,
+  transparent = false,
+}) => {
+  // Déterminer la couleur en fonction du statut de sélection
+  let sphereColor;
+
+  if (isActiveNode) {
+    // Le nœud actif (avec TransformControls) est orange vif
+    sphereColor = "#ff9500";
+  } else if (isMultiSelected) {
+    // Les nœuds en multi-sélection (mais pas actifs) sont violet
+    sphereColor = "#9900ff";
+  } else if (isSelected) {
+    // Les nœuds simplement sélectionnés sont jaunes
+    sphereColor = "#ffcc00";
+  } else {
+    // Les nœuds non sélectionnés utilisent la couleur par défaut
+    sphereColor = color;
+  }
+
+  // Intensité de l'émission pour renforcer la visibilité
+  const emissiveIntensity = isSelected || isActiveNode ? 0.6 : 0.3;
+
   return (
     <>
       <sphereGeometry args={[size * 3 || 0.5, 32, 32]} />
       <meshStandardMaterial
-        color={color}
+        color={sphereColor}
         roughness={0.3}
         metalness={0.8}
-        emissive={isSelected ? "#FFF" : "#FFF"}
-        emissiveIntensity={0.5}
+        emissive={isSelected || isActiveNode ? sphereColor : "#FFF"}
+        emissiveIntensity={emissiveIntensity}
         transparent={transparent}
         opacity={transparent ? 0.3 : 1.0}
       />
@@ -23,8 +50,27 @@ const NodeSphere = ({ size, color, isSelected, transparent = false }) => {
 };
 
 // Composant pour afficher un SVG chargé
-const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
+const NodeSVG = ({
+  svgData,
+  svgBounds,
+  scale,
+  isSelected,
+  isMultiSelected,
+  isActiveNode,
+}) => {
   if (!svgData || !svgBounds) return null;
+
+  // Déterminer la couleur des lignes du SVG selon l'état de sélection
+  let strokeColor;
+  if (isActiveNode) {
+    strokeColor = "#ff9500"; // Orange pour le nœud actif
+  } else if (isMultiSelected) {
+    strokeColor = "#9900ff"; // Violet pour les nœuds en multi-sélection
+  } else if (isSelected) {
+    strokeColor = "#ffcc00"; // Jaune pour les nœuds sélectionnés
+  } else {
+    strokeColor = "#FFFFFF"; // Blanc pour les nœuds non sélectionnés
+  }
 
   return (
     <Billboard>
@@ -58,7 +104,7 @@ const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
                   </bufferGeometry>
                   <lineBasicMaterial
                     attach="material"
-                    color={isSelected ? "#ff9500" : "#FFFFFF"}
+                    color={strokeColor}
                     linewidth={2}
                     linecap="round"
                     linejoin="round"
@@ -74,7 +120,28 @@ const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
 };
 
 // Composant pour afficher un label/texte
-const NodeLabel = ({ text, size, isSelected, isActive }) => {
+const NodeLabel = ({
+  text,
+  size,
+  isSelected,
+  isActiveNode,
+  isMultiSelected,
+}) => {
+  // Déterminer la couleur du texte selon l'état de sélection
+  let textColor;
+  if (isActiveNode) {
+    textColor = "#ffa500"; // Orange pour le nœud actif
+  } else if (isMultiSelected) {
+    textColor = "#d699ff"; // Violet clair pour les nœuds en multi-sélection
+  } else if (isSelected) {
+    textColor = "#ffdd77"; // Jaune clair pour les nœuds sélectionnés
+  } else {
+    textColor = "#ffffff"; // Blanc pour les nœuds non sélectionnés
+  }
+
+  // Taille du texte légèrement plus grande pour les nœuds sélectionnés
+  const fontSize = isSelected || isActiveNode ? 2.2 : 2;
+
   return (
     <group position={[0, size * 3 + 0.3, 0]}>
       <Billboard>
@@ -90,10 +157,10 @@ const NodeLabel = ({ text, size, isSelected, isActive }) => {
             />
           </mesh>
 
-          {/* Text with improved visibility - now always visible */}
+          {/* Text with improved visibility */}
           <Text
-            fontSize={2}
-            color={"#ffffff"}
+            fontSize={fontSize}
+            color={textColor}
             anchorX="center"
             anchorY="middle"
             outlineWidth={0.2}
@@ -203,7 +270,11 @@ const MovableNode = ({
   node,
   onClick,
   isSelected,
+  isMultiSelected,
+  isActiveNode,
   onPositionUpdate,
+  onTransformStart,
+  onTransformEnd,
   controlsRef,
 }) => {
   const nodeRef = useRef();
@@ -223,11 +294,6 @@ const MovableNode = ({
     setIsActive(isSelected);
   }, [isSelected]);
 
-  // Charger le SVG si disponible
-  const { useImage, svgData, svgBounds } = useSVGLoader(
-    node.isJoshua ? "character" : node.name
-  );
-
   // Couleurs et propriétés visuelles
   const defaultColor = isSelected ? "#ff9500" : "#0088ff";
   const nodeColor =
@@ -238,6 +304,11 @@ const MovableNode = ({
   const nodeScale = isActive ? 1.75 : 1.0;
   const nodeSize = baseSize * nodeScale;
 
+  // Charger le SVG si disponible
+  const { useImage, svgData, svgBounds } = useSVGLoader(
+    node.isJoshua ? "character" : node.name
+  );
+
   const svgScale = nodeSize * 0.02;
 
   // Texte à afficher
@@ -247,10 +318,10 @@ const MovableNode = ({
   const handleClick = (e) => {
     e.stopPropagation();
 
-    // Quand l'utilisateur clique sur un nœud, activer les contrôles de transformation
-    // mais ne pas déclencher l'onClick normal si on est en train de transformer
+    // Ne pas déclencher le clic si on est en transformation
     if (!isTransforming) {
-      onClick && onClick(node);
+      // Passer l'état de la touche Shift au gestionnaire de clic parent
+      onClick && onClick(node, e.shiftKey);
     }
   };
 
@@ -258,28 +329,26 @@ const MovableNode = ({
   const handleTransformStart = () => {
     setIsTransforming(true);
 
-    // Désactiver les contrôles de caméra pendant la transformation
-    if (controlsRef && controlsRef.current) {
-      controlsRef.current.enabled = false;
-    }
+    // Signaler le début de la transformation
+    onTransformStart && onTransformStart();
   };
 
   const handleTransformEnd = () => {
     setIsTransforming(false);
 
-    // Réactiver les contrôles de caméra après la transformation
-    if (controlsRef && controlsRef.current) {
-      controlsRef.current.enabled = true;
-    }
+    // Signaler la fin de la transformation
+    onTransformEnd && onTransformEnd();
 
-    // Lire la position actuelle pour la mise à jour
+    // Mettre à jour la position finale
     if (nodeRef.current) {
       const position = nodeRef.current.position;
 
-      // Synchroniser la position avec l'objet node
-      node.x = position.x;
-      node.y = position.y;
-      node.z = position.z;
+      // Mettre à jour la position locale
+      setLocalPosition({
+        x: position.x,
+        y: position.y,
+        z: position.z,
+      });
 
       // Appeler le callback de mise à jour
       onPositionUpdate &&
@@ -288,37 +357,22 @@ const MovableNode = ({
           y: position.y,
           z: position.z,
         });
+
+      console.log("Position finale après transformation:", position);
     }
   };
 
+  // Écouter les événements de dragging du TransformControls
   useEffect(() => {
     if (transformRef.current) {
-      // Écouter les événements de TransformControls
       const controls = transformRef.current;
 
       const handleDraggingChanged = (event) => {
         setIsTransforming(event.value);
 
-        // Désactiver/réactiver les contrôles de caméra
-        if (controlsRef && controlsRef.current) {
-          controlsRef.current.enabled = !event.value;
-        }
-
         // Si la transformation est terminée, mettre à jour la position
         if (!event.value && nodeRef.current) {
           const position = nodeRef.current.position;
-
-          // Mettre à jour la position locale
-          setLocalPosition({
-            x: position.x,
-            y: position.y,
-            z: position.z,
-          });
-
-          // Synchroniser la position avec l'objet node pour les liens
-          node.x = position.x;
-          node.y = position.y;
-          node.z = position.z;
 
           // Appeler le callback de mise à jour
           onPositionUpdate &&
@@ -330,69 +384,65 @@ const MovableNode = ({
         }
       };
 
+      // Écouter les changements pendant le déplacement pour mettre à jour les autres nœuds
+      const handleObjectChange = () => {
+        if (isTransforming && nodeRef.current) {
+          const position = nodeRef.current.position;
+
+          // Mettre à jour en temps réel pendant le déplacement
+          onPositionUpdate &&
+            onPositionUpdate({
+              x: position.x,
+              y: position.y,
+              z: position.z,
+            });
+        }
+      };
+
       controls.addEventListener("dragging-changed", handleDraggingChanged);
+      controls.addEventListener("objectChange", handleObjectChange);
 
       return () => {
         controls.removeEventListener("dragging-changed", handleDraggingChanged);
+        controls.removeEventListener("objectChange", handleObjectChange);
       };
     }
-  }, [transformRef.current, controlsRef, onPositionUpdate, node]);
+  }, [transformRef, isTransforming, onPositionUpdate]);
 
   // Définir la position initiale du nœud ou utiliser la position locale sauvegardée
   useEffect(() => {
     if (nodeRef.current) {
-      // Si la position a été modifiée localement, utiliser celle-ci
-      if (
-        localPosition.x !== node.x ||
-        localPosition.y !== node.y ||
-        localPosition.z !== node.z
-      ) {
-        nodeRef.current.position.set(
-          localPosition.x,
-          localPosition.y,
-          localPosition.z
-        );
-      } else {
-        // Sinon, utiliser la position du nœud original
-        nodeRef.current.position.set(node.x || 0, node.y || 0, node.z || 0);
-      }
+      // Si nous avons une position locale, l'utiliser
+      nodeRef.current.position.set(
+        localPosition.x,
+        localPosition.y,
+        localPosition.z
+      );
     }
-  }, [node.x, node.y, node.z, localPosition]);
+  }, [localPosition]);
 
-  // Basculer entre les modes de transformation avec la touche Shift
+  // Mettre à jour la position locale si la position du nœud change depuis l'extérieur
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === "Shift" && isSelected) {
-        // Changer de mode lorsqu'on appuie sur Shift
-        setTransformMode((prevMode) => {
-          if (prevMode === "translate") return "rotate";
-          if (prevMode === "rotate") return "scale";
-          return "translate";
-        });
+    if (
+      node.x !== undefined &&
+      node.y !== undefined &&
+      node.z !== undefined &&
+      (node.x !== localPosition.x ||
+        node.y !== localPosition.y ||
+        node.z !== localPosition.z)
+    ) {
+      setLocalPosition({
+        x: node.x,
+        y: node.y,
+        z: node.z,
+      });
+    }
+  }, [node.x, node.y, node.z]);
 
-        // Logger le changement de mode pour l'utilisateur
-        console.log(
-          `Mode de transformation changé à: ${
-            transformMode === "translate"
-              ? "rotation"
-              : transformMode === "rotate"
-              ? "mise à l'échelle"
-              : "translation"
-          }`
-        );
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isSelected, transformMode]);
-
-  // Hook pour mettre à jour la position en temps réel pendant la transformation
+  // Hook pour visualiser les transformations
   useFrame(() => {
-    if (isTransforming && nodeRef.current) {
-      // Mettre à jour la position de l'objet node directement pour les liens
+    if (nodeRef.current && isTransforming) {
+      // Synchroniser la position pour que les liens suivent
       node.x = nodeRef.current.position.x;
       node.y = nodeRef.current.position.y;
       node.z = nodeRef.current.position.z;
@@ -409,8 +459,10 @@ const MovableNode = ({
         {/* Toujours afficher une sphère pour interagir, même si un SVG est présent */}
         <NodeSphere
           size={nodeSize * 0.7} // Taille augmentée pour faciliter l'interaction
-          color={isSelected ? "#ff9500" : "#0088ff"}
+          color={nodeColor}
           isSelected={isSelected}
+          isMultiSelected={isMultiSelected}
+          isActiveNode={isActiveNode}
           transparent={useImage && svgData}
         />
 
@@ -421,20 +473,23 @@ const MovableNode = ({
             svgBounds={svgBounds}
             scale={svgScale}
             isSelected={isSelected}
+            isMultiSelected={isMultiSelected}
+            isActiveNode={isActiveNode}
           />
         )}
 
-        {/* Ajouter le label - maintenant toujours visible */}
+        {/* Ajouter le label - toujours visible */}
         <NodeLabel
           text={displayText}
           size={nodeSize}
           isSelected={isSelected}
-          isActive={isActive}
+          isActiveNode={isActiveNode}
+          isMultiSelected={isMultiSelected}
         />
       </mesh>
 
-      {/* Ajouter TransformControls uniquement si le nœud est sélectionné */}
-      {isSelected && (
+      {/* Ajouter TransformControls uniquement si c'est le nœud actif de la sélection */}
+      {isActiveNode && (
         <TransformControls
           ref={transformRef}
           object={nodeRef}

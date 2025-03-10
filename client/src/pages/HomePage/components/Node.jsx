@@ -3,6 +3,7 @@ import { useFrame, useLoader } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
+import { useSpring, animated } from "@react-spring/three";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
 const NodeSphere = ({ size, color, isSelected }) => {
@@ -206,6 +207,14 @@ const Node = ({ node, onClick, isSelected }) => {
   const meshRef = useRef();
   const [isActive, setIsActive] = useState(false);
 
+  // Animation spring pour la position
+  const { position } = useSpring({
+    from: { position: [0, 0, 0] },
+    to: { position: [node.x, node.y, node.z] },
+    config: { mass: 1, tension: 120, friction: 100 }, // Configuration pour une animation lente et sans rebond
+    delay: 300, // Léger délai pour un effet cascade
+  });
+
   // Charger le SVG si disponible
   const { useImage, svgData, svgBounds } = useSVGLoader(
     node.isJoshua ? "character" : node.name
@@ -242,9 +251,9 @@ const Node = ({ node, onClick, isSelected }) => {
   }, [node]);
 
   return (
-    <mesh
+    <animated.mesh
       ref={meshRef}
-      position={[node.x, node.y, node.z]}
+      position={position}
       onClick={handleClick}
       scale={[nodeScale, nodeScale, nodeScale]}
     >
@@ -262,13 +271,13 @@ const Node = ({ node, onClick, isSelected }) => {
       )}
 
       {/* Afficher le label du nœud */}
-      <NodeLabel
+      {/* <NodeLabel
         text={displayText}
         size={baseSize}
         isSelected={isSelected}
         isActive={isActive}
-      />
-    </mesh>
+      /> */}
+    </animated.mesh>
   );
 };
 

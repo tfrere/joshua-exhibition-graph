@@ -1,0 +1,23 @@
+.scramble-char {
+  color: #ffffff;
+  font-weight: bold;
+  display: inline-block;
+  animation: pulse 0.1s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.text-scramble-container {
+  display: inline-block;
+  min-height: 1em;
+}

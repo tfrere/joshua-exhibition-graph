@@ -34,6 +34,7 @@ import {
   calculateOscillationPositions,
   calculateExplosionPositions,
   calculateTransitionValues,
+  calculateGradientColorByDistance,
 } from "./utils/animationUtils";
 
 // ----------------------------------------------------------------------------------
@@ -600,6 +601,35 @@ export function Posts({
     const sizes = [];
     const colors = [];
 
+    // Trouver la distance maximale pour normaliser
+    let maxDistance = 0;
+    data.forEach((post) => {
+      if (!post) return;
+
+      let x = 0,
+        y = 0,
+        z = 0;
+
+      if (
+        post.x !== undefined &&
+        post.y !== undefined &&
+        post.z !== undefined
+      ) {
+        x = post.x;
+        y = post.y;
+        z = post.z;
+      } else if (post.coordinates && post.coordinates.x !== undefined) {
+        x = post.coordinates.x;
+        y = post.coordinates.y;
+        z = post.coordinates.z;
+      }
+
+      const distance = Math.sqrt(x * x + y * y + z * z);
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
+    });
+
     // Traiter chaque post
     data.forEach((post, index) => {
       if (!post) return;
@@ -656,10 +686,13 @@ export function Posts({
       // Stocker la taille
       sizes[index] = size;
 
-      // Déterminer la couleur
-      const r = post.color && post.color.length >= 3 ? post.color[0] : 1.0;
-      const g = post.color && post.color.length >= 3 ? post.color[1] : 1.0;
-      const b = post.color && post.color.length >= 3 ? post.color[2] : 1.0;
+      // Calculer la couleur en fonction de la distance au centre
+      const [r, g, b] = calculateGradientColorByDistance({
+        x,
+        y,
+        z,
+        maxDistance,
+      });
 
       // Stocker la couleur
       colors[index * 3] = r;
@@ -699,10 +732,10 @@ export function Posts({
       frustumCulled={false}
       renderOrder={10}
     >
-      <sphereGeometry args={[0.1, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
+      <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
       <meshLambertMaterial
         transparent={true}
-        opacity={0.2}
+        opacity={0.9}
         color="white"
         side={THREE.DoubleSide}
         depthWrite={true}

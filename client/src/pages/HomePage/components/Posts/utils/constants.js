@@ -3,13 +3,13 @@
 // ----------------------------------------------------------------------------------
 
 // Tailles et apparence
-export const SIZE = 0.2;
-export const ACTIVE_POST_SIZE = 10; // Taille du post actif - augmentée pour être plus visible
+export const SIZE = 0.125;
+export const ACTIVE_POST_SIZE = 20; // Taille du post actif - augmentée pour être plus visible
 export const MIN_IMPACT_SIZE = 3;
 export const MAX_IMPACT_SIZE = 8;
 export const USE_IMPACT_SIZE = true;
 export const ACTIVE_POST_COLOR = [1.0, 0, 0]; // Couleur rouge vif pour le post actif
-export const POST_ACTIVATION_DURATION = 0.8; // Durée de la transition en secondes
+export const POST_ACTIVATION_DURATION = 3; // Durée de la transition en secondes
 export const MIN_SIZE_DURING_TRANSITION = 0.5; // Taille minimale pendant une transition pour éviter les disparitions
 export const SPHERE_SEGMENTS = 6; // Segments de la sphère (qualité)
 export const PROXIMITY_THRESHOLD = 100; // Seuil de proximité pour déterminer si un post est actif
