@@ -113,10 +113,13 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     volume: 0,
     loop: true,
     interrupt: false,
+    soundEnabled: true,
+    playbackRate: 1,
   });
 
   const accelerationPlaying = useRef(false);
   const currentAccelerationVolume = useRef(0);
+  const currentAccelerationPitch = useRef(1);
 
   // Récupérer les entrées unifiées (clavier et manette)
   const inputs = useInputs();
@@ -629,6 +632,20 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
       // S'assurer que la caméra pointe toujours vers le centre
       camera.lookAt(0, 0, 0);
+
+      // Log debug info occasionally (every ~5 seconds)
+      if (
+        Math.floor(Date.now() / 5000) % 1 === 0 &&
+        Math.floor(Date.now()) % 5000 < 100
+      ) {
+        console.log(
+          `Audio - Volume: ${currentAccelerationVolume.current.toFixed(
+            2
+          )}, Pitch: ${currentAccelerationPitch.current.toFixed(
+            2
+          )}, AccelFactor: ${accelerationFactor.toFixed(2)}`
+        );
+      }
     }
     // On est en mode vol, mais pas en transition ni en mode orbite
     else if (flightController.current && !transitioning.current.active) {
@@ -674,12 +691,26 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         const speed = velocity.length();
         const maxSpeed = flightController.current.config.maxSpeed;
 
-        // Calculate normalized volume (0 to 1) based on current speed
-        const targetVolume = Math.min(speed / (maxSpeed * 0.5), 1);
+        // Get acceleration factor from the controller (if available)
+        const accelerationFactor = window.__accelerationFactor || 1;
+
+        // Calculate normalized volume (0 to 1) based on current speed and acceleration factor
+        // Increase volume based on acceleration factor
+        const targetVolume = Math.min(
+          (speed / (maxSpeed * 0.5)) * (0.5 + accelerationFactor / 2),
+          1
+        );
+
+        // Also adjust pitch based on acceleration factor (higher speed = higher pitch)
+        const targetPitch = 0.8 + (accelerationFactor - 1) * 0.3; // Range from 0.8 to 1.4
 
         // Smooth volume transition
         currentAccelerationVolume.current =
           currentAccelerationVolume.current * 0.95 + targetVolume * 0.05;
+
+        // Smooth pitch transition
+        currentAccelerationPitch.current =
+          (currentAccelerationPitch.current || 1) * 0.95 + targetPitch * 0.05;
 
         // Play or stop sound based on acceleration
         if (speed > 0.5 && !accelerationPlaying.current) {
@@ -687,9 +718,49 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
           accelerationPlaying.current = true;
         }
 
-        // Update sound volume
+        // Update sound volume and pitch
         if (accelerationSound && accelerationPlaying.current) {
+          // Appliquer le volume
           accelerationSound.volume(currentAccelerationVolume.current);
+
+          // Appliquer la modulation de hauteur (pitch)
+          try {
+            // Différentes approches possibles selon la version de Howler.js utilisée
+            if (typeof accelerationSound.rate === "function") {
+              // Méthode directe si disponible
+              accelerationSound.rate(currentAccelerationPitch.current);
+            } else if (
+              accelerationSound._sounds &&
+              accelerationSound._sounds.length > 0
+            ) {
+              // Accès aux sons internes
+              accelerationSound._sounds.forEach((sound) => {
+                if (
+                  sound._node &&
+                  typeof sound._node.playbackRate !== "undefined"
+                ) {
+                  sound._node.playbackRate.value =
+                    currentAccelerationPitch.current;
+                }
+              });
+            }
+          } catch (error) {
+            console.error("Erreur lors de l'ajustement du pitch:", error);
+          }
+
+          // Log debug info occasionally (every ~5 seconds)
+          if (
+            Math.floor(Date.now() / 5000) % 1 === 0 &&
+            Math.floor(Date.now()) % 5000 < 100
+          ) {
+            console.log(
+              `Audio - Volume: ${currentAccelerationVolume.current.toFixed(
+                2
+              )}, Pitch: ${currentAccelerationPitch.current.toFixed(
+                2
+              )}, AccelFactor: ${accelerationFactor.toFixed(2)}`
+            );
+          }
 
           // Stop sound if almost stopped
           if (speed < 0.5) {

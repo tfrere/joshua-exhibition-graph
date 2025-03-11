@@ -275,6 +275,22 @@ export class InputManager {
     const applyDeadzone = (value) =>
       Math.abs(value) > this.config.deadzone ? value : 0;
 
+    // Nouvelle fonction pour appliquer une courbe de réponse exponentielle aux mouvements de caméra
+    // Cette fonction amplifie les petits mouvements du joystick pour une meilleure réactivité
+    const applyLookCurve = (value) => {
+      // Première étape: appliquer la zone morte
+      const deadzonedValue = applyDeadzone(value);
+      if (deadzonedValue === 0) return 0;
+
+      // Appliquer une courbe exponentielle pour amplifier les petits mouvements
+      // Math.sign préserve le signe (direction), Math.pow crée la courbe
+      const curveIntensity = 0.5; // Plus cette valeur est basse, plus l'effet est fort
+      return (
+        Math.sign(deadzonedValue) *
+        Math.pow(Math.abs(deadzonedValue), curveIntensity)
+      );
+    };
+
     // Mouvements (stick gauche)
     this.gamepadInputs.moveForward = -applyDeadzone(gamepad.axes[1]);
     this.gamepadInputs.moveRight = applyDeadzone(gamepad.axes[0]);
@@ -283,9 +299,9 @@ export class InputManager {
     this.gamepadInputs.moveUp =
       (gamepad.buttons[5]?.value || 0) - (gamepad.buttons[4]?.value || 0);
 
-    // Rotation caméra (stick droit)
-    this.gamepadInputs.lookHorizontal = applyDeadzone(gamepad.axes[2]);
-    this.gamepadInputs.lookVertical = applyDeadzone(gamepad.axes[3]);
+    // Rotation caméra (stick droit) - Utiliser la courbe pour plus de sensibilité
+    this.gamepadInputs.lookHorizontal = applyLookCurve(gamepad.axes[2]);
+    this.gamepadInputs.lookVertical = -applyLookCurve(gamepad.axes[3]);
 
     // Roll (L1/R1 ou équivalent)
     this.gamepadInputs.roll =
@@ -315,6 +331,16 @@ export class InputManager {
     // Autres actions
     this.gamepadInputs.action1 = gamepad.buttons[1]?.pressed || false; // B ou cercle
     this.gamepadInputs.action2 = gamepad.buttons[3]?.pressed || false; // Y ou triangle
+
+    // // Log the state of the joysticks
+    // console.log("État des joysticks:", {
+    //   moveForward: this.gamepadInputs.moveForward,
+    //   moveRight: this.gamepadInputs.moveRight,
+    //   moveUp: this.gamepadInputs.moveUp,
+    //   lookHorizontal: this.gamepadInputs.lookHorizontal,
+    //   lookVertical: this.gamepadInputs.lookVertical,
+    //   roll: this.gamepadInputs.roll,
+    // });
 
     // Combiner et notifier
     this.combineInputs();

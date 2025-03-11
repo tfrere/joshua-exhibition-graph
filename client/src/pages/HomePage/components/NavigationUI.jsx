@@ -14,6 +14,7 @@ export const NavigationUI = ({ graphRef }) => {
   const [cameraTarget, setCameraTarget] = useState({ x: 0, y: 0, z: 0 });
   const [distanceToCenter, setDistanceToCenter] = useState(0);
   const [timeBeforeAutoOrbit, setTimeBeforeAutoOrbit] = useState(null);
+  const [accelerationFactor, setAccelerationFactor] = useState(1);
 
   // Écouter l'état d'animation exposé par le contrôleur de caméra et mettre à jour les positions
   useEffect(() => {
@@ -67,6 +68,11 @@ export const NavigationUI = ({ graphRef }) => {
           y: parseFloat(window.__cameraTarget.y.toFixed(2)),
           z: parseFloat(window.__cameraTarget.z.toFixed(2)),
         });
+      }
+
+      // Mise à jour du facteur d'accélération si disponible
+      if (window.__accelerationFactor) {
+        setAccelerationFactor(window.__accelerationFactor);
       }
     };
 
@@ -151,9 +157,54 @@ export const NavigationUI = ({ graphRef }) => {
             <span style={{ color: "#ff6b6b" }}> (Limite: 800)</span>
           )}
         </div>
-        <div>
+        <div style={{ marginBottom: "5px" }}>
           <strong>Direction:</strong>
           X: {cameraTarget.x}, Y: {cameraTarget.y}, Z: {cameraTarget.z}
+        </div>
+        <div style={{ marginBottom: "5px" }}>
+          <strong>Facteur d'accélération:</strong>
+          <span
+            style={{
+              color:
+                accelerationFactor > 1
+                  ? `rgba(0, 170, 255, ${Math.min(
+                      1,
+                      (accelerationFactor - 1) / 2
+                    )})`
+                  : "#ffffff",
+              fontWeight: accelerationFactor > 1 ? "bold" : "normal",
+            }}
+          >
+            {accelerationFactor.toFixed(2)}x
+            {accelerationFactor > 2.5 && " (Mode Rapide)"}
+            {accelerationFactor > 1 &&
+              accelerationFactor <= 2.5 &&
+              " (Accélération)"}
+          </span>
+          {/* Barre de progression d'accélération */}
+          <div
+            style={{
+              width: "100%",
+              height: "4px",
+              backgroundColor: "rgba(255,255,255,0.2)",
+              borderRadius: "2px",
+              marginTop: "3px",
+              position: "relative",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                height: "100%",
+                width: `${((accelerationFactor - 1) / 2) * 100}%`,
+                backgroundColor: "rgba(0, 170, 255, 0.8)",
+                borderRadius: "2px",
+                transition: "width 0.3s ease-out",
+              }}
+            />
+          </div>
         </div>
       </div>
 

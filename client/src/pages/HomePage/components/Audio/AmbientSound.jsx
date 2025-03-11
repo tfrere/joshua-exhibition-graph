@@ -56,15 +56,10 @@ const AmbientSound = () => {
     volume: DEFAULT_VOLUME,
     loop: true,
     // Options for better handling of large files
-    preload: "metadata", // Just load metadata first, not the whole file
-    html5: true, // Use HTML5 Audio instead of Web Audio API
-    xhr: {
-      // Streaming options
-      method: "GET",
-      headers: {
-        Range: "bytes=0-", // Request range for streaming
-      },
-    },
+    preload: true, // Chargement complet pour une meilleure boucle
+    html5: false, // Utiliser Web Audio API pour un meilleur comportement de boucle
+    // Supprimer le sprite pour permettre au mécanisme de boucle natif de fonctionner
+    interrupt: false, // Empêcher les interruptions qui pourraient affecter la boucle
     onload: () => {
       console.log("Audio file loaded successfully!");
       setIsLoading(false);
@@ -84,9 +79,14 @@ const AmbientSound = () => {
         setKey(Date.now()); // Force new instance
       }
     },
-    // Important: set the sprite to force single instance
-    sprite: {
-      main: [0, 24 * 60 * 60 * 1000], // 24 hours max duration
+    onend: () => {
+      console.log("Audio reached end - should loop automatically");
+      // Si nécessaire, forcer la relecture en cas d'échec de boucle automatique
+      if (isPlaying && !isMuted) {
+        setTimeout(() => {
+          play();
+        }, 100);
+      }
     },
   });
 
@@ -104,8 +104,8 @@ const AmbientSound = () => {
       setIsLoading(true);
       console.log("User has interacted, trying to play audio...");
       try {
-        // Play the main sprite instead of default
-        play({ id: "main" });
+        // Play without specifying sprite ID to use native looping
+        play();
         setIsPlaying(true);
         console.log("Audio playback started!");
       } catch (error) {

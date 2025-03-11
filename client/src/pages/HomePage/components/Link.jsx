@@ -245,17 +245,6 @@ const LinkText = ({ points, linkColor, relationType, depth }) => {
     };
   }, [points, relationType]);
 
-  // Animation subtile
-  useFrame((state) => {
-    if (textRef.current) {
-      textRef.current.material.opacity = THREE.MathUtils.lerp(
-        0.1,
-        1.0,
-        (Math.sin(state.clock.getElapsedTime() * 1.5) + 1) / 2
-      );
-    }
-  });
-
   if (!textData || !relationType) return null;
 
   return (

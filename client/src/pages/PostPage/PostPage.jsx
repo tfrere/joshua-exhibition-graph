@@ -14,6 +14,7 @@ function PostPage() {
   const [activeCharacterData, setActiveCharacterData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activePost, setactivePost] = useState(null);
+  const [characterImageExists, setCharacterImageExists] = useState(false);
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
@@ -140,12 +141,37 @@ function PostPage() {
           const character = findCharacter(pendingPost.slug);
           if (character) {
             setActiveCharacterData(character);
+            // Vérifier si l'image du personnage existe
+            const checkImageExists = async () => {
+              try {
+                const response = await fetch(
+                  `/public/img/characters/${pendingPost.slug}.svg`
+                );
+                // Il faut vérifier si le contenu de la réponse est une image SVG valide
+                // Un statut 200 n'est pas suffisant car le serveur peut renvoyer une page 404 personnalisée avec un statut 200
+                const contentType = response.headers.get("content-type");
+                const text = await response.text();
+                const isSvg =
+                  contentType &&
+                  contentType.includes("svg") &&
+                  text.includes("<svg");
+                setCharacterImageExists(isSvg);
+              } catch (error) {
+                console.error(
+                  "Erreur lors de la vérification de l'image:",
+                  error
+                );
+                setCharacterImageExists(false);
+              }
+            };
+            checkImageExists();
           } else {
             console.warn(
               "Personnage actif non trouvé dans la base de données:",
               pendingPost.slug
             );
             setActiveCharacterData(null);
+            setCharacterImageExists(false);
           }
         }
 
@@ -259,30 +285,48 @@ function PostPage() {
           }}
         >
           {/* Photo de profil */}
-          <div
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "60px",
-              background: activeCharacterData.isJoshua ? "#ffffff" : "#888888",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: "1.25rem",
-              color: "#000",
-              fontSize: "3rem",
-              fontWeight: "bold",
-              border: "4px solid #222",
-            }}
-          >
-            {(
-              activeCharacterData.displayName ||
-              activeCharacterData.slug ||
-              "?"
-            )
-              .charAt(0)
-              .toUpperCase()}
-          </div>
+          {characterImageExists ? (
+            <img
+              src={`/public/img/characters/${activeCharacterData.slug}.svg`}
+              alt={activeCharacterData.displayName || activeCharacterData.slug}
+              style={{
+                width: "120px",
+                height: "120px",
+                borderRadius: "60px",
+                marginBottom: "1.25rem",
+                border: "4px solid #222",
+                objectFit: "cover",
+                background: "#ffffff",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "120px",
+                height: "120px",
+                borderRadius: "60px",
+                background: activeCharacterData.isJoshua
+                  ? "#ffffff"
+                  : "#888888",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: "1.25rem",
+                color: "#000",
+                fontSize: "3rem",
+                fontWeight: "bold",
+                border: "4px solid #222",
+              }}
+            >
+              {(
+                activeCharacterData.displayName ||
+                activeCharacterData.slug ||
+                "?"
+              )
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+          )}
 
           {/* Nom du personnage et badge Joshua */}
           <div
@@ -465,7 +509,7 @@ function PostPage() {
         </div>
       </div>
     );
-  }, [isLoading, activeCharacterData, activePost]);
+  }, [isLoading, activeCharacterData, activePost, characterImageExists]);
 
   return pageContent;
 }

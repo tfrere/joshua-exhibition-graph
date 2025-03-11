@@ -11,13 +11,10 @@ export const CAMERA_POSITIONS = [
 
 // Configuration par défaut pour le mode vol
 export const DEFAULT_FLIGHT_CONFIG = {
-  maxSpeed: 500,
-  acceleration: 1000,
-  deceleration: 0.95,
-  rotationSpeed: 0.8,
-  rotationAcceleration: 1.0, // Nouvelle propriété : accélération de rotation
-  rotationDeceleration: 0.85, // Nouvelle propriété : décélération de rotation
-  maxRotationSpeed: 2.0, // Nouvelle propriété : vitesse maximale de rotation
+  maxSpeed: 35,
+  acceleration: 300,
+  deceleration: 0.8,
+  rotationSpeed: 0.3, // Valeur plus élevée pour une réponse directe sans accélération
   deadzone: 0.1,
 };
 
@@ -144,7 +141,6 @@ export class FlightController {
     this.tempVector = new Vector3();
     this.euler = new Euler(0, 0, 0, "YXZ");
     this.direction = new Vector3();
-    this.rotationVelocity = { yaw: 0, pitch: 0, roll: 0 };
 
     // Paramètres pour la sphère limite
     this.boundingSphereRadius = 800; // Rayon de la sphère limite
@@ -152,6 +148,12 @@ export class FlightController {
     this.defaultTarget = new Vector3(0, 0, 0);
     this.isReturningToDefault = false;
 
+    // Facteurs d'accélération pour la transition
+    this.currentAccelerationFactor = 3; // Facteur actuel (interpolé)
+    this.targetAccelerationFactor = 1; // Facteur cible
+    this.accelerationTransitionSpeed = 0.05; // Vitesse de transition (3 fois plus lente qu'avant)
+
+    // Entrées actuelles
     this.input = {
       thrust: 0,
       lateral: 0,
@@ -160,6 +162,41 @@ export class FlightController {
       pitch: 0,
       roll: 0,
     };
+
+    // Entrées cibles (pour le lissage)
+    this.targetInput = { ...this.input };
+
+    // Lissage des entrées
+    this.smoothFactor = 0.15;
+
+    // Vitesse actuelle
+    this.velocity = new Vector3(0, 0, 0);
+
+    // Vecteur temporaire pour les calculs
+    this.tempVector = new Vector3();
+
+    // Pour les rotations
+    this.quaternionTemp = new Quaternion();
+
+    // Pour la transition entre positions
+    this.transitionStart = null;
+    this.transitionEnd = null;
+    this.transitionProgress = 0;
+    this.transitionDuration = 2000;
+    this.isTransitioning = false;
+    this.orbitControlsAfterTransition = false;
+
+    // Limiter l'espace de jeu
+    this.returnVelocity = 10;
+    this.returnRotationSpeed = 0.1;
+    this.returnStartPos = null;
+    this.returnStartRot = null;
+    this.returnProgress = 0;
+    this.returnDuration = 2000;
+
+    // Stockage des positions
+    this.predefinedPositions = [];
+    this.currentPredefinedPosition = -1;
   }
 
   // Accesseur pour la configuration
@@ -173,7 +210,8 @@ export class FlightController {
   }
 
   setInput(input) {
-    this.input = { ...this.input, ...input };
+    // Mettre à jour les entrées cibles, pas directement les entrées actuelles
+    this.targetInput = { ...this.targetInput, ...input };
   }
 
   update(delta) {
@@ -188,29 +226,91 @@ export class FlightController {
     // Utiliser la configuration actuelle
     const config = this._config;
 
+    // Calculer la distance par rapport au centre pour déterminer le facteur d'accélération cible
+    const distanceFromCenter = this.camera.position.length();
+    this.targetAccelerationFactor = distanceFromCenter > 400 ? 3 : 1;
+
+    // Interpolation linéaire vers le facteur d'accélération cible
+    if (
+      Math.abs(this.currentAccelerationFactor - this.targetAccelerationFactor) >
+      0.01
+    ) {
+      if (this.currentAccelerationFactor < this.targetAccelerationFactor) {
+        this.currentAccelerationFactor += this.accelerationTransitionSpeed;
+        if (this.currentAccelerationFactor > this.targetAccelerationFactor) {
+          this.currentAccelerationFactor = this.targetAccelerationFactor;
+        }
+      } else {
+        this.currentAccelerationFactor -= this.accelerationTransitionSpeed;
+        if (this.currentAccelerationFactor < this.targetAccelerationFactor) {
+          this.currentAccelerationFactor = this.targetAccelerationFactor;
+        }
+      }
+    }
+
+    // Utiliser le facteur d'accélération interpolé
+    const accelerationFactor = this.currentAccelerationFactor;
+
+    // Exposer le facteur d'accélération actuel pour le NavigationUI
+    window.__accelerationFactor = accelerationFactor;
+
+    // Log pour debug (à retirer une fois le problème résolu)
+    if (Math.floor(Date.now() / 1000) % 5 === 0) {
+      // Log toutes les 5 secondes environ
+      console.log(
+        `Distance: ${distanceFromCenter.toFixed(
+          2
+        )}, Accélération: ${accelerationFactor.toFixed(
+          2
+        )}x, Vitesse maximale: ${(config.maxSpeed * accelerationFactor).toFixed(
+          2
+        )}`
+      );
+    }
+
+    // Interpoler progressivement entre les entrées actuelles et les entrées cibles
+    this.input.thrust +=
+      (this.targetInput.thrust - this.input.thrust) * this.smoothFactor;
+    this.input.lateral +=
+      (this.targetInput.lateral - this.input.lateral) * this.smoothFactor;
+    this.input.upDown +=
+      (this.targetInput.upDown - this.input.upDown) * this.smoothFactor;
+    this.input.yaw +=
+      (this.targetInput.yaw - this.input.yaw) * this.smoothFactor;
+    this.input.pitch +=
+      (this.targetInput.pitch - this.input.pitch) * this.smoothFactor;
+    this.input.roll +=
+      (this.targetInput.roll - this.input.roll) * this.smoothFactor;
+
     // Calculer l'accélération dans la direction de vue (avant/arrière)
-    if (this.input.thrust !== 0) {
+    if (Math.abs(this.input.thrust) > 0.001) {
       this.tempVector
         .set(0, 0, -1)
         .applyQuaternion(this.camera.quaternion)
-        .multiplyScalar(this.input.thrust * config.acceleration * delta);
+        .multiplyScalar(
+          this.input.thrust * config.acceleration * delta * accelerationFactor
+        );
       this.velocity.add(this.tempVector);
     }
 
     // Mouvement latéral (gauche/droite)
-    if (this.input.lateral !== 0) {
+    if (Math.abs(this.input.lateral) > 0.001) {
       this.tempVector
         .set(1, 0, 0)
         .applyQuaternion(this.camera.quaternion)
-        .multiplyScalar(this.input.lateral * config.acceleration * delta);
+        .multiplyScalar(
+          this.input.lateral * config.acceleration * delta * accelerationFactor
+        );
       this.velocity.add(this.tempVector);
     }
 
     // Mouvement vertical (haut/bas)
-    if (this.input.upDown !== 0) {
+    if (Math.abs(this.input.upDown) > 0.001) {
       this.tempVector
         .set(0, 1, 0)
-        .multiplyScalar(this.input.upDown * config.acceleration * delta);
+        .multiplyScalar(
+          this.input.upDown * config.acceleration * delta * accelerationFactor
+        );
       this.velocity.add(this.tempVector);
     }
 
@@ -219,15 +319,19 @@ export class FlightController {
 
     // Limiter la vitesse maximale
     const currentSpeed = this.velocity.length();
-    if (currentSpeed > config.maxSpeed) {
-      this.velocity.multiplyScalar(config.maxSpeed / currentSpeed);
+    // Ajuster la vitesse maximale en fonction du facteur d'accélération
+    const adjustedMaxSpeed = config.maxSpeed * accelerationFactor;
+    // Exposer la vitesse maximale ajustée pour le NavigationUI
+    window.__adjustedMaxSpeed = adjustedMaxSpeed;
+
+    if (currentSpeed > adjustedMaxSpeed) {
+      this.velocity.multiplyScalar(adjustedMaxSpeed / currentSpeed);
     }
 
     // Appliquer le mouvement
     this.camera.position.add(this.velocity.clone().multiplyScalar(delta));
 
     // Vérifier si le joueur est en dehors de la sphère limite
-    const distanceFromCenter = this.camera.position.length();
     if (distanceFromCenter > this.boundingSphereRadius) {
       console.log(
         `Joueur hors limites (${distanceFromCenter.toFixed(2)} > ${
@@ -238,75 +342,41 @@ export class FlightController {
       return;
     }
 
-    // Rotation de la caméra avec accélération progressive
+    // Obtenir l'orientation actuelle de la caméra
     this.euler.setFromQuaternion(this.camera.quaternion);
 
-    // Accélération du lacet (yaw)
-    if (this.input.yaw !== 0) {
-      // Appliquer l'accélération à la vitesse de rotation
-      this.rotationVelocity.yaw +=
-        this.input.yaw * config.rotationAcceleration * delta;
-    }
-    // Décélération du lacet
-    else {
-      this.rotationVelocity.yaw *= config.rotationDeceleration;
+    // APPLICATION DIRECTE: Appliquer directement les entrées de rotation
+    // Lacet (yaw - rotation horizontale)
+    if (Math.abs(this.input.yaw) > 0.001) {
+      this.euler.y -= this.input.yaw * config.rotationSpeed * delta;
     }
 
-    // Accélération du tangage (pitch)
-    if (this.input.pitch !== 0) {
-      this.rotationVelocity.pitch +=
-        this.input.pitch * config.rotationAcceleration * delta;
-    }
-    // Décélération du tangage
-    else {
-      this.rotationVelocity.pitch *= config.rotationDeceleration;
-    }
-
-    // Accélération du roulis (roll)
-    if (this.input.roll !== 0) {
-      this.rotationVelocity.roll +=
-        this.input.roll * config.rotationAcceleration * delta;
-    }
-    // Décélération et auto-stabilisation du roulis
-    else {
-      this.rotationVelocity.roll *= config.rotationDeceleration * 0.9; // Stabilisation plus rapide pour le roulis
+    // Tangage (pitch - rotation verticale)
+    if (Math.abs(this.input.pitch) > 0.001) {
+      // Limiter le tangage (pitch) pour éviter de tourner à 180°
+      this.euler.x = Math.max(
+        -Math.PI / 2,
+        Math.min(
+          Math.PI / 2,
+          this.euler.x + this.input.pitch * config.rotationSpeed * delta
+        )
+      );
     }
 
-    // Limiter les vitesses de rotation maximales
-    this.rotationVelocity.yaw = Math.max(
-      -config.maxRotationSpeed,
-      Math.min(config.maxRotationSpeed, this.rotationVelocity.yaw)
-    );
-    this.rotationVelocity.pitch = Math.max(
-      -config.maxRotationSpeed,
-      Math.min(config.maxRotationSpeed, this.rotationVelocity.pitch)
-    );
-    this.rotationVelocity.roll = Math.max(
-      -config.maxRotationSpeed,
-      Math.min(config.maxRotationSpeed, this.rotationVelocity.roll)
-    );
-
-    // Appliquer les rotations avec les vitesses actuelles
-    this.euler.y -= this.rotationVelocity.yaw * delta * config.rotationSpeed;
-
-    // Limiter le tangage (pitch) pour éviter de tourner à 180°
-    this.euler.x = Math.max(
-      -Math.PI / 2,
-      Math.min(
-        Math.PI / 2,
-        this.euler.x +
-          this.rotationVelocity.pitch * delta * config.rotationSpeed
-      )
-    );
-
-    // Limiter le roulis (roll)
-    this.euler.z = Math.max(
-      -Math.PI / 4,
-      Math.min(
-        Math.PI / 4,
-        this.euler.z + this.rotationVelocity.roll * delta * config.rotationSpeed
-      )
-    );
+    // Roulis (roll - rotation sur l'axe de visée)
+    if (Math.abs(this.input.roll) > 0.001) {
+      // Limiter le roulis (roll)
+      this.euler.z = Math.max(
+        -Math.PI / 4,
+        Math.min(
+          Math.PI / 4,
+          this.euler.z + this.input.roll * config.rotationSpeed * delta
+        )
+      );
+    } else {
+      // Auto-stabilisation du roulis quand pas d'entrée
+      this.euler.z *= 0.95; // Facteur de stabilisation
+    }
 
     // Appliquer les rotations
     this.camera.quaternion.setFromEuler(this.euler);
@@ -324,7 +394,6 @@ export class FlightController {
 
     // Réinitialiser la vitesse et la rotation
     this.velocity.set(0, 0, 0);
-    this.rotationVelocity = { yaw: 0, pitch: 0, roll: 0 };
 
     // Pour simuler exactement l'action d'un utilisateur qui appuie sur une touche de position,
     // on va accéder directement au gestionnaire d'entrées global et déclencher le nextPosition
@@ -380,10 +449,19 @@ export class FlightController {
 
   reset() {
     this.velocity.set(0, 0, 0);
-    this.rotationVelocity = { yaw: 0, pitch: 0, roll: 0 };
     this.isReturningToDefault = false;
 
     this.input = {
+      thrust: 0,
+      lateral: 0,
+      upDown: 0,
+      yaw: 0,
+      pitch: 0,
+      roll: 0,
+    };
+
+    // Réinitialiser aussi les entrées cibles
+    this.targetInput = {
       thrust: 0,
       lateral: 0,
       upDown: 0,

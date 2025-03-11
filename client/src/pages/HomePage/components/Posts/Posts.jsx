@@ -5,6 +5,7 @@ import useNearestPostDetection, {
   activePostRef,
   initSocketSync,
 } from "./hooks/useNearestPostDetection";
+import PostActivationEffect from "./effects/PostActivationEffect";
 
 // Import des constantes et fonctions utilitaires
 import {
@@ -29,6 +30,14 @@ import {
   TRANSITION_DURATION,
   PROXIMITY_THRESHOLD,
   MIN_DISTANCE,
+  // Nouvelles constantes pour l'effet d'activation
+  ACTIVATION_EFFECT_DURATION,
+  ACTIVATION_EFFECT_MAX_SIZE,
+  ACTIVATION_EFFECT_START_SIZE,
+  ACTIVATION_EFFECT_COLOR,
+  ACTIVATION_EFFECT_OPACITY,
+  ACTIVATION_EFFECT_RINGS,
+  ACTIVATION_EFFECT_RING_DELAY,
 } from "./utils/constants";
 
 import {
@@ -120,6 +129,9 @@ export function Posts({
   const prevActivePostUIDRef = useRef(null);
   const prevActivePostRef = useRef(null);
 
+  // Nouvel état pour suivre les effets d'activation actifs
+  const [activationEffects, setActivationEffects] = useState([]);
+
   // Références pour l'animation
   const originalPositions = useRef([]); // Positions originales des points
   const originalSizes = useRef([]); // Tailles originales
@@ -194,6 +206,44 @@ export function Posts({
     if (newPostUID !== activePostUID) {
       console.log("UID du post actif mis à jour:", newPostUID);
 
+      // Si un nouveau post est activé, déclencher l'effet d'activation
+      if (newPostUID) {
+        const postIndex = data.findIndex(
+          (post) => post && post.postUID === newPostUID
+        );
+        if (postIndex !== -1) {
+          const post = data[postIndex];
+          let postPosition;
+
+          // Extraire la position du post (selon le format disponible)
+          if (
+            post.x !== undefined &&
+            post.y !== undefined &&
+            post.z !== undefined
+          ) {
+            postPosition = [post.x, post.y, post.z];
+          } else if (post.coordinates && post.coordinates.x !== undefined) {
+            postPosition = [
+              post.coordinates.x,
+              post.coordinates.y,
+              post.coordinates.z,
+            ];
+          } else {
+            postPosition = [0, 0, 0];
+          }
+
+          // Créer un nouvel effet avec un ID unique
+          const newEffect = {
+            id: `effect-${Date.now()}-${Math.random()}`,
+            position: postPosition,
+            timestamp: Date.now(),
+          };
+
+          // Ajouter ce nouvel effet à la liste
+          setActivationEffects((prev) => [...prev, newEffect]);
+        }
+      }
+
       // Stocker l'ancien post actif
       const oldPostUID = activePostUID;
 
@@ -236,6 +286,23 @@ export function Posts({
       setActivePostUID(newPostUID);
     }
   });
+
+  // Supprimer les effets d'activation terminés après un certain temps
+  useEffect(() => {
+    if (activationEffects.length > 0) {
+      const duration =
+        ACTIVATION_EFFECT_DURATION * 1000 * (ACTIVATION_EFFECT_RINGS + 1); // Durée totale en ms
+      const timeoutId = setTimeout(() => {
+        // Supprimer les effets plus anciens que la durée totale
+        const now = Date.now();
+        setActivationEffects((prev) =>
+          prev.filter((effect) => now - effect.timestamp < duration)
+        );
+      }, duration);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [activationEffects]);
 
   // ----------------------------------------------------------------------------------
   // Animation principale
@@ -523,15 +590,19 @@ export function Posts({
       );
     }
 
+    // Changement: ne modifier que la taille, pas la couleur pour les posts actifs
+    const baseColor = [
+      originalColors.current[index * 3],
+      originalColors.current[index * 3 + 1],
+      originalColors.current[index * 3 + 2],
+    ];
+
     // Utiliser la fonction utilitaire pour calculer la taille et la couleur
+    // Mais utiliser la couleur originale au lieu de ACTIVE_POST_COLOR
     const result = calculateTransitionValues({
       baseSize,
-      baseColor: [
-        originalColors.current[index * 3],
-        originalColors.current[index * 3 + 1],
-        originalColors.current[index * 3 + 2],
-      ],
-      targetColor: ACTIVE_POST_COLOR,
+      baseColor,
+      targetColor: baseColor, // Utiliser la couleur de base au lieu de ACTIVE_POST_COLOR
       targetSize: isActivation ? ACTIVE_POST_SIZE : baseSize,
       progress,
       minSize: MIN_SIZE_DURING_TRANSITION,
@@ -737,23 +808,44 @@ export function Posts({
   }
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[null, null, data.length]}
-      frustumCulled={true}
-      renderOrder={10}
-    >
-      <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
-      <meshLambertMaterial
-        transparent={true}
-        opacity={1}
-        color="white"
-        side={THREE.DoubleSide}
-        toneMapped={false}
-        depthWrite={true}
-        depthTest={true}
-      />
-    </instancedMesh>
+    <>
+      {/* InstancedMesh pour les posts */}
+      <instancedMesh
+        ref={meshRef}
+        args={[null, null, data.length]}
+        frustumCulled={true}
+        renderOrder={10}
+      >
+        <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
+        <meshLambertMaterial
+          transparent={true}
+          opacity={1}
+          color="white"
+          side={THREE.DoubleSide}
+          toneMapped={false}
+          depthWrite={true}
+          depthTest={true}
+        />
+      </instancedMesh>
+
+      {/* Effets d'activation */}
+      {activationEffects.map((effect) => (
+        <PostActivationEffect
+          key={effect.id}
+          position={effect.position}
+          duration={ACTIVATION_EFFECT_DURATION}
+          maxSize={ACTIVATION_EFFECT_MAX_SIZE}
+          startSize={ACTIVATION_EFFECT_START_SIZE}
+          color={ACTIVATION_EFFECT_COLOR}
+          opacityStart={ACTIVATION_EFFECT_OPACITY}
+          rings={ACTIVATION_EFFECT_RINGS}
+          ringDelay={ACTIVATION_EFFECT_RING_DELAY}
+          onComplete={() => {
+            // Optionnel: logique à exécuter quand l'effet est terminé
+          }}
+        />
+      ))}
+    </>
   );
 }
 
