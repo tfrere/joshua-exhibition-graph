@@ -197,9 +197,9 @@ const HomePage = () => {
           /> */}
 
           {/* Afficher le graphe si les données sont disponibles et valides */}
-          {/* {graphData && graphData.nodes && graphData.links && (
+          {graphData && graphData.nodes && graphData.links && (
             <Graph data={graphData} postsData={postsData} />
-          )} */}
+          )}
 
           {/* Afficher les posts si activés et disponibles */}
           {postsData && <Posts data={postsData} />}

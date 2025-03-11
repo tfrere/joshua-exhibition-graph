@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
 import { Billboard, Text, PositionalAudio } from "@react-three/drei";
 import * as THREE from "three";
-import { useSpring, animated, config } from "@react-spring/three";
+import { useSpring, animated } from "@react-spring/three";
+import useProximityCheck from "../hooks/useProximityCheck";
 
 // Composant NodeLabel avec logique conditionnelle et audio positionnel
 const NodeLabel = ({
@@ -13,17 +13,23 @@ const NodeLabel = ({
   isSelected,
   isActive,
 }) => {
-  const [isLabelVisible, setIsLabelVisible] = useState(false);
   const [shouldPlaySound, setShouldPlaySound] = useState(false);
   const [audioFile, setAudioFile] = useState("/sounds/character-touch.mp3");
   const audioRef = useRef();
-  const { camera } = useThree();
+
+  // Utiliser le hook personnalisé pour vérifier si le nœud est proche du point de référence
+  const isVisible = useProximityCheck({
+    meshRef,
+    objectPosition: nodePosition,
+    threshold: 50,
+    referenceOffset: 20,
+  });
 
   // Animation de fade in/fade out avec des paramètres améliorés pour une transition plus douce
   const { opacity, scale, positionY } = useSpring({
-    opacity: isLabelVisible ? 1 : 0,
-    scale: isLabelVisible ? 1 : 0.8,
-    positionY: isLabelVisible ? 0 : -0.2,
+    opacity: isVisible ? 1 : 0,
+    scale: isVisible ? 1 : 0.8,
+    positionY: isVisible ? 0 : -0.2,
     from: { opacity: 0, scale: 0.8, positionY: -0.2 },
     config: {
       mass: 1.5,
@@ -31,41 +37,15 @@ const NodeLabel = ({
       friction: 26,
       clamp: true,
     },
-    delay: isLabelVisible ? 100 : 0, // Léger délai à l'apparition
+    delay: isVisible ? 100 : 0, // Léger délai à l'apparition
   });
 
   // Texte à afficher
   const displayText = node.label || node.name || "Node";
 
-  // Vérifier la visibilité du label par rapport à la position de la caméra
-  useFrame(() => {
-    // Obtenir la position de la caméra
-    const cameraPosition = new THREE.Vector3();
-    camera.getWorldPosition(cameraPosition);
-
-    // Créer un point de référence à 20 unités devant la caméra sur l'axe X uniquement
-    const referencePoint = new THREE.Vector3(
-      cameraPosition.x + 20,
-      cameraPosition.y,
-      cameraPosition.z
-    );
-
-    // Récupérer la position mondiale du nœud
-    const nodeWorldPosition = new THREE.Vector3();
-    if (meshRef.current) {
-      meshRef.current.getWorldPosition(nodeWorldPosition);
-    } else {
-      nodeWorldPosition.copy(nodePosition);
-    }
-
-    // Calculer la distance entre le nœud et le point de référence
-    const distance = nodeWorldPosition.distanceTo(referencePoint);
-
-    // Le label est visible si la distance est inférieure à 10 mètres
-    const newLabelVisible = distance < 50;
-
-    // Déclencher le son seulement si le label vient d'apparaître
-    if (newLabelVisible && !isLabelVisible) {
+  // Gestion de l'apparition/disparition du label et du son
+  useEffect(() => {
+    if (isVisible) {
       // Choisir aléatoirement entre les deux fichiers audio
       const randomSound =
         Math.random() < 0.5
@@ -73,28 +53,26 @@ const NodeLabel = ({
           : "/sounds/character-touch-2.mp3";
       setAudioFile(randomSound);
       setShouldPlaySound(true);
-    } else if (!newLabelVisible && isLabelVisible) {
+    } else {
       setShouldPlaySound(false);
     }
-
-    // Mettre à jour l'état de visibilité du label
-    setIsLabelVisible(newLabelVisible);
-  });
+  }, [isVisible]);
 
   // Jouer le son quand shouldPlaySound devient true
   useEffect(() => {
     if (shouldPlaySound && audioRef.current) {
       audioRef.current.play();
       // Réinitialiser l'état après avoir joué le son
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setShouldPlaySound(false);
-      }, 500);
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
   }, [shouldPlaySound]);
 
   // Ne rien rendre si le label n'est pas visible pour des raisons de performance
   // Mais continuer à calculer l'animation pour une transition fluide
-  if (!isLabelVisible && opacity.get() === 0) return null;
+  if (!isVisible && opacity.get() === 0) return null;
 
   return (
     <group position={[0, baseSize + 0.3, 0]}>
@@ -103,9 +81,9 @@ const NodeLabel = ({
         <PositionalAudio
           ref={audioRef}
           url={audioFile}
-          distance={5}
+          distance={2}
           loop={false}
-          volume={0.2}
+          volume={0.0005}
         />
       )}
 

@@ -8,6 +8,9 @@ import useNearestPostDetection, {
 import PostActivationEffect from "./effects/PostActivationEffect";
 import PulseEffect from "./effects/PulseEffect";
 
+// Import des renderers
+import { SphereRenderer, BillboardRenderer } from "./renderers";
+
 // Import des constantes et fonctions utilitaires
 import {
   SIZE,
@@ -83,6 +86,7 @@ import {
  * Composant pour le rendu ultra-optimisé des posts en utilisant instancedMesh
  * @param {Object} props - Propriétés du composant
  * @param {Array} props.data - Données des posts
+ * @param {string} [props.renderer="sphere"] - Type de renderer à utiliser ('sphere' ou 'billboard')
  * @param {number} [props.proximityThreshold=100.0] - Distance à partir de laquelle les points commencent à réduire
  * @param {number} [props.minDistance=20.0] - Distance à laquelle les points disparaissent complètement
  * @param {number} [props.animationAmplitude=ANIMATION_AMPLITUDE] - Amplitude du mouvement aléatoire des points
@@ -100,6 +104,7 @@ import {
  */
 export function Posts({
   data,
+  renderer = "sphere",
   proximityThreshold = PROXIMITY_THRESHOLD,
   minDistance = MIN_DISTANCE,
   animationAmplitude = ANIMATION_AMPLITUDE,
@@ -684,24 +689,28 @@ export function Posts({
 
     // Mettre à jour la matrice de manière sécurisée
     try {
-      meshRef.current.setMatrixAt(index, tempObject.matrix);
+      if (meshRef.current && meshRef.current.setMatrixAt) {
+        meshRef.current.setMatrixAt(index, tempObject.matrix);
 
-      // Stocker la matrice pour référence ultérieure
-      if (!matrixRef.current) {
-        matrixRef.current = [];
+        // Stocker la matrice pour référence ultérieure
+        if (!matrixRef.current) {
+          matrixRef.current = [];
+        }
+
+        // Créer une copie de la matrice pour ne pas partager la référence
+        if (!matrixRef.current[index]) {
+          matrixRef.current[index] = new THREE.Matrix4();
+        }
+        matrixRef.current[index].copy(tempObject.matrix);
+
+        // Mettre à jour la couleur
+        if (meshRef.current.setColorAt) {
+          meshRef.current.setColorAt(
+            index,
+            new THREE.Color(finalR, finalG, finalB)
+          );
+        }
       }
-
-      // Créer une copie de la matrice pour ne pas partager la référence
-      if (!matrixRef.current[index]) {
-        matrixRef.current[index] = new THREE.Matrix4();
-      }
-      matrixRef.current[index].copy(tempObject.matrix);
-
-      // Mettre à jour la couleur
-      meshRef.current.setColorAt(
-        index,
-        new THREE.Color(finalR, finalG, finalB)
-      );
     } catch (error) {
       console.error(
         `Erreur lors de la mise à jour de la matrice pour le post ${postUID}:`,
@@ -851,38 +860,26 @@ export function Posts({
 
   return (
     <>
-      {/* InstancedMesh pour les posts */}
-      <instancedMesh
-        ref={meshRef}
-        args={[null, null, data.length]}
-        frustumCulled={false}
-        renderOrder={10}
-      >
-        <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
-        <meshLambertMaterial
-          transparent={true}
-          opacity={1}
-          color="white"
-          side={THREE.DoubleSide}
-          toneMapped={false}
-          depthWrite={true}
-          depthTest={true}
+      {/* Rendu des posts avec le renderer sélectionné */}
+      {renderer === "sphere" ? (
+        <SphereRenderer
+          meshRef={meshRef}
+          data={data}
+          SPHERE_SEGMENTS={SPHERE_SEGMENTS}
+          SIZE={SIZE}
+          MIN_IMPACT_SIZE={MIN_IMPACT_SIZE}
+          MAX_IMPACT_SIZE={MAX_IMPACT_SIZE}
         />
-      </instancedMesh>
-      {/* <PostActivationEffect
-          key={effect.id}
-          position={effect.position}
-          duration={ACTIVATION_EFFECT_DURATION}
-          maxSize={ACTIVATION_EFFECT_MAX_SIZE}
-          startSize={ACTIVATION_EFFECT_START_SIZE}
-          color={ACTIVATION_EFFECT_COLOR}
-          opacityStart={ACTIVATION_EFFECT_OPACITY}
-          rings={ACTIVATION_EFFECT_RINGS}
-          ringDelay={ACTIVATION_EFFECT_RING_DELAY}
-          onComplete={() => {
-            // Optionnel: logique à exécuter quand l'effet est terminé
-          }}
-        /> */}
+      ) : (
+        <BillboardRenderer
+          ref={meshRef}
+          data={data}
+          SIZE={SIZE}
+          MIN_IMPACT_SIZE={MIN_IMPACT_SIZE}
+          MAX_IMPACT_SIZE={MAX_IMPACT_SIZE}
+        />
+      )}
+
       {/* Effets d'activation */}
       {activationEffects.map((effect) => (
         <PulseEffect

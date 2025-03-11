@@ -17,7 +17,7 @@ const TOUCH_SOUNDS = [
   "/sounds/touch-a.mp3",
   "/sounds/touch-b.mp3",
   "/sounds/touch-c.mp3",
-  "/sounds/touch-d.mp3",
+  // "/sounds/touch-d.mp3",
 ];
 
 /**
