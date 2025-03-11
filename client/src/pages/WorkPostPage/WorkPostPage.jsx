@@ -2,12 +2,14 @@ import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useControls, folder, button } from "leva";
-import { ForceGraphUI } from "./components/ForceGraph/ForceGraph.jsx";
-import ForceGraph from "./components/ForceGraph/ForceGraph.jsx";
 import PostsRenderer from "./components/PostRenderer/PostsRenderer.jsx";
-import { useData } from "../../contexts/DataContext.jsx";
 import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import * as THREE from "three";
+import { spatializePostsAroundJoshuaNodes } from "./components/PostRenderer/utils/voronoiPass.js";
+import { normalizePostsInSphere } from "./components/PostRenderer/utils/spherizePass.js";
+import { animatePostsInFlowfield } from "./components/PostRenderer/utils/flowfieldPass.js";
+import { applyRadialDisplacement } from "./components/PostRenderer/utils/displacementPass.js";
 
 // Fonction utilitaire pour télécharger un fichier JSON
 const downloadJSON = (content, fileName) => {
@@ -24,252 +26,378 @@ const downloadJSON = (content, fileName) => {
   URL.revokeObjectURL(url);
 };
 
-const WorkPostPage = () => {
-  const {
-    isLoadingGraph,
-    isLoadingPosts,
-    updatePostsPositions,
-    graphData,
-    postsData,
-  } = useData();
-  const forceGraphRef = useRef(null);
-  const positionsUpdatedOnceRef = useRef(false);
-
-  // Utiliser useRef au lieu de useState pour éviter les re-rendus
-  const graphInstanceRef = useRef(null);
-
-  // Utiliser useCallback pour stabiliser cette fonction
-  const getGraphRef = useCallback((instance) => {
-    if (instance) {
-      console.log("Référence du graphe obtenue");
-      graphInstanceRef.current = instance;
+// Fonction simple pour charger un fichier JSON
+const loadJSON = async (url) => {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  }, []);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error(`Erreur lors du chargement de ${url}:`, error);
+    return null;
+  }
+};
+
+// Composant simple pour afficher les nœuds comme des sphères rouges
+const SimpleNodes = ({ nodes }) => {
+  if (!nodes || nodes.length === 0) return null;
+
+  return (
+    <group>
+      {nodes.map((node) => (
+        <mesh key={node.id} position={[node.x || 0, node.y || 0, node.z || 0]}>
+          <sphereGeometry args={[2, 16, 16]} />
+          <meshBasicMaterial color="red" />
+        </mesh>
+      ))}
+    </group>
+  );
+};
+
+const WorkPostPage = () => {
+  const [postsData, setPostsData] = useState([]);
+  const [nodesData, setNodesData] = useState([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingNodes, setIsLoadingNodes] = useState(true);
+  const [processedPosts, setProcessedPosts] = useState([]);
 
   // Configuration par défaut pour la spatialisation des posts
   const DEFAULT_POSTS_SPATIAL_CONFIG = {
-    joshuaOnly: true,
-    preserveOtherPositions: true,
-    // Paramètres de positionnement
+    // Paramètres généraux (utilisés principalement par la passe voronoi)
+    joshuaOnly: false, // Traiter TOUS les posts, pas seulement ceux de Joshua
+    preserveOtherPositions: false, // Ne pas préserver les positions existantes - on veut tout spatialiser
     radius: 60,
     minDistance: 40,
-    verticalSpread: 1.5, // Augmentation pour une meilleure distribution verticale
+    verticalSpread: 1.5,
     horizontalSpread: 1.5,
 
-    // === PASSE 1: VORONOI (bvoronoi) ===
-    // Cette passe applique une dilatation des positions autour des nœuds
-    // centraux avec un effet voronoi, qui crée des clusters distincts
-    useVoronoi: true, // Active/désactive la passe bvoronoi
-    perlinScale: 0.05,
-    perlinAmplitude: 1, // Augmenté pour plus de variation 3D
-    dilatationFactor: 1.2,
-
-    // Coloration des posts
+    // Paramètre de coloration (utilisé par spatializePostsAroundJoshuaNodes)
     useUniqueColorsPerCharacter: true,
 
-    // === PASSE 2: FLOWFIELD ===
-    // Cette passe anime les positions des posts à travers un champ de vecteurs
-    // pour créer des motifs organiques et naturels
-    useFlowfield: false, // Active/désactive la passe flowfield
-    flowFrames: 100,
-    flowScale: 0.02,
-    flowStrength: 5,
+    // Option pour mettre à jour la visualisation après chaque passe (expérimental)
+    updateAfterEachPass: false,
 
-    // === PASSE 3: SPHERIZATION ===
-    // Cette passe normalise les positions dans une sphère pour assurer
-    // une distribution homogène et contenir l'ensemble dans un volume défini
-    normalizeInSphere: false, // Active/désactive la passe spherization
-    sphereRadius: 250,
-    volumeExponent: 2 / 3, // 1/3 donne une distribution uniforme dans le volume
-    minRadius: 0, // Distance minimum depuis le centre (10% du rayon)
-    jitter: 0.2, // 20% de variation aléatoire pour éviter les motifs trop réguliers
+    // Passes de traitement dans l'ordre d'exécution
+    passes: [
+      {
+        name: "voronoi",
+        enabled: true, // Activer la passe voronoi pour spatialiser tous les posts
+        config: {
+          perlinScale: 0.05,
+          perlinAmplitude: 1,
+          dilatationFactor: 1.2,
+          twoPhases: true, // Activer le traitement en deux phases
+        },
+      },
+      {
+        name: "flowfield",
+        enabled: false, // Désactiver flowfield pour le moment
+        config: {
+          frames: 100,
+          flowScale: 0.02,
+          flowStrength: 5,
+        },
+      },
+      {
+        name: "spherize",
+        enabled: false, // Désactiver spherize pour le moment
+        config: {
+          sphereRadius: 250,
+          volumeExponent: 2 / 3,
+          minRadius: 0,
+          jitter: 0.2,
+        },
+      },
+      {
+        name: "displacement",
+        enabled: false,
+        config: {
+          intensity: 1000,
+          frequency: 0.2,
+          seed: 42,
+          minRadius: 5,
+        },
+      },
+    ],
+  };
 
-    // === PASSE 4: DISPLACEMENT ===
-    // Cette passe applique un déplacement radial basé sur du bruit de Perlin
-    // pour créer une texture organique à la surface de la sphère
-    useDisplacement: false, // Active/désactive la passe displacement
-    displacementIntensity: 15, // Intensité du déplacement
-    displacementFrequency: 0.08, // Fréquence du bruit de Perlin
-    displacementSeed: 42, // Valeur de graine pour le bruit
-    displacementMinRadius: 0, // Rayon minimal à préserver
+  // Charger les données au chargement du composant
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoadingPosts(true);
+      setIsLoadingNodes(true);
+
+      // Charger les nœuds
+      const nodesAndLinks = await loadJSON(
+        "/data/spatialized_nodes_and_links.data.json"
+      );
+      if (nodesAndLinks && nodesAndLinks.nodes) {
+        setNodesData(nodesAndLinks.nodes);
+      }
+      setIsLoadingNodes(false);
+
+      // Charger les posts
+      const posts = await loadJSON("/data/posts.data.json");
+      if (posts) {
+        setPostsData(posts);
+      }
+      setIsLoadingPosts(false);
+    };
+
+    fetchData();
+  }, []);
+
+  // Traiter les posts lorsque les données sont chargées
+  useEffect(() => {
+    const processPosts = async () => {
+      if (
+        isLoadingPosts ||
+        isLoadingNodes ||
+        postsData.length === 0 ||
+        nodesData.length === 0
+      ) {
+        return;
+      }
+
+      console.log("Démarrage du traitement des posts...");
+      await processPostsWithPasses(
+        postsData,
+        nodesData,
+        DEFAULT_POSTS_SPATIAL_CONFIG,
+        setProcessedPosts
+      );
+    };
+
+    processPosts();
+  }, [isLoadingPosts, isLoadingNodes, postsData, nodesData]);
+
+  // Fonction pour traiter les posts avec les différentes passes
+  const processPostsWithPasses = async (
+    posts,
+    nodes,
+    options,
+    updateCallback
+  ) => {
+    try {
+      console.log("=== DÉBUT DU PROCESSUS DE SPATIALISATION AVEC PASSES ===");
+      console.log(
+        `Démarrage avec ${posts.length} posts et ${nodes.length} nœuds`
+      );
+
+      // Initialiser tous les posts avec des coordonnées par défaut si nécessaire
+      let processedPosts = posts.map((post) => {
+        // Créer une copie profonde pour éviter de modifier les originaux
+        const newPost = JSON.parse(JSON.stringify(post));
+
+        // Assurer que les coordonnées sont définies
+        if (newPost.x === undefined) newPost.x = 0;
+        if (newPost.y === undefined) newPost.y = 0;
+        if (newPost.z === undefined) newPost.z = 0;
+
+        // Initialiser avec des coordonnées aléatoires dans une petite zone
+        // pour éviter que tous les posts démarrent à 0,0,0
+        newPost.x += (Math.random() * 2 - 1) * 10;
+        newPost.y += (Math.random() * 2 - 1) * 10;
+        newPost.z += (Math.random() * 2 - 1) * 10;
+
+        return newPost;
+      });
+
+      console.log(
+        `Posts initialisés avec des coordonnées de base: ${processedPosts.length}`
+      );
+      if (processedPosts.length > 0) {
+        console.log("Premier post:", {
+          id: processedPosts[0].id,
+          coords: {
+            x: processedPosts[0].x,
+            y: processedPosts[0].y,
+            z: processedPosts[0].z,
+          },
+        });
+      }
+
+      // Tableau de passes à exécuter
+      const passes = options.passes || [];
+      console.log(
+        `Traitement séquentiel de ${passes.length} passes configurées`
+      );
+
+      // Exécuter chaque passe dans l'ordre défini
+      for (let i = 0; i < passes.length; i++) {
+        const pass = passes[i];
+
+        // Ignorer les passes désactivées
+        if (!pass.enabled) {
+          console.log(
+            `Passe "${pass.name}" [${i + 1}/${
+              passes.length
+            }] désactivée - ignorée`
+          );
+          continue;
+        }
+
+        console.log(
+          `=== EXÉCUTION DE LA PASSE "${pass.name}" [${i + 1}/${
+            passes.length
+          }] ===`
+        );
+
+        // Exécuter la passe appropriée en fonction de son nom
+        switch (pass.name.toLowerCase()) {
+          case "voronoi":
+            console.log(
+              `Spatialisation voronoi avec échelle ${pass.config.perlinScale}, amplitude ${pass.config.perlinAmplitude}, dilatation ${pass.config.dilatationFactor}, deux phases: ${pass.config.twoPhases}`
+            );
+
+            // Appliquer la spatialisation voronoi
+            processedPosts = spatializePostsAroundJoshuaNodes(
+              processedPosts,
+              nodes,
+              {
+                // Options générales
+                joshuaOnly: options.joshuaOnly,
+                preserveOtherPositions: options.preserveOtherPositions,
+                radius: options.radius,
+                minDistance: options.minDistance,
+                verticalSpread: options.verticalSpread,
+                horizontalSpread: options.horizontalSpread,
+
+                // Options spécifiques à voronoi
+                perlinScale: pass.config.perlinScale,
+                perlinAmplitude: pass.config.perlinAmplitude,
+                dilatationFactor: pass.config.dilatationFactor,
+                twoPhases:
+                  pass.config.twoPhases !== undefined
+                    ? pass.config.twoPhases
+                    : true,
+                useVoronoi: true,
+              }
+            );
+
+            console.log(
+              `Voronoi terminé, ${processedPosts.length} posts spatialisés`
+            );
+            break;
+
+          case "flowfield":
+            console.log(
+              `Animation flowfield avec ${pass.config.frames} frames, échelle ${pass.config.flowScale}, force ${pass.config.flowStrength}`
+            );
+
+            // S'assurer que frames est un nombre positif
+            const frames = Math.max(1, parseInt(pass.config.frames) || 10);
+            console.log(`Nombre de frames final pour flowfield: ${frames}`);
+
+            processedPosts = await animatePostsInFlowfield(processedPosts, {
+              frames: frames,
+              flowScale: pass.config.flowScale,
+              flowStrength: pass.config.flowStrength,
+            });
+
+            console.log(
+              `Flowfield terminé, ${processedPosts.length} posts traités`
+            );
+            break;
+
+          case "spherize":
+            console.log(
+              `Normalisation sphérique avec rayon ${pass.config.sphereRadius}, exposant ${pass.config.volumeExponent}`
+            );
+
+            processedPosts = normalizePostsInSphere(processedPosts, {
+              sphereRadius: pass.config.sphereRadius,
+              volumeExponent: pass.config.volumeExponent,
+              minRadius: pass.config.minRadius,
+              jitter: pass.config.jitter,
+            });
+
+            console.log(
+              `Sphérisation terminée, ${processedPosts.length} posts traités`
+            );
+            break;
+
+          case "displacement":
+            console.log(`--------> DÉMARRAGE DU DÉPLACEMENT RADIAL <--------`);
+            console.log(
+              `Paramètres de déplacement: 
+              - Intensité: ${pass.config.intensity || 10}
+              - Fréquence: ${pass.config.frequency || 0.05}
+              - Seed: ${pass.config.seed || 42}
+              - Min Radius: ${pass.config.minRadius || 0}`
+            );
+
+            try {
+              processedPosts = await applyRadialDisplacement(processedPosts, {
+                intensity: pass.config.intensity || 10,
+                frequency: pass.config.frequency || 0.05,
+                seed: pass.config.seed || 42,
+                center: pass.config.center || { x: 0, y: 0, z: 0 },
+                minRadius: pass.config.minRadius || 0,
+              });
+            } catch (error) {
+              console.error(
+                "ERREUR lors de l'application du déplacement radial:",
+                error
+              );
+            }
+
+            console.log(
+              `Déplacement terminé, ${processedPosts.length} posts traités`
+            );
+            break;
+
+          default:
+            console.warn(`Passe inconnue: ${pass.name} - ignorée`);
+            break;
+        }
+      }
+
+      console.log(`=== TRAITEMENT COMPLET: ${processedPosts.length} posts ===`);
+
+      // Mettre à jour avec les posts traités
+      if (updateCallback) {
+        updateCallback(processedPosts);
+      }
+
+      return processedPosts;
+    } catch (error) {
+      console.error("Erreur dans processPostsWithPasses:", error);
+      return posts;
+    }
   };
 
   // Fonction pour exporter les données spatialisées
   const exportSpatializedData = () => {
-    console.log("Début de l'exportation...");
-    console.log("État actuel des données:");
-    console.log("- graphData:", graphData);
-    console.log("- postsData:", postsData);
-    console.log("- graphInstance:", graphInstanceRef.current);
-
-    // Vérifier si les données sont disponibles
-    const hasGraphData =
-      graphData && graphData.nodes && graphData.nodes.length > 0;
-    const hasPostsData =
-      postsData && Array.isArray(postsData) && postsData.length > 0;
-
-    if (!hasGraphData) {
-      console.warn("Aucune donnée de graphe à exporter");
+    if (processedPosts.length === 0 || nodesData.length === 0) {
       alert(
-        "Attention: Aucune donnée de graphe disponible. Les données exportées seront vides."
+        "Aucune donnée à exporter. Veuillez attendre le chargement des données."
       );
+      return;
     }
 
-    if (!hasPostsData) {
-      console.warn("Aucune donnée de posts à exporter");
-      alert(
-        "Attention: Aucune donnée de posts disponible. Les données exportées seront vides."
-      );
-    }
-
-    // Procéder à l'exportation même si les données sont vides (créer des fichiers vides)
     try {
-      console.log("Démarrage de l'export...");
+      // Exporter les posts traités
+      console.log(`Export des posts: ${processedPosts.length}`);
+      const spatializedPosts = processedPosts.map((post) => {
+        // Prendre directement les coordonnées à plat
+        return {
+          id: post.id,
+          postUID: post.postUID || post.id,
+          slug: post.slug || "",
+          impact: post.impact || 0,
+          x: post.x || 0,
+          y: post.y || 0,
+          z: post.z || 0,
+        };
+      });
 
-      // Création de l'export des nœuds et liens
-      // ------------------------------------------------
-      let nodesWithPositions = [];
-      let links = [];
-
-      // 1. Tenter d'utiliser la référence du graphe si disponible
-      const useGraphRef =
-        graphInstanceRef.current &&
-        typeof graphInstanceRef.current.getNodesPositions === "function";
-
-      if (useGraphRef) {
-        console.log("Utilisation de la référence du graphe pour l'exportation");
-        try {
-          // Récupérer les positions des noeuds directement depuis le graphe
-          nodesWithPositions = graphInstanceRef.current.getNodesPositions();
-          console.log(
-            `Récupéré ${
-              nodesWithPositions?.length || 0
-            } noeuds depuis la référence du graphe`
-          );
-        } catch (err) {
-          console.error("Erreur lors de la récupération des noeuds:", err);
-          nodesWithPositions = [];
-        }
-      }
-
-      // 2. Si les noeuds sont vides, utiliser la méthode de secours avec les données du contexte
-      if (!nodesWithPositions || nodesWithPositions.length === 0) {
-        console.log("Méthode de secours pour les noeuds");
-
-        if (hasGraphData) {
-          nodesWithPositions = graphData.nodes.map((node) => {
-            // Créer un objet qui contient toutes les propriétés du nœud
-            return {
-              id: node.id,
-              group: node.group || 0,
-              name: node.name || "",
-              x: node.coordinates?.x ?? node.x ?? 0,
-              y: node.coordinates?.y ?? node.y ?? 0,
-              z: node.coordinates?.z ?? node.z ?? 0,
-              value: node.value || 1,
-              type: node.type,
-              isJoshua: node.isJoshua,
-              // Inclure toutes les autres propriétés directement
-              slug: node.slug,
-              biography: node.biography,
-              mostViralContent: node.mostViralContent,
-              displayName: node.displayName,
-              aliases: node.aliases,
-              fictionOrImpersonation: node.fictionOrImpersonation,
-              platform: node.platform,
-              thematic: node.thematic,
-              career: node.career,
-              genre: node.genre,
-              polarisation: node.polarisation,
-              cercle: node.cercle,
-              politicalSphere: node.politicalSphere,
-              sources: node.sources,
-              totalPosts: node.totalPosts,
-              hasEnoughPostsToUseInFrequencyPosts:
-                node.hasEnoughPostsToUseInFrequencyPosts,
-              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
-              topWords: node.topWords,
-            };
-          });
-          console.log(
-            `Récupéré ${nodesWithPositions.length} noeuds depuis graphData`
-          );
-        }
-      }
-
-      // // 3. Préparer les liens depuis graphData
-      // if (graphData && graphData.links && graphData.links.length > 0) {
-      //   links = graphData.links.map((link) => {
-      //     // Extraction des IDs de source et cible
-      //     const source =
-      //       typeof link.source === "object" ? link.source.id : link.source;
-      //     const target =
-      //       typeof link.target === "object" ? link.target.id : link.target;
-
-      //     return {
-      //       source: source,
-      //       target: target,
-      //       value: link.value || 1,
-      //       // Propriétés additionnelles sans le préfixe underscore
-      //       isDirect: link._isDirect || link.isDirect,
-      //       relationType: link._relationType || link.relationType,
-      //       mediaImpact: link._mediaImpact || link.mediaImpact,
-      //       virality: link._virality || link.virality,
-      //       mediaCoverage: link._mediaCoverage || link.mediaCoverage,
-      //       linkType: link._linkType || link.linkType,
-      //     };
-      //   });
-      //   console.log(`Récupéré ${links.length} liens depuis graphData`);
-      // } else {
-      //   console.log("Aucun lien disponible dans graphData");
-      // }
-
-      // // 4. Exporter le premier fichier (noeuds et liens)
-      // const spatializedNodesAndLinks = {
-      //   nodes: nodesWithPositions || [],
-      //   links: links || [],
-      // };
-
-      // console.log(
-      //   `COMMENTEE POUR LINSTANT : Export des nœuds: ${nodesWithPositions.length}, liens: ${links.length}`
-      // );
-      // downloadJSON(
-      //   spatializedNodesAndLinks,
-      //   "spatialized_nodes_and_links.data.json"
-      // );
-
-      // Création de l'export des posts
-      // ------------------------------------------------
-      let spatializedPosts = [];
-
-      // 5. Préparer les données des posts si disponibles
-      if (hasPostsData) {
-        spatializedPosts = postsData.map((post) => {
-          const coords = post.coordinates || {};
-
-          return {
-            id: post.id,
-            postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
-            slug: post.slug || "",
-            impact: post.impact || 0,
-            x: coords.x || 0,
-            y: coords.y || 0,
-            z: coords.z || 0,
-            // isJoshuaCharacter supprimé
-          };
-        });
-        console.log(`Préparé ${spatializedPosts.length} posts pour l'export`);
-      }
-
-      // 6. Exporter le deuxième fichier (posts)
-      console.log(`Export des posts: ${spatializedPosts.length}`);
       downloadJSON(spatializedPosts, "spatialized_posts.data.json");
 
-      // 7. Afficher un message de confirmation
-      alert(`Exportation terminée!
-- Noeuds: ${nodesWithPositions.length}
-- Liens: ${links.length} 
-- Posts: ${spatializedPosts.length}`);
+      alert(`Exportation terminée!\n- Posts: ${spatializedPosts.length}`);
     } catch (error) {
       console.error("Erreur pendant l'exportation:", error);
       alert(`Erreur pendant l'exportation: ${error.message}`);
@@ -277,238 +405,10 @@ const WorkPostPage = () => {
   };
 
   // Configurer tous les contrôles avec Leva en dehors de la fonction de render
-  const levaControls = useControls({
+  const { debug, backgroundColor, cameraConfig } = useControls({
     debug: true,
     backgroundColor: "#000000",
-
-    // Options de spatialisation
-    spatialisation: folder({
-      // Options pour la passe Voronoi
-      voronoi: folder({
-        useVoronoi: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.useVoronoi,
-          label: "Activer Voronoi",
-        },
-        perlinScale: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.perlinScale,
-          min: 0.01,
-          max: 0.2,
-          step: 0.01,
-          label: "Échelle Perlin",
-        },
-        perlinAmplitude: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.perlinAmplitude,
-          min: 0,
-          max: 20,
-          step: 0.5,
-          label: "Amplitude Perlin",
-        },
-        dilatationFactor: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.dilatationFactor,
-          min: 0.5,
-          max: 3,
-          step: 0.1,
-          label: "Facteur de dilatation",
-        },
-      }),
-
-      // Options pour la passe Flowfield
-      flowfield: folder({
-        useFlowfield: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.useFlowfield,
-          label: "Activer Flowfield",
-        },
-        flowFrames: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.flowFrames,
-          min: 10,
-          max: 200,
-          step: 10,
-          label: "Nombre de frames",
-        },
-        flowScale: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.flowScale,
-          min: 0.001,
-          max: 0.1,
-          step: 0.001,
-          label: "Échelle du flow",
-        },
-        flowStrength: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.flowStrength,
-          min: 0.1,
-          max: 20,
-          step: 0.1,
-          label: "Force du flow",
-        },
-      }),
-
-      // Options pour la passe Spherization
-      spherization: folder({
-        normalizeInSphere: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.normalizeInSphere,
-          label: "Activer Sphérisation",
-        },
-        sphereRadius: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.sphereRadius,
-          min: 50,
-          max: 500,
-          step: 10,
-          label: "Rayon de la sphère",
-        },
-        volumeExponent: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.volumeExponent,
-          min: 0.1,
-          max: 1,
-          step: 0.05,
-          label: "Exposant volumique",
-        },
-        jitter: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.jitter,
-          min: 0,
-          max: 0.5,
-          step: 0.05,
-          label: "Variation aléatoire",
-        },
-      }),
-
-      // Options pour la passe Displacement
-      displacement: folder({
-        useDisplacement: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.useDisplacement,
-          label: "Activer Displacement",
-        },
-        displacementIntensity: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.displacementIntensity,
-          min: 0,
-          max: 50,
-          step: 1,
-          label: "Intensité",
-        },
-        displacementFrequency: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.displacementFrequency,
-          min: 0.01,
-          max: 0.5,
-          step: 0.01,
-          label: "Fréquence",
-        },
-        displacementSeed: {
-          value: DEFAULT_POSTS_SPATIAL_CONFIG.displacementSeed,
-          min: 1,
-          max: 100,
-          step: 1,
-          label: "Seed",
-        },
-      }),
-
-      // Bouton pour appliquer les modifications
-      appliquer: button(() => {
-        console.log("Application des paramètres de spatialisation");
-        if (graphInstanceRef.current) {
-          const nodes = graphInstanceRef.current.getNodesPositions();
-          updatePostsPositions({
-            ...DEFAULT_POSTS_SPATIAL_CONFIG,
-            // Substituer les valeurs des contrôles Leva
-            useVoronoi: levaControls.useVoronoi,
-            perlinScale: levaControls.perlinScale,
-            perlinAmplitude: levaControls.perlinAmplitude,
-            dilatationFactor: levaControls.dilatationFactor,
-
-            useFlowfield: levaControls.useFlowfield,
-            flowFrames: levaControls.flowFrames,
-            flowScale: levaControls.flowScale,
-            flowStrength: levaControls.flowStrength,
-
-            normalizeInSphere: levaControls.normalizeInSphere,
-            sphereRadius: levaControls.sphereRadius,
-            volumeExponent: levaControls.volumeExponent,
-            jitter: levaControls.jitter,
-
-            useDisplacement: levaControls.useDisplacement,
-            displacementIntensity: levaControls.displacementIntensity,
-            displacementFrequency: levaControls.displacementFrequency,
-            displacementSeed: levaControls.displacementSeed,
-
-            customNodes: nodes,
-          });
-        } else {
-          updatePostsPositions({
-            ...DEFAULT_POSTS_SPATIAL_CONFIG,
-            // Substituer les valeurs des contrôles Leva
-            useVoronoi: levaControls.useVoronoi,
-            perlinScale: levaControls.perlinScale,
-            perlinAmplitude: levaControls.perlinAmplitude,
-            dilatationFactor: levaControls.dilatationFactor,
-
-            useFlowfield: levaControls.useFlowfield,
-            flowFrames: levaControls.flowFrames,
-            flowScale: levaControls.flowScale,
-            flowStrength: levaControls.flowStrength,
-
-            normalizeInSphere: levaControls.normalizeInSphere,
-            sphereRadius: levaControls.sphereRadius,
-            volumeExponent: levaControls.volumeExponent,
-            jitter: levaControls.jitter,
-
-            useDisplacement: levaControls.useDisplacement,
-            displacementIntensity: levaControls.displacementIntensity,
-            displacementFrequency: levaControls.displacementFrequency,
-            displacementSeed: levaControls.displacementSeed,
-          });
-        }
-      }),
-    }),
   });
-
-  const { debug, backgroundColor, cameraConfig } = levaControls;
-
-  // Mettre à jour automatiquement les positions des posts après le chargement des données
-  useEffect(() => {
-    // Vérifier que ni le graphe ni les posts ne sont en cours de chargement
-    if (
-      !isLoadingGraph &&
-      !isLoadingPosts &&
-      !positionsUpdatedOnceRef.current
-    ) {
-      console.log(
-        "Données entièrement chargées, planification de la mise à jour des positions..."
-      );
-
-      // Attendre que le rendu du graphe soit terminé avant de mettre à jour
-      const timer = setTimeout(() => {
-        console.log("Vérification de la stabilisation du graphe...");
-        // Ne mettre à jour que si la référence du graphe est disponible
-        if (forceGraphRef.current) {
-          // Vérifier si le graphe est déjà stabilisé
-          if (forceGraphRef.current.isStabilized()) {
-            console.log("Graphe déjà stabilisé, mise à jour des positions...");
-            const currentNodes = forceGraphRef.current.getNodesPositions();
-            console.log(
-              `Récupération de ${currentNodes.length} nœuds pour la spatialisation`
-            );
-            updatePostsPositions({
-              ...DEFAULT_POSTS_SPATIAL_CONFIG,
-              customNodes: currentNodes,
-            });
-            positionsUpdatedOnceRef.current = true;
-          } else {
-            // Forcer la stabilisation puis mettre à jour
-            console.log(
-              "Stabilisation du graphe puis mise à jour des positions..."
-            );
-            forceGraphRef.current.stabilize();
-            // La mise à jour sera déclenchée par le callback onGraphStabilized
-          }
-        } else {
-          console.warn(
-            "Référence du graphe non disponible, mise à jour classique..."
-          );
-          updatePostsPositions(DEFAULT_POSTS_SPATIAL_CONFIG);
-          positionsUpdatedOnceRef.current = true;
-        }
-      }, 5000); // Attendre 5 secondes pour être sûr que le graphe est rendu
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoadingGraph, isLoadingPosts, updatePostsPositions]);
 
   return (
     <div className="canvas-container">
@@ -534,6 +434,23 @@ const WorkPostPage = () => {
         Exporter les données JSON
       </button>
 
+      {/* Indicateur de chargement */}
+      {(isLoadingPosts || isLoadingNodes) && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            color: "white",
+            fontSize: "20px",
+            zIndex: 1000,
+          }}
+        >
+          Chargement des données...
+        </div>
+      )}
+
       {/* Canvas 3D avec les éléments 3D uniquement */}
       <Canvas camera={{ position: [0, 0, 500] }}>
         {debug && <Stats />}
@@ -541,17 +458,18 @@ const WorkPostPage = () => {
         <OrbitControls enablePan={true} enableZoom={true} makeDefault={true} />
         {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
-        <ForceGraph ref={getGraphRef} />
-        <PostsRenderer />
+        {/* Nœuds simplifiés (sphères rouges) */}
+        <SimpleNodes nodes={nodesData} />
+        {/* Rendu des posts avec les positions traitées */}
+        {processedPosts.length > 0 && (
+          <PostsRenderer posts={processedPosts} isLoading={isLoadingPosts} />
+        )}
         <EffectComposer>
           <Bloom
             intensity={0.5}
             luminanceThreshold={0.5}
             luminanceSmoothing={0.5}
           />
-          {/* <Pixelation
-            granularity={3} // pixel granularity
-          /> */}
         </EffectComposer>
       </Canvas>
     </div>

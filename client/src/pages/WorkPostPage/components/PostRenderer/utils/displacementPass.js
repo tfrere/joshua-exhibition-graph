@@ -42,9 +42,9 @@ function perlinNoise(x, y, z, scale = 1, seed = 0) {
  * @param {number} options.seed - Valeur de graine pour le bruit (défaut: 42)
  * @param {Object} options.center - Centre de la sphère (défaut: {x: 0, y: 0, z: 0})
  * @param {number} options.minRadius - Rayon minimal à préserver (défaut: 0)
- * @returns {Array} Posts avec coordonnées déplacées
+ * @returns {Promise<Array>} Promise résolue avec les posts déplacés
  */
-export function applyRadialDisplacement(posts, options = {}) {
+export async function applyRadialDisplacement(posts, options = {}) {
   const intensity = options.intensity || 10;
   const frequency = options.frequency || 0.05;
   const seed = options.seed || 42;
@@ -52,19 +52,85 @@ export function applyRadialDisplacement(posts, options = {}) {
   const minRadius = options.minRadius || 0;
 
   if (!posts || posts.length === 0) {
+    console.warn("Aucun post à déplacer, retournant la liste vide");
     return posts;
   }
 
+  console.log("=== DÉBUT DU DÉPLACEMENT RADIAL ===");
   console.log(
-    `Application de déplacement radial avec du bruit de Perlin sur ${posts.length} posts (intensité: ${intensity}, fréquence: ${frequency})`
+    `Application de déplacement radial avec du bruit de Perlin sur ${posts.length} posts (intensité: ${intensity}, fréquence: ${frequency}, seed: ${seed})`
   );
+
+  // Pour le debugging, échantillonner quelques posts avant déplacement
+  if (posts.length > 0) {
+    const samplePost = posts[0];
+    console.log(
+      "Coordonnées AVANT déplacement (premier post):",
+      JSON.stringify({
+        x: samplePost.x,
+        y: samplePost.y,
+        z: samplePost.z,
+      })
+    );
+
+    // Calculer les statistiques initiales (min, max, moyenne)
+    const validDistances = [];
+    for (const post of posts) {
+      // Vérifier que les coordonnées sont numériques
+      if (
+        typeof post.x === "number" &&
+        typeof post.y === "number" &&
+        typeof post.z === "number"
+      ) {
+        const dx = post.x - center.x;
+        const dy = post.y - center.y;
+        const dz = post.z - center.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (!isNaN(distance) && isFinite(distance)) {
+          validDistances.push(distance);
+        }
+      }
+    }
+
+    let minDist = 0,
+      maxDist = 0,
+      avgDist = 0;
+    if (validDistances.length > 0) {
+      minDist = Math.min(...validDistances);
+      maxDist = Math.max(...validDistances);
+      avgDist =
+        validDistances.reduce((sum, d) => sum + d, 0) / validDistances.length;
+    }
+
+    console.log(
+      `Statistiques avant déplacement: min=${minDist.toFixed(
+        2
+      )}, max=${maxDist.toFixed(2)}, moyenne=${avgDist.toFixed(2)}`
+    );
+  }
 
   // Appliquer le déplacement à chaque post
   const displacedPosts = posts.map((post) => {
+    // S'assurer que les coordonnées existent
+    if (post.x === undefined || post.y === undefined || post.z === undefined) {
+      // Initialiser les coordonnées si elles n'existent pas
+      return {
+        ...post,
+        x: 0,
+        y: 0,
+        z: 0,
+      };
+    }
+
+    // S'assurer que les coordonnées sont numériques
+    const x = typeof post.x === "number" ? post.x : 0;
+    const y = typeof post.y === "number" ? post.y : 0;
+    const z = typeof post.z === "number" ? post.z : 0;
+
     // Calculer le vecteur de direction depuis le centre
-    const dx = post.coordinates.x - center.x;
-    const dy = post.coordinates.y - center.y;
-    const dz = post.coordinates.z - center.z;
+    const dx = x - center.x;
+    const dy = y - center.y;
+    const dz = z - center.z;
 
     // Distance au centre
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -83,23 +149,71 @@ export function applyRadialDisplacement(posts, options = {}) {
     const noiseValue = perlinNoise(dirX, dirY, dirZ, frequency, seed);
 
     // Calculer l'amplitude du déplacement
-    // Le déplacement est plus fort à la surface et s'atténue vers le centre
-    const displacementFactor =
-      intensity * noiseValue * (distance / (distance + minRadius));
+    // Augmentation drastique pour debug - effet très visible
+    const displacementFactor = intensity * noiseValue;
 
     // Appliquer le déplacement dans la direction radiale
-    const newCoordinates = {
-      x: post.coordinates.x + dirX * displacementFactor,
-      y: post.coordinates.y + dirY * displacementFactor,
-      z: post.coordinates.z + dirZ * displacementFactor,
+    // Application d'un déplacement exagéré pour le debugging
+    const newPost = {
+      ...post,
+      x: x + dirX * displacementFactor,
+      y: y + dirY * displacementFactor,
+      z: z + dirZ * displacementFactor,
+      // Attribut additionnel pour tracking
+      displacementValue: displacementFactor,
     };
 
-    // Créer une copie du post avec les nouvelles coordonnées
-    return {
-      ...post,
-      coordinates: newCoordinates,
-    };
+    return newPost;
   });
+
+  // Pour le debugging, échantillonner quelques posts après déplacement
+  if (displacedPosts.length > 0) {
+    const samplePost = displacedPosts[0];
+    console.log(
+      "Coordonnées APRÈS déplacement (premier post):",
+      JSON.stringify({
+        x: samplePost.x,
+        y: samplePost.y,
+        z: samplePost.z,
+      })
+    );
+
+    // Calculer les statistiques après déplacement
+    const validDistances = [];
+    for (const post of displacedPosts) {
+      // Vérifier que les coordonnées sont numériques
+      if (
+        typeof post.x === "number" &&
+        typeof post.y === "number" &&
+        typeof post.z === "number"
+      ) {
+        const dx = post.x - center.x;
+        const dy = post.y - center.y;
+        const dz = post.z - center.z;
+        const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (!isNaN(distance) && isFinite(distance)) {
+          validDistances.push(distance);
+        }
+      }
+    }
+
+    let minDist = 0,
+      maxDist = 0,
+      avgDist = 0;
+    if (validDistances.length > 0) {
+      minDist = Math.min(...validDistances);
+      maxDist = Math.max(...validDistances);
+      avgDist =
+        validDistances.reduce((sum, d) => sum + d, 0) / validDistances.length;
+    }
+
+    console.log(
+      `Statistiques après déplacement: min=${minDist.toFixed(
+        2
+      )}, max=${maxDist.toFixed(2)}, moyenne=${avgDist.toFixed(2)}`
+    );
+    console.log("=== FIN DU DÉPLACEMENT RADIAL ===");
+  }
 
   return displacedPosts;
 }

@@ -11,6 +11,23 @@ import {
 import { animatePostsInFlowfield } from "./flowfieldPass.js";
 import { normalizePostsInSphere } from "./spherizePass.js";
 import { applyRadialDisplacement } from "./displacementPass.js";
+// Import du fichier de test
+import { testDisplacement } from "./testDisplacement.js";
+
+// Vérifier immédiatement si la fonction de déplacement est correctement importée
+console.log("VÉRIFICATION DE L'IMPORT DU DÉPLACEMENT DANS POSTSPOSITIONUTILS");
+console.log(
+  `La fonction applyRadialDisplacement est de type: ${typeof applyRadialDisplacement}`
+);
+
+// Appel du test pour vérifier le fonctionnement du déplacement
+testDisplacement()
+  .then((result) => {
+    console.log("TEST DE DÉPLACEMENT TERMINÉ DEPUIS POSTSPOSITIONUTILS");
+  })
+  .catch((error) => {
+    console.error("ERREUR LORS DU TEST:", error);
+  });
 
 /**
  * Calcule une couleur pour un post en fonction de différents critères
@@ -135,9 +152,9 @@ export {
  * @param {Object} graphData - Données du graphe avec les nœuds
  * @param {Object} options - Options de traitement
  * @param {Function} updateCallback - Callback à appeler avec les posts mis à jour
- * @returns {Array} Posts avec coordonnées mises à jour
+ * @returns {Promise<Array>} Promise résolue avec les posts mis à jour
  */
-export function updatePostsPositionsInContext(
+export async function updatePostsPositionsInContext(
   postsData,
   graphData,
   options = {},
@@ -146,127 +163,384 @@ export function updatePostsPositionsInContext(
   // Extraire les tableaux des posts et des nœuds selon le format des données
   const posts = Array.isArray(postsData) ? postsData : postsData?.posts || [];
 
-  // Si des nœuds personnalisés sont fournis, les utiliser directement
-  if (options.customNodes && Array.isArray(options.customNodes)) {
+  try {
     console.log(
-      `Utilisation de ${options.customNodes.length} nœuds personnalisés pour la mise à jour des positions`
+      "Démarrage de la mise à jour des positions pour",
+      posts.length,
+      "posts"
     );
 
-    // Spatialiser les posts autour des nœuds personnalisés
-    const initialPosts = spatializePostsAroundJoshuaNodes(posts, [], {
-      ...options,
-      customNodes: options.customNodes,
-    });
+    // Préparer les nœuds à utiliser pour la spatialisation
+    let nodes = [];
+    let useCustomNodes = false;
 
-    // Continuer avec le traitement normal
-    return processPostsForVisualization(initialPosts, options, updateCallback);
-  }
+    // Si des nœuds personnalisés sont fournis, les utiliser directement
+    if (options.customNodes && Array.isArray(options.customNodes)) {
+      console.log(
+        `Utilisation de ${options.customNodes.length} nœuds personnalisés pour la mise à jour des positions`
+      );
+      nodes = options.customNodes;
+      useCustomNodes = true;
+    } else {
+      // Sinon, extraire les nœuds du graphe comme avant
+      if (Array.isArray(graphData)) {
+        nodes = graphData;
+      } else if (graphData?.nodes) {
+        nodes = graphData.nodes;
+      } else if (graphData?.graphData?.nodes) {
+        nodes = graphData.graphData.nodes;
+      }
+    }
 
-  // Sinon, extraire les nœuds du graphe comme avant
-  let nodes = [];
-  if (Array.isArray(graphData)) {
-    nodes = graphData;
-  } else if (graphData?.nodes) {
-    nodes = graphData.nodes;
-  } else if (graphData?.graphData?.nodes) {
-    nodes = graphData.graphData.nodes;
-  }
+    if (nodes.length === 0) {
+      console.error("Aucun nœud trouvé dans les données du graphe");
+      return posts;
+    }
 
-  if (nodes.length === 0) {
-    console.error("Aucun nœud trouvé dans les données du graphe");
+    console.log(
+      `Mise à jour des positions de ${posts.length} posts avec ${nodes.length} nœuds`
+    );
+
+    // Vérifier si on utilise le système de passes
+    const passes = options.passes || [];
+
+    if (passes.length > 0) {
+      console.log(
+        `Utilisation du système de passes avec ${passes.length} passes configurées`
+      );
+
+      // Traiter toutes les passes configurées, en commençant par voronoi
+      return await processPostsWithPasses(
+        posts,
+        nodes,
+        options,
+        updateCallback,
+        useCustomNodes
+      );
+    } else {
+      // Ancien système: spatialiser puis traiter
+      console.log(
+        "Mode legacy: Spatialisation initiale puis traitement séquentiel"
+      );
+
+      // Spatialiser les posts autour des nœuds Joshua (voronoi initial)
+      const initialPosts = spatializePostsAroundJoshuaNodes(
+        posts,
+        useCustomNodes ? [] : nodes,
+        {
+          ...options,
+          customNodes: useCustomNodes ? nodes : undefined,
+        }
+      );
+
+      // Continuer avec le traitement asynchrone complet
+      return await processPostsForVisualization(
+        initialPosts,
+        options,
+        updateCallback
+      );
+    }
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour des positions:", error);
     return posts;
   }
+}
 
-  console.log(
-    `Mise à jour des positions de ${posts.length} posts avec ${nodes.length} nœuds du graphe`
-  );
+/**
+ * Nouveau processus qui traite toutes les passes configurées, y compris la passe voronoi
+ *
+ * @param {Array} posts - Les posts à traiter
+ * @param {Array} nodes - Les nœuds à utiliser pour la spatialisation
+ * @param {Object} options - Options de traitement
+ * @param {Function} updateCallback - Fonction de rappel pour mettre à jour les posts
+ * @param {boolean} useCustomNodes - Si true, utilise les nœuds personnalisés
+ * @returns {Promise<Array>} Promise résolue avec les posts traités
+ */
+async function processPostsWithPasses(
+  posts,
+  nodes,
+  options,
+  updateCallback,
+  useCustomNodes = false
+) {
+  try {
+    console.log("=== DÉBUT DU PROCESSUS DE SPATIALISATION AVEC PASSES ===");
+    console.log(
+      `Démarrage avec ${posts.length} posts et ${nodes.length} nœuds`
+    );
 
-  // Spatialiser les posts autour des nœuds Joshua
-  const initialPosts = spatializePostsAroundJoshuaNodes(posts, nodes, options);
+    // Tableau de passes à exécuter
+    const passes = options.passes || [];
+    console.log(`Traitement séquentiel de ${passes.length} passes configurées`);
 
-  // Continuer le traitement (flowfield, normalisation, etc.)
-  return processPostsForVisualization(initialPosts, options, updateCallback);
+    // Variable pour suivre les posts à travers les transformations
+    let processedPosts = posts;
+
+    // Exécuter chaque passe dans l'ordre défini
+    for (let i = 0; i < passes.length; i++) {
+      const pass = passes[i];
+
+      // Ignorer les passes désactivées
+      if (!pass.enabled) {
+        console.log(
+          `Passe "${pass.name}" [${i + 1}/${
+            passes.length
+          }] désactivée - ignorée`
+        );
+        continue;
+      }
+
+      console.log(
+        `=== EXÉCUTION DE LA PASSE "${pass.name}" [${i + 1}/${
+          passes.length
+        }] ===`
+      );
+
+      // Exécuter la passe appropriée en fonction de son nom
+      switch (pass.name.toLowerCase()) {
+        case "voronoi":
+          console.log(
+            `Spatialisation voronoi avec échelle ${pass.config.perlinScale}, amplitude ${pass.config.perlinAmplitude}, dilatation ${pass.config.dilatationFactor}`
+          );
+
+          // Appliquer la spatialisation voronoi
+          processedPosts = spatializePostsAroundJoshuaNodes(
+            processedPosts,
+            useCustomNodes ? [] : nodes,
+            {
+              // Options générales
+              joshuaOnly: options.joshuaOnly,
+              preserveOtherPositions: options.preserveOtherPositions,
+              radius: options.radius,
+              minDistance: options.minDistance,
+              verticalSpread: options.verticalSpread,
+              horizontalSpread: options.horizontalSpread,
+
+              // Options spécifiques à voronoi
+              perlinScale: pass.config.perlinScale,
+              perlinAmplitude: pass.config.perlinAmplitude,
+              dilatationFactor: pass.config.dilatationFactor,
+
+              // Si on utilise des nœuds personnalisés
+              customNodes: useCustomNodes ? nodes : undefined,
+            }
+          );
+
+          console.log(
+            `Voronoi terminé, ${processedPosts.length} posts spatialisés`
+          );
+          break;
+
+        case "flowfield":
+          console.log(
+            `Animation flowfield avec ${pass.config.frames} frames, échelle ${pass.config.flowScale}, force ${pass.config.flowStrength}`
+          );
+
+          // S'assurer que frames est un nombre positif
+          const frames = Math.max(1, parseInt(pass.config.frames) || 10);
+          console.log(`Nombre de frames final pour flowfield: ${frames}`);
+
+          processedPosts = await animatePostsInFlowfield(processedPosts, {
+            frames: frames,
+            flowScale: pass.config.flowScale,
+            flowStrength: pass.config.flowStrength,
+          });
+
+          console.log(
+            `Flowfield terminé, ${processedPosts.length} posts traités`
+          );
+          break;
+
+        case "spherize":
+          console.log(
+            `Normalisation sphérique avec rayon ${pass.config.sphereRadius}, exposant ${pass.config.volumeExponent}`
+          );
+
+          processedPosts = await normalizePostsInSphere(processedPosts, {
+            sphereRadius: pass.config.sphereRadius,
+            volumeExponent: pass.config.volumeExponent,
+            minRadius: pass.config.minRadius,
+            jitter: pass.config.jitter,
+          });
+
+          console.log(
+            `Sphérisation terminée, ${processedPosts.length} posts traités`
+          );
+          break;
+
+        case "displacement":
+          console.log(`--------> DÉMARRAGE DU DÉPLACEMENT RADIAL <--------`);
+          console.log(
+            `Paramètres de déplacement: 
+            - Intensité: ${pass.config.intensity || 10}
+            - Fréquence: ${pass.config.frequency || 0.05}
+            - Seed: ${pass.config.seed || 42}
+            - Min Radius: ${pass.config.minRadius || 0}`
+          );
+
+          try {
+            // Vérifier l'existence de la fonction
+            console.log(
+              `La fonction applyRadialDisplacement est: ${typeof applyRadialDisplacement}`
+            );
+            console.log("Début de l'appel à applyRadialDisplacement");
+
+            processedPosts = await applyRadialDisplacement(processedPosts, {
+              intensity: pass.config.intensity || 10,
+              frequency: pass.config.frequency || 0.05,
+              seed: pass.config.seed || 42,
+              center: pass.config.center || { x: 0, y: 0, z: 0 },
+              minRadius: pass.config.minRadius || 0,
+            });
+
+            console.log("Appel à applyRadialDisplacement terminé");
+          } catch (error) {
+            console.error(
+              "ERREUR lors de l'application du déplacement radial:",
+              error
+            );
+          }
+
+          console.log(
+            `Déplacement terminé, ${processedPosts.length} posts traités`
+          );
+          break;
+
+        default:
+          console.warn(`Passe inconnue: ${pass.name} - ignorée`);
+          break;
+      }
+
+      // Appeler le callback après chaque passe si configuré avec updateAfterEachPass
+      if (options.updateAfterEachPass && typeof updateCallback === "function") {
+        console.log(`Mise à jour intermédiaire après la passe "${pass.name}"`);
+        updateCallback([...processedPosts]);
+      }
+    }
+
+    console.log(`=== TRAITEMENT COMPLET: ${processedPosts.length} posts ===`);
+
+    // Si une fonction de rappel est fournie, appeler avec les posts finalisés
+    if (typeof updateCallback === "function" && !options.updateAfterEachPass) {
+      // Vérifier que les posts ne sont pas undefined avant d'appeler le callback
+      if (processedPosts && Array.isArray(processedPosts)) {
+        console.log(
+          `Application du callback avec ${processedPosts.length} posts...`
+        );
+        updateCallback(processedPosts);
+      } else {
+        console.error(
+          "ERREUR: Les posts traités sont undefined ou pas un tableau!"
+        );
+      }
+    }
+
+    return processedPosts;
+  } catch (error) {
+    console.error("Erreur dans processPostsWithPasses:", error);
+    return posts;
+  }
 }
 
 /**
  * Fonction utilitaire pour traiter les posts après la spatialisation initiale
  * (gère flowfield, normalisation, etc.)
+ *
+ * @deprecated Utiliser processPostsWithPasses à la place
  */
-function processPostsForVisualization(initialPosts, options, updateCallback) {
-  // Options pour les différentes passes
-  const useFlowfield =
-    options.useFlowfield !== undefined ? options.useFlowfield : true;
-  const normalizeInSphere =
-    options.normalizeInSphere !== undefined ? options.normalizeInSphere : true;
-  const useDisplacement =
-    options.useDisplacement !== undefined ? options.useDisplacement : true;
+async function processPostsForVisualization(
+  initialPosts,
+  options,
+  updateCallback
+) {
+  try {
+    console.log(
+      "ATTENTION: Utilisation de la fonction processPostsForVisualization dépréciée"
+    );
+    console.log(
+      "Il est recommandé d'utiliser le nouveau système de passes configurées"
+    );
 
-  // Chaîner les traitements de manière asynchrone
-  let promise = Promise.resolve(initialPosts);
+    // Reconstruire un tableau de passes basé sur les options legacy
+    const passes = [];
 
-  // 1. Étape de flowfield si activée
-  if (useFlowfield && options.flowFrames > 0) {
-    promise = promise.then((posts) => {
-      console.log(
-        `Animation flowfield avec ${options.flowFrames} frames, échelle ${options.flowScale}, force ${options.flowStrength}`
-      );
-      return animatePostsInFlowfield(posts, {
-        frames: options.flowFrames,
-        flowScale: options.flowScale,
-        flowStrength: options.flowStrength,
+    // Ajouter la passe flowfield si activée
+    if (options.useFlowfield) {
+      passes.push({
+        name: "flowfield",
+        enabled: true,
+        config: {
+          frames: options.flowFrames || 10,
+          flowScale: options.flowScale || 0.02,
+          flowStrength: options.flowStrength || 2,
+        },
       });
-    });
-  }
+    }
 
-  // 2. Étape de normalisation sphérique si activée
-  if (normalizeInSphere) {
-    promise = promise.then((posts) => {
-      console.log(
-        `Normalisation sphérique avec rayon ${options.sphereRadius}, exposant ${options.volumeExponent}`
-      );
-      return normalizePostsInSphere(posts, {
-        sphereRadius: options.sphereRadius,
-        volumeExponent: options.volumeExponent,
-        minRadius: options.minRadius,
-        jitter: options.jitter,
+    // Ajouter la passe spherize si activée
+    if (options.normalizeInSphere) {
+      passes.push({
+        name: "spherize",
+        enabled: true,
+        config: {
+          sphereRadius: options.sphereRadius || 100,
+          volumeExponent: options.volumeExponent || 1 / 3,
+          minRadius: options.minRadius || 0,
+          jitter: options.jitter || 0.1,
+        },
       });
-    });
-  }
+    }
 
-  // 3. Étape de déplacement radial avec bruit de Perlin si activée
-  if (useDisplacement) {
-    promise = promise.then((posts) => {
-      console.log(
-        `Déplacement radial avec intensité ${
-          options.displacementIntensity || 10
-        }, fréquence ${options.displacementFrequency || 0.05}`
-      );
-      return applyRadialDisplacement(posts, {
-        intensity: options.displacementIntensity || 10,
-        frequency: options.displacementFrequency || 0.05,
-        seed: options.displacementSeed || 42,
-        center: options.center || { x: 0, y: 0, z: 0 },
-        minRadius: options.displacementMinRadius || 0,
+    // Ajouter la passe displacement si activée
+    if (options.useDisplacement) {
+      passes.push({
+        name: "displacement",
+        enabled: true,
+        config: {
+          intensity: options.displacementIntensity || 10,
+          frequency: options.displacementFrequency || 0.05,
+          seed: options.displacementSeed || 42,
+          minRadius: options.displacementMinRadius || 0,
+        },
       });
-    });
-  }
+    }
 
-  // Traitement final et mise à jour du callback
-  promise
-    .then((finalizedPosts) => {
-      console.log(`Traitement complet de ${finalizedPosts.length} posts`);
+    // Si des passes ont été configurées, les utiliser avec le nouveau système
+    if (passes.length > 0) {
+      const optionsWithPasses = {
+        ...options,
+        passes: passes,
+      };
 
-      // Si une fonction de rappel est fournie, appeler avec les posts finalisés
-      if (typeof updateCallback === "function") {
-        updateCallback(finalizedPosts);
+      // Utiliser le nouveau système (sans appliquer voronoi à nouveau)
+      return await processPostsWithPasses(
+        initialPosts,
+        [],
+        optionsWithPasses,
+        updateCallback,
+        false
+      );
+    }
+
+    // Si aucune passe n'est configurée, juste retourner les posts initiaux
+    console.log(
+      "Aucune passe configurée, retour des posts sans transformation"
+    );
+
+    // Si une fonction de rappel est fournie, appeler avec les posts finalisés
+    if (typeof updateCallback === "function") {
+      // Vérifier que les posts ne sont pas undefined avant d'appeler le callback
+      if (initialPosts && Array.isArray(initialPosts)) {
+        console.log(
+          `Application du callback avec ${initialPosts.length} posts...`
+        );
+        updateCallback(initialPosts);
       }
+    }
 
-      return finalizedPosts;
-    })
-    .catch((error) => {
-      console.error("Erreur lors du traitement des posts:", error);
-      return initialPosts;
-    });
-
-  return initialPosts;
+    return initialPosts;
+  } catch (error) {
+    console.error("Erreur dans processPostsForVisualization:", error);
+    return initialPosts;
+  }
 }

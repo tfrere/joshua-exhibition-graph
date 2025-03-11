@@ -35,9 +35,14 @@ export function normalizePostsInSphere(posts, options = {}) {
 
   // Calculer et stocker la direction et la distance de chaque post par rapport au centre
   const postsWithSphericalInfo = posts.map((post) => {
-    const dx = post.coordinates.x - center.x;
-    const dy = post.coordinates.y - center.y;
-    const dz = post.coordinates.z - center.z;
+    // Utiliser les coordonnées à plat (s'assurer qu'elles existent)
+    const x = post.x !== undefined ? post.x : 0;
+    const y = post.y !== undefined ? post.y : 0;
+    const z = post.z !== undefined ? post.z : 0;
+
+    const dx = x - center.x;
+    const dy = y - center.y;
+    const dz = z - center.z;
 
     // Distance euclidienne au centre
     const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
@@ -97,17 +102,17 @@ export function normalizePostsInSphere(posts, options = {}) {
     }
 
     // Appliquer la nouvelle distance dans la direction d'origine
-    const newCoordinates = {
-      x: center.x + post._spherical.direction.x * newDistance,
-      y: center.y + post._spherical.direction.y * newDistance,
-      z: center.z + post._spherical.direction.z * newDistance,
-    };
+    const newX = center.x + post._spherical.direction.x * newDistance;
+    const newY = center.y + post._spherical.direction.y * newDistance;
+    const newZ = center.z + post._spherical.direction.z * newDistance;
 
     // Créer une copie du post avec les nouvelles coordonnées, sans les infos sphériques temporaires
     const { _spherical, ...postWithoutSpherical } = post;
     return {
       ...postWithoutSpherical,
-      coordinates: newCoordinates,
+      x: newX,
+      y: newY,
+      z: newZ,
     };
   });
 

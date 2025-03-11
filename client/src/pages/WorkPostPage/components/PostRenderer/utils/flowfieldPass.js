@@ -66,16 +66,16 @@ export function animatePostsInFlowfield(posts, options = {}) {
         const post = animatedPosts[i];
 
         // Obtenir le vecteur de flow pour cette position
-        const flowVector = generateFlowfieldVector(post.coordinates, {
+        const flowVector = generateFlowfieldVector(post, {
           scale: flowScale,
           strength: flowStrength * (1 - currentFrame / frames), // Réduire la force au fil du temps
           time: currentFrame,
         });
 
-        // Appliquer le vecteur à la position
-        post.coordinates.x += flowVector.x;
-        post.coordinates.y += flowVector.y;
-        post.coordinates.z += flowVector.z;
+        // Appliquer le vecteur à la position (coordonnées à plat)
+        post.x += flowVector.x;
+        post.y += flowVector.y;
+        post.z += flowVector.z;
       }
 
       // Continuer l'animation si nécessaire
