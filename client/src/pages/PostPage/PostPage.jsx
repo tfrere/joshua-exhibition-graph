@@ -412,7 +412,7 @@ function PostPage() {
                 }}
               >
                 <div style={{ display: "flex", gap: "1rem" }}>
-                  Posté le
+                  <span style={{ opacity: 0.5 }}> Posté le</span>
                   {activePost && activePost.creationDate ? (
                     <span>
                       {new Date(
@@ -422,7 +422,7 @@ function PostPage() {
                   ) : (
                     <span>01/01/2023</span>
                   )}
-                  sur
+                  <span style={{ opacity: 0.5 }}>sur</span>
                   {activePost && activePost.source ? (
                     <span>
                       {/* <TextScramble text={activePost.source} /> */}
