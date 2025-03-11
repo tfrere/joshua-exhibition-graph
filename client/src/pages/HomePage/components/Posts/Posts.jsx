@@ -6,6 +6,7 @@ import useNearestPostDetection, {
   initSocketSync,
 } from "./hooks/useNearestPostDetection";
 import PostActivationEffect from "./effects/PostActivationEffect";
+import PulseEffect from "./effects/PulseEffect";
 
 // Import des constantes et fonctions utilitaires
 import {
@@ -150,6 +151,7 @@ export function Posts({
   const pointFrequenciesRef = useRef([]); // Fréquences uniques pour chaque point
   const postExplosionTimeRef = useRef(0); // Temps écoulé depuis la fin de l'explosion
   const frameCountRef = useRef(0); // Compteur de frames pour les logs
+  const matrixRef = useRef([]); // Référence aux matrices de transformation des instances
 
   // ----------------------------------------------------------------------------------
   // Initialisation
@@ -217,21 +219,48 @@ export function Posts({
           const post = data[postIndex];
           let postPosition;
 
-          // Extraire la position du post (selon le format disponible)
+          // Récupérer la position actuelle du post depuis la matrice
           if (
+            meshRef.current &&
+            matrixRef.current &&
+            matrixRef.current[postIndex]
+          ) {
+            // Extraire la position directement de la matrice de transformation
+            const matrix = matrixRef.current[postIndex];
+            const position = new THREE.Vector3();
+            position.setFromMatrixPosition(matrix);
+            postPosition = [position.x, position.y, position.z];
+            console.log(
+              `Position réelle du post ${newPostUID} au moment du touch:`,
+              postPosition
+            );
+          }
+          // Fallback si la matrice n'est pas disponible
+          else if (
             post.x !== undefined &&
             post.y !== undefined &&
             post.z !== undefined
           ) {
             postPosition = [post.x, post.y, post.z];
+            console.log(
+              `Utilisation de la position statique du post ${newPostUID}:`,
+              postPosition
+            );
           } else if (post.coordinates && post.coordinates.x !== undefined) {
             postPosition = [
               post.coordinates.x,
               post.coordinates.y,
               post.coordinates.z,
             ];
+            console.log(
+              `Utilisation des coordonnées du post ${newPostUID}:`,
+              postPosition
+            );
           } else {
             postPosition = [0, 0, 0];
+            console.warn(
+              `Aucune position trouvée pour le post ${newPostUID}, utilisation de [0,0,0]`
+            );
           }
 
           // Créer un nouvel effet avec un ID unique
@@ -657,6 +686,17 @@ export function Posts({
     try {
       meshRef.current.setMatrixAt(index, tempObject.matrix);
 
+      // Stocker la matrice pour référence ultérieure
+      if (!matrixRef.current) {
+        matrixRef.current = [];
+      }
+
+      // Créer une copie de la matrice pour ne pas partager la référence
+      if (!matrixRef.current[index]) {
+        matrixRef.current[index] = new THREE.Matrix4();
+      }
+      matrixRef.current[index].copy(tempObject.matrix);
+
       // Mettre à jour la couleur
       meshRef.current.setColorAt(
         index,
@@ -829,10 +869,7 @@ export function Posts({
           depthTest={true}
         />
       </instancedMesh>
-
-      {/* Effets d'activation */}
-      {activationEffects.map((effect) => (
-        <PostActivationEffect
+      {/* <PostActivationEffect
           key={effect.id}
           position={effect.position}
           duration={ACTIVATION_EFFECT_DURATION}
@@ -845,6 +882,18 @@ export function Posts({
           onComplete={() => {
             // Optionnel: logique à exécuter quand l'effet est terminé
           }}
+        /> */}
+      {/* Effets d'activation */}
+      {activationEffects.map((effect) => (
+        <PulseEffect
+          key={effect.id}
+          position={effect.position}
+          colorStart={[0.2, 0.8, 1.0]} // Couleur de départ (bleu-cyan)
+          colorEnd={[1.0, 0.4, 0.8]} // Couleur de fin (rose-violet)
+          duration={1.0} // Durée en secondes
+          rings={2} // Nombre d'anneaux
+          glowIntensity={1.2} // Intensité de la lueur
+          onComplete={() => console.log("Animation terminée")}
         />
       ))}
     </>

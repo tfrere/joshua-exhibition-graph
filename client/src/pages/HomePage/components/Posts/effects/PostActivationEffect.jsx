@@ -4,13 +4,13 @@ import * as THREE from "three";
 import { Billboard, PositionalAudio } from "@react-three/drei";
 
 // Default constants for the animation
-const DEFAULT_DURATION = 0.3; // seconds
+const DEFAULT_DURATION = 0.5; // seconds
 const DEFAULT_MAX_SIZE = 100;
 const DEFAULT_START_SIZE = 0.2;
 const DEFAULT_COLOR = [1.0, 1.0, 1.0]; // White color
 const DEFAULT_OPACITY_START = 0.5;
-const DEFAULT_RINGS = 2;
-const DEFAULT_RING_DELAY = 0.01; // seconds between rings
+const DEFAULT_RINGS = 1;
+const DEFAULT_RING_DELAY = 0.03; // seconds between rings
 
 /**
  * Component that creates an expanding ring effect at a specific position
