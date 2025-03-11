@@ -145,21 +145,33 @@ const calculateSVGBounds = (paths) => {
 };
 
 // Hook personnalisé pour vérifier et charger un SVG
-const useSVGLoader = (nodeName) => {
+const useSVGLoader = (node) => {
   const [useImage, setUseImage] = useState(false);
   const [svgData, setSvgData] = useState(null);
   const [svgBounds, setSvgBounds] = useState(null);
 
   useEffect(() => {
     const checkSvgExists = async () => {
-      if (!nodeName) {
+      if (!node) {
         setUseImage(false);
         return;
       }
 
+      // Déterminer le nom du fichier SVG en fonction du type de nœud
+      let svgFileName;
+      if (node.type === "central") {
+        svgFileName = "joshua-goldberg";
+      } else if (node.type === "character" && node.isJoshua === false) {
+        svgFileName = "journalist";
+      } else if (node.type === "character" && node.isJoshua === true) {
+        svgFileName = "character";
+      } else {
+        svgFileName = node.name;
+      }
+
       try {
         // Chemin du SVG à charger
-        const svgPath = `/img/${nodeName}.svg`;
+        const svgPath = `/img/${svgFileName}.svg`;
 
         // Try to fetch the SVG
         const response = await fetch(svgPath);
@@ -177,27 +189,27 @@ const useSVGLoader = (nodeName) => {
               setSvgData(data);
               setSvgBounds(calculateSVGBounds(data.paths));
             } else {
-              console.log(`SVG for ${nodeName} doesn't have valid paths`);
+              console.log(`SVG for ${svgFileName} doesn't have valid paths`);
               setUseImage(false);
             }
           } catch (parseError) {
-            console.log(`Error parsing SVG for ${nodeName}:`, parseError);
+            console.log(`Error parsing SVG for ${svgFileName}:`, parseError);
             setUseImage(false);
           }
         } else {
           console.log(
-            `SVG not found for ${nodeName} (status: ${response.status})`
+            `SVG not found for ${svgFileName} (status: ${response.status})`
           );
           setUseImage(false);
         }
       } catch (error) {
-        console.log(`Error fetching SVG for ${nodeName}:`, error);
+        console.log(`Error fetching SVG for ${svgFileName}:`, error);
         setUseImage(false);
       }
     };
 
     checkSvgExists();
-  }, [nodeName]);
+  }, [node]);
 
   return { useImage, svgData, svgBounds };
 };
@@ -216,9 +228,7 @@ const Node = ({ node, onClick, isSelected }) => {
   });
 
   // Charger le SVG si disponible
-  const { useImage, svgData, svgBounds } = useSVGLoader(
-    node.isJoshua ? "character" : node.name
-  );
+  const { useImage, svgData, svgBounds } = useSVGLoader(node);
 
   // Couleurs et propriétés visuelles
   const defaultColor = isSelected ? "#ff9500" : "#0088ff";

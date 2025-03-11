@@ -9,7 +9,7 @@ import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import GridReferences from "./components/GridReferences.jsx";
-import AmbientSound from "./components/Audio/AmbientSound.jsx";
+import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
@@ -122,7 +122,24 @@ const HomePage = () => {
   return (
     <div className="canvas-container">
       {/* Composant de son d'ambiance */}
-      <AmbientSound />
+      <SoundPlayer
+        soundPath="/sounds/ambiant.mp3"
+        defaultVolume={0.1}
+        loop={true}
+        autoPlay={true}
+        displayControls={true}
+        controlPosition={{ top: "20px", right: "20px" }}
+        tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
+      />
+      <SoundPlayer
+        soundPath="/sounds/interview.mp3"
+        defaultVolume={0.5}
+        loop={true}
+        autoPlay={true}
+        displayControls={true}
+        controlPosition={{ top: "20px", right: "20px" }}
+        tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
+      />
 
       {isLoading && (
         <div className="loading-overlay">
