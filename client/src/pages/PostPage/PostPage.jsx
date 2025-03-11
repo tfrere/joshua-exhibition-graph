@@ -357,10 +357,10 @@ function PostPage() {
 
             <div
               style={{
-                background: "#1a1a1a",
+                //background: "#1a1a1a",
                 padding: "1rem",
                 borderRadius: "0.5rem",
-                border: "1px solid #333",
+                border: "1px solid #555",
                 height: "auto",
                 minHeight: "180px",
                 display: "flex",
@@ -408,23 +408,25 @@ function PostPage() {
                   marginTop: "1rem",
                   borderTop: "1px solid #333",
                   paddingTop: "0.75rem",
+                  height: "30px",
                 }}
               >
                 <div style={{ display: "flex", gap: "1rem" }}>
+                  Posté le
                   {activePost && activePost.creationDate ? (
                     <span>
-                      <TextScramble
-                        text={new Date(
-                          activePost.creationDate * 1000
-                        ).toLocaleDateString()}
-                      />
+                      {new Date(
+                        activePost.creationDate * 1000
+                      ).toLocaleDateString()}
                     </span>
                   ) : (
                     <span>01/01/2023</span>
                   )}
+                  sur
                   {activePost && activePost.source ? (
                     <span>
-                      <TextScramble text={activePost.source} />
+                      {/* <TextScramble text={activePost.source} /> */}
+                      {activePost.source}
                     </span>
                   ) : (
                     <span>Source inconnue</span>
@@ -435,7 +437,7 @@ function PostPage() {
                     style={{
                       color: "#ffffff",
                       fontSize: "0.85rem",
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      //backgroundColor: "rgba(255, 255, 255, 0.1)",
                       padding: "0.25rem 0.5rem",
                       borderRadius: "0.25rem",
                       display: "flex",
