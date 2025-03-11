@@ -4,16 +4,13 @@ import { Server } from "socket.io";
 import cors from "cors";
 
 const app = express();
-const ALLOWED_ORIGINS =
-  process.env.NODE_ENV === "production"
-    ? process.env.CLIENT_URL
-      ? [process.env.CLIENT_URL]
-      : []
-    : ["http://localhost:5173"];
+
+// Autoriser toutes les origines
+console.log("Configuration CORS: Toutes les origines autorisées");
 
 app.use(
   cors({
-    origin: ALLOWED_ORIGINS,
+    origin: "*",
     credentials: true,
   })
 );
@@ -21,7 +18,7 @@ app.use(
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: ALLOWED_ORIGINS,
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -65,7 +62,12 @@ let currentState: SharedState = {
 };
 
 io.on("connection", (socket) => {
-  console.log("Client connecté");
+  console.log(
+    "Client connecté, ID:",
+    socket.id,
+    "Origine:",
+    socket.handshake.headers.origin
+  );
 
   socket.emit("initialState", currentState);
 
@@ -110,12 +112,12 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("Client déconnecté");
+    console.log("Client déconnecté, ID:", socket.id);
   });
 });
 
 const PORT = process.env.PORT || 3000;
 httpServer.listen(PORT, () => {
   console.log(`Serveur en écoute sur le port ${PORT}`);
-  console.log("Origins autorisés:", ALLOWED_ORIGINS);
+  console.log("Configuration CORS: Toutes les origines autorisées");
 });
