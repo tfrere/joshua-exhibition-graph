@@ -19,6 +19,7 @@
  * @param {number} options.dilatationFactor - Facteur de dilatation pour l'effet Voronoï (défaut: 1.2)
  * @param {boolean} options.useVoronoi - Si true, applique l'effet de dilatation Voronoi (défaut: true)
  * @param {boolean} options.applyDispersion - Si true, applique la dispersion autour du nœud (défaut: true)
+ * @param {string} options.postUID - Identifiant unique du post (défaut: '')
  * @returns {Object} Coordonnées {x, y, z} du post
  */
 export function calculatePostPosition(characterNode, options = {}) {
@@ -45,6 +46,7 @@ export function calculatePostPosition(characterNode, options = {}) {
     options.useVoronoi !== undefined ? options.useVoronoi : true;
   const applyDispersion =
     options.applyDispersion !== undefined ? options.applyDispersion : true;
+  const postUID = options.postUID || ''; // Ajouter le postUID comme option
 
   // Si on ne veut pas appliquer de dispersion, retourner simplement la position du nœud
   if (!applyDispersion) {
@@ -63,7 +65,11 @@ export function calculatePostPosition(characterNode, options = {}) {
   // Générer une dispersion aléatoire autour du nœud
   // Au lieu de dispersion totalement aléatoire, utiliser une version simplifiée de "bruit de Perlin"
   // (nous n'avons pas accès à une vraie implémentation ici)
-  const seed = nodeX * 1000 + nodeY * 100 + nodeZ * 10; // Utiliser la position comme seed
+  
+  // Utiliser postUID comme partie de la seed pour obtenir des positions différentes pour chaque post  
+  // Combiner la position du nœud et le hash du postUID pour créer une seed unique par post
+  const seed = nodeX * 1000 + nodeY * 100 + nodeZ * 10 + postUID;
+  
   const pseudoRandom = (val) =>
     (Math.sin(val * 12.9898 + seed * 78.233) * 43758.5453) % 1;
 
@@ -150,7 +156,7 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     dilatationFactor = 1.2,
     useVoronoi = true,
     // Option pour les couleurs uniques par personnage
-    useUniqueColorsPerCharacter = true,
+    useUniqueColorsPerCharacter = true, // eslint-disable-line no-unused-vars
     // Nœuds personnalisés avec positions actuelles de la simulation
     customNodes = null,
   } = options;
@@ -267,7 +273,7 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
   let postsWithoutCharacter = 0;
   let totalPostsWithCoordinates = 0;
 
-  spatializedPosts.forEach((post, index) => {
+  spatializedPosts.forEach((post) => {
     // Déterminer si c'est un post "Joshua" (gardé pour compatibilité)
     const isJoshuaPost =
       post.isJoshuaCharacter === true ||
@@ -326,6 +332,7 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
           perlinAmplitude,
           dilatationFactor,
           useVoronoi,
+          postUID: post.postUID, // Utiliser directement le postUID existant
         });
 
         // Mettre à jour les coordonnées du post
@@ -407,6 +414,7 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
           perlinAmplitude,
           dilatationFactor,
           useVoronoi,
+          postUID: post.postUID, // Utiliser directement le postUID existant
         });
 
         // Mettre à jour les coordonnées du post avec la dispersion
