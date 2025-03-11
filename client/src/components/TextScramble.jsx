@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 const TextScramble = ({
   text,
   className,
-  speed = 0.5,
+  speed = 0.8,
   charSet = "!<>-_\\/[]{}—=+*^?#________",
 }) => {
   const elRef = useRef(null);
@@ -72,8 +72,8 @@ const TextScramble = ({
     for (let i = 0; i < length; i++) {
       const from = oldText[i] || "";
       const to = newText[i] || "";
-      const start = Math.floor(Math.random() * 20) / speed;
-      const end = start + Math.floor(Math.random() * 20) / speed;
+      const start = Math.floor(Math.random() * 8) / speed;
+      const end = start + Math.floor(Math.random() * 10) / speed;
       queueRef.current.push({ from, to, start, end });
     }
 

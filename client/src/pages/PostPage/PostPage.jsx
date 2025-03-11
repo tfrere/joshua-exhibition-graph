@@ -163,7 +163,7 @@ function PostPage() {
         setIsLoading(false);
 
         changeTimeoutRef.current = null;
-      }, 2000);
+      }, 300);
     };
 
     addEventListener("activePostChanged", handleActivePostChange);
