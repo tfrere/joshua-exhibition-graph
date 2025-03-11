@@ -23,6 +23,7 @@
  * @param {number} options.displacementIntensity - Intensité du déplacement (défaut: 10)
  * @param {number} options.displacementFrequency - Fréquence du bruit de Perlin (défaut: 0.05)
  * @param {number} options.displacementSeed - Valeur de graine pour le bruit (défaut: 42)
+ * @param {Array} options.allCharacterNodes - Tous les nœuds de personnage (pour vérifier les frontières Voronoi)
  * @returns {Object} Coordonnées {x, y, z} du post
  */
 export function calculatePostPosition(characterNode, options = {}) {
@@ -50,6 +51,7 @@ export function calculatePostPosition(characterNode, options = {}) {
   const applyDispersion =
     options.applyDispersion !== undefined ? options.applyDispersion : true;
   const postUID = options.postUID || ''; // Ajouter le postUID comme option
+  const allCharacterNodes = options.allCharacterNodes || []; // Tous les nœuds pour calculer les frontières Voronoi
 
   // Si on ne veut pas appliquer de dispersion, retourner simplement la position du nœud
   if (!applyDispersion) {
@@ -65,58 +67,215 @@ export function calculatePostPosition(characterNode, options = {}) {
   const nodeY = characterNode.y;
   const nodeZ = characterNode.z;
 
-  // Générer une dispersion aléatoire autour du nœud
-  // Au lieu de dispersion totalement aléatoire, utiliser une version simplifiée de "bruit de Perlin"
-  // (nous n'avons pas accès à une vraie implémentation ici)
-  
-  // Utiliser postUID comme partie de la seed pour obtenir des positions différentes pour chaque post  
   // Combiner la position du nœud et le hash du postUID pour créer une seed unique par post
-  const seed = nodeX * 1000 + nodeY * 100 + nodeZ * 10 + postUID;
+  // Utiliser l'entier postUID directement
+  const postUIDValue = postUID || 0; // Utiliser directement postUID comme valeur numérique
+  const seed = Math.abs(nodeX * 73.156 + nodeY * 52.789 + nodeZ * 21.321 + postUIDValue * 13.437);
   
-  const pseudoRandom = (val) =>
-    (Math.sin(val * 12.9898 + seed * 78.233) * 43758.5453) % 1;
+  // Fonction pseudo-aléatoire plus chaotique
+  const pseudoRandom = (val, offset = 0) => {
+    const x = Math.sin(val * 12.9898 + seed * 78.233 + offset * 43.4329) * 43758.5453;
+    const y = Math.cos(val * 39.4729 + seed * 27.957 + offset * 12.3743) * 32478.2357;
+    return (Math.abs(x * y) % 1);
+  };
 
-  // Calculer des valeurs "pseudo-aléatoires" mais déterministes pour ce nœud
-  const theta = pseudoRandom(nodeX) * Math.PI * 2; // Angle horizontal (0-2π)
-  const phi = pseudoRandom(nodeY) * Math.PI; // Angle vertical (0-π)
+  // Fonction pour calculer la distance entre deux points 3D
+  const distanceBetween = (a, b) => {
+    const dx = a.x - b.x;
+    const dy = a.y - b.y;
+    const dz = a.z - b.z;
+    return Math.sqrt(dx * dx + dy * dy + dz * dz);
+  };
 
-  // Calculer une distance entre minDistance et radius
-  const distance = minDistance + pseudoRandom(nodeZ) * (radius - minDistance);
+  // Position initiale dans la cellule Voronoi
+  let isValid = false;
+  let attempts = 0;
+  let x, y, z;
+  
+  // Essayer jusqu'à 50 fois de trouver une position valide
+  while (!isValid && attempts < 50) {
+    // Deux approches différentes pour générer des positions, alternée aléatoirement
+    // pour éviter les motifs réguliers
+    if (pseudoRandom(attempts, 1) < 0.5) {
+      // Approche 1: Coordonnées sphériques aléatoires avec perturbation
+      const theta = pseudoRandom(attempts, 2) * Math.PI * 2; // Angle horizontal (0-2π)
+      const phi = Math.acos(2 * pseudoRandom(attempts, 3) - 1); // Angle vertical (0-π)
+      
+      // Ajouter une perturbation aux angles pour éviter les arcs parfaits
+      const thetaNoise = (pseudoRandom(attempts, 4) - 0.5) * 0.5;
+      const phiNoise = (pseudoRandom(attempts, 5) - 0.5) * 0.3;
+      
+      // Calculer une distance entre minDistance et radius avec distribution non uniforme
+      const distancePower = pseudoRandom(attempts, 6) * 2; // Entre 0 et 2
+      const normalizedDistance = Math.pow(pseudoRandom(attempts, 7), distancePower); 
+      const distance = minDistance + normalizedDistance * (radius - minDistance);
+      
+      // Calculer les coordonnées avec les angles perturbés
+      x = nodeX + Math.sin(phi + phiNoise) * Math.cos(theta + thetaNoise) * distance * horizontalSpread;
+      y = nodeY + Math.sin(phi + phiNoise) * Math.sin(theta + thetaNoise) * distance * horizontalSpread;
+      z = nodeZ + Math.cos(phi + phiNoise) * distance * verticalSpread;
+    } else {
+      // Approche 2: Position cubique avec projection radiale
+      // Générer une position dans un cube (-1 à 1)
+      const cubeX = (pseudoRandom(attempts, 8) * 2 - 1);
+      const cubeY = (pseudoRandom(attempts, 9) * 2 - 1);
+      const cubeZ = (pseudoRandom(attempts, 10) * 2 - 1);
+      
+      // Calculer la distance du point au centre du cube
+      const dist = Math.sqrt(cubeX*cubeX + cubeY*cubeY + cubeZ*cubeZ);
+      
+      // Normaliser le point sur une sphère si nécessaire (évite concentration au centre)
+      let nx, ny, nz;
+      if (dist > 1) {
+        // Normaliser sur la sphère unité
+        nx = cubeX / dist;
+        ny = cubeY / dist;
+        nz = cubeZ / dist;
+      } else if (dist < 0.2) {
+        // Éviter trop de points au centre
+        const normDist = Math.max(0.2, dist);
+        nx = cubeX / normDist;
+        ny = cubeY / normDist;
+        nz = cubeZ / normDist;
+      } else {
+        // Garder la position cubique
+        nx = cubeX;
+        ny = cubeY;
+        nz = cubeZ;
+      }
+      
+      // Calculer une distance entre minDistance et radius non linéaire
+      const distanceRatio = minDistance / radius;
+      const distance = radius * (distanceRatio + (1 - distanceRatio) * pseudoRandom(attempts, 11));
+      
+      // Calculer les coordonnées finales
+      x = nodeX + nx * distance * horizontalSpread;
+      y = nodeY + ny * distance * horizontalSpread;
+      z = nodeZ + nz * distance * verticalSpread;
+    }
 
-  // Calculer la dispersion sphérique
-  let x = nodeX + Math.sin(phi) * Math.cos(theta) * distance * horizontalSpread;
-  let y = nodeY + Math.sin(phi) * Math.sin(theta) * distance * horizontalSpread;
-  let z = nodeZ + Math.cos(phi) * distance * verticalSpread;
+    // Ajouter du "bruit" façon Perlin pour éviter les distributions trop régulières
+    if (perlinScale > 0 && perlinAmplitude > 0) {
+      // Utiliser des fréquences différentes pour chaque dimension
+      const noiseX = perlinNoise(x * perlinScale, y * perlinScale * 1.1, z * perlinScale * 0.9, 1, seed) * perlinAmplitude;
+      const noiseY = perlinNoise(y * perlinScale * 1.2, z * perlinScale * 0.8, x * perlinScale * 1.3, 1, seed + 1) * perlinAmplitude;
+      const noiseZ = perlinNoise(z * perlinScale * 0.7, x * perlinScale * 1.4, y * perlinScale * 1.1, 1, seed + 2) * perlinAmplitude;
 
-  // Ajouter du "bruit" façon Perlin pour éviter les distributions trop régulières
-  if (perlinScale > 0 && perlinAmplitude > 0) {
-    const noiseX =
-      Math.sin(x * perlinScale) * Math.cos(y * perlinScale) * perlinAmplitude;
-    const noiseY =
-      Math.sin(y * perlinScale) * Math.cos(z * perlinScale) * perlinAmplitude;
-    const noiseZ =
-      Math.sin(z * perlinScale) * Math.cos(x * perlinScale) * perlinAmplitude;
+      x += noiseX;
+      y += noiseY;
+      z += noiseZ;
+    }
 
-    x += noiseX;
-    y += noiseY;
-    z += noiseZ;
+    // Appliquer l'effet de dilatation Voronoi si activé
+    if (useVoronoi && dilatationFactor !== 1) {
+      // La dilatation augmente la distance au centre proportionnellement
+      const dx = x - nodeX;
+      const dy = y - nodeY;
+      const dz = z - nodeZ;
+
+      // Appliquer un facteur de dilatation légèrement variable pour casser les motifs réguliers
+      const dilatationVariation = 1 + (pseudoRandom(attempts, 12) - 0.5) * 0.2; // ±10% de variation
+      const effectiveDilatation = dilatationFactor * dilatationVariation;
+
+      // Calculer la nouvelle position dilatée
+      x = nodeX + dx * effectiveDilatation;
+      y = nodeY + dy * effectiveDilatation;
+      z = nodeZ + dz * effectiveDilatation;
+    }
+
+    // Vérifier que cette position est à l'intérieur de la cellule Voronoi
+    // c'est-à-dire qu'elle est plus proche de son personnage que de tout autre personnage
+    if (allCharacterNodes.length > 0) {
+      isValid = true;
+      const newPosition = { x, y, z };
+      const distanceToSite = distanceBetween(newPosition, characterNode);
+      
+      for (const otherNode of allCharacterNodes) {
+        // Ne pas comparer avec le nœud lui-même
+        if (otherNode === characterNode || 
+            (otherNode.id && characterNode.id && otherNode.id === characterNode.id) ||
+            (otherNode.slug && characterNode.slug && otherNode.slug === characterNode.slug)) {
+          continue;
+        }
+        
+        const distanceToOther = distanceBetween(newPosition, otherNode);
+        if (distanceToOther < distanceToSite) {
+          isValid = false;
+          break;
+        }
+      }
+    } else {
+      // Si aucun autre nœud n'est fourni, considérer la position comme valide par défaut
+      isValid = true;
+    }
+
+    attempts++;
   }
 
-  // Appliquer l'effet de dilatation Voronoi si activé
-  if (useVoronoi && dilatationFactor !== 1) {
-    // La dilatation augmente la distance au centre proportionnellement
-    const dx = x - nodeX;
-    const dy = y - nodeY;
-    const dz = z - nodeZ;
-
-    // Calculer la nouvelle position dilatée
-    x = nodeX + dx * dilatationFactor;
-    y = nodeY + dy * dilatationFactor;
-    z = nodeZ + dz * dilatationFactor;
+  // Si après plusieurs tentatives on n'a pas trouvé de position valide,
+  // on revient à une position plus proche du personnage pour garantir qu'elle est dans sa cellule
+  if (!isValid) {
+    // Approche de repli plus intelligente
+    // Essayer des distances de plus en plus petites jusqu'à trouver une position valide
+    let fallbackValid = false;
+    let fallbackAttempts = 0;
+    
+    while (!fallbackValid && fallbackAttempts < 10) {
+      // Réduire progressivement le rayon
+      const fallbackRadius = minDistance * (1 - fallbackAttempts * 0.1);
+      
+      // Générer des angles vraiment aléatoires pour cette tentative de repli
+      const theta = pseudoRandom(1000 + fallbackAttempts, 1) * Math.PI * 2;
+      const phi = Math.acos(2 * pseudoRandom(2000 + fallbackAttempts, 2) - 1);
+      
+      x = nodeX + Math.sin(phi) * Math.cos(theta) * fallbackRadius * horizontalSpread;
+      y = nodeY + Math.sin(phi) * Math.sin(theta) * fallbackRadius * horizontalSpread;
+      z = nodeZ + Math.cos(phi) * fallbackRadius * verticalSpread;
+      
+      // Vérifier si cette position est dans la cellule Voronoi
+      if (allCharacterNodes.length > 0) {
+        fallbackValid = true;
+        const newPosition = { x, y, z };
+        const distanceToSite = distanceBetween(newPosition, characterNode);
+        
+        for (const otherNode of allCharacterNodes) {
+          if (otherNode === characterNode || 
+              (otherNode.id && characterNode.id && otherNode.id === characterNode.id) ||
+              (otherNode.slug && characterNode.slug && otherNode.slug === characterNode.slug)) {
+            continue;
+          }
+          
+          const distanceToOther = distanceBetween(newPosition, otherNode);
+          if (distanceToOther < distanceToSite) {
+            fallbackValid = false;
+            break;
+          }
+        }
+      } else {
+        fallbackValid = true;
+      }
+      
+      fallbackAttempts++;
+    }
+    
+    // Si toujours pas de position valide, juste utiliser une position très proche
+    if (!fallbackValid) {
+      const minimalOffset = minDistance * 0.1;
+      x = nodeX + (pseudoRandom(3000, 3) - 0.5) * minimalOffset;
+      y = nodeY + (pseudoRandom(4000, 4) - 0.5) * minimalOffset;
+      z = nodeZ + (pseudoRandom(5000, 5) - 0.5) * minimalOffset;
+    }
+    
+    isValid = fallbackValid;
   }
 
   // Retourner les coordonnées calculées
-  return { x, y, z };
+  return { 
+    x, 
+    y, 
+    z,
+    inValidVoronoiCell: isValid // Attribut pour debugging
+  };
 }
 
 // Importer la fonction de bruit de Perlin depuis displacementPass.js
@@ -344,26 +503,23 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
       nodesByIdMap[node.id] = node;
     }
 
-    // Si le nœud est un personnage OU a un slug, l'ajouter à l'index des personnages
-    // Relaxation des critères pour inclure plus de nœuds
-    if (
-      node.type === "character" ||
-      node.type === "user" ||
-      node.slug ||
-      (node.id && typeof node.id === "string" && node.id.includes("-"))
-    ) {
-      if (node.slug) {
-        characterNodesMap[node.slug] = node;
-      } else if (node.id) {
-        // Si pas de slug mais un ID, utiliser l'ID comme clé alternative
+    // Priorité absolue au slug pour les nœuds de personnages
+    if (node.slug) {
+      characterNodesMap[node.slug] = node;
+      // Également mapper par ID pour compatibilité
+      if (node.id) {
         characterNodesMap[node.id] = node;
       }
+    }
+    // Si pas de slug mais un ID, utiliser l'ID comme clé alternative
+    else if (node.id && (node.type === "character" || node.type === "user" || (typeof node.id === "string" && node.id.includes("-")))) {
+      characterNodesMap[node.id] = node;
+    }
 
-      // Identifier les personnages Joshua (gardé pour compatibilité)
-      if (node.isJoshua === true || node.slug === "real-joshua-goldberg") {
-        if (node.slug) joshuaCharacterSlugs.add(node.slug);
-        if (node.id) joshuaCharacterIds.add(node.id);
-      }
+    // Identifier les personnages Joshua (gardé pour compatibilité)
+    if (node.isJoshua === true || node.slug === "real-joshua-goldberg") {
+      if (node.slug) joshuaCharacterSlugs.add(node.slug);
+      if (node.id) joshuaCharacterIds.add(node.id);
     }
   });
 
@@ -390,12 +546,19 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
     "PHASE 1: Positionnement des posts aux coordonnées exactes des personnages"
   );
 
+  // Debug: identifier tous les slugs uniques dans les posts pour validation
+  const uniqueSlugs = new Set();
+  const missingNodePosts = [];
+  
   // Traiter chaque post
   let postsWithCharacter = 0;
   let postsWithoutCharacter = 0;
   let totalPostsWithCoordinates = 0;
 
   spatializedPosts.forEach((post) => {
+    // Collecter les slugs uniques pour debug
+    if (post.slug) uniqueSlugs.add(post.slug);
+    
     // Déterminer si c'est un post "Joshua" (gardé pour compatibilité)
     const isJoshuaPost =
       post.isJoshuaCharacter === true ||
@@ -410,17 +573,20 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
       }
     }
 
-    // Trouver le nœud correspondant à ce post (priorité au slug, puis au character)
+    // Trouver le nœud correspondant à ce post (Priorité STRICTE au slug)
     let characterNode = null;
 
+    // 1. Recherche par slug (PRIORITAIRE)
     if (post.slug && characterNodesMap[post.slug]) {
       characterNode = characterNodesMap[post.slug];
-    } else if (post.character) {
-      // Essayer d'abord comme slug
+    } 
+    // 2. Si aucun nœud trouvé par slug et que post.character existe, l'utiliser
+    else if (!characterNode && post.character) {
+      // Essayer d'abord comme slug dans characterNodesMap
       if (characterNodesMap[post.character]) {
         characterNode = characterNodesMap[post.character];
       }
-      // Puis comme id
+      // Puis comme id dans nodesByIdMap
       else if (nodesByIdMap[post.character]) {
         characterNode = nodesByIdMap[post.character];
       }
@@ -429,6 +595,10 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
     // Si on a trouvé un nœud de caractère pour ce post
     if (characterNode) {
       postsWithCharacter++;
+      
+      // Enregistrer le nœud dans le post pour traçabilité
+      post.associatedNodeId = characterNode.id;
+      post.associatedNodeSlug = characterNode.slug;
 
       // Positionner exactement aux coordonnées du personnage (sans dispersion)
       const nodePosition = {
@@ -446,6 +616,13 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
     } else {
       // Si aucun nœud trouvé mais qu'on veut traiter ce post
       postsWithoutCharacter++;
+      
+      // Enregistrer dans la liste des posts sans nœud pour debug
+      missingNodePosts.push({
+        postId: post.id,
+        postSlug: post.slug,
+        character: post.character
+      });
 
       if (!joshuaOnly || (joshuaOnly && isJoshuaPost)) {
         // Générer une position aléatoire si aucun nœud correspondant trouvé
@@ -471,24 +648,51 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
       spatializedPosts.length - totalPostsWithCoordinates
     }
   `);
+  
+  // Debug: Afficher les slugs uniques trouvés dans les posts
+  console.log(`Nombre de slugs uniques dans les posts: ${uniqueSlugs.size}`);
+  console.log(`Exemple de slugs: ${Array.from(uniqueSlugs).slice(0, 10).join(', ')}`);
+  
+  // Identifier les slugs qui n'ont pas de nœud correspondant
+  const missingSlugs = Array.from(uniqueSlugs).filter(slug => !characterNodesMap[slug]);
+  console.log(`Slugs sans nœud correspondant: ${missingSlugs.length}`);
+  if (missingSlugs.length > 0) {
+    console.log(`Exemple de slugs manquants: ${missingSlugs.slice(0, 10).join(', ')}`);
+  }
+  
+  // Afficher quelques posts sans nœud pour debug
+  if (missingNodePosts.length > 0) {
+    console.log(`Exemples de posts sans nœud correspondant: `, missingNodePosts.slice(0, 5));
+  }
 
-  // PHASE 2: Appliquer la dispersion autour des positions des personnages
+  // PHASE 2: Appliquer la dispersion autour des positions des personnages avec respect des frontières Voronoi
   // Cette phase n'est exécutée que si secondPass est true
   if (secondPass) {
     console.log(
-      "PHASE 2: Application de la dispersion autour des positions de base"
+      "PHASE 2: Application de la dispersion avec respect des frontières Voronoi"
     );
+
+    // Extraire tous les nœuds de personnage pour les calculs de frontières Voronoi
+    const allCharacterNodes = Object.values(characterNodesMap);
 
     // Pour chaque post qui a été positionné sur un personnage, appliquer la dispersion
     let postsDispersed = 0;
+    const postsInWrongCells = [];
 
     spatializedPosts.forEach((post) => {
-      // Rechercher à nouveau le nœud correspondant
+      // Rechercher le nœud correspondant prioritairement par le slug
       let characterNode = null;
 
+      // 1. Recherche par slug (PRIORITAIRE)
       if (post.slug && characterNodesMap[post.slug]) {
         characterNode = characterNodesMap[post.slug];
-      } else if (post.character) {
+      } 
+      // 2. Utiliser le nœud associé dans la phase 1 si disponible
+      else if (post.associatedNodeSlug && characterNodesMap[post.associatedNodeSlug]) {
+        characterNode = characterNodesMap[post.associatedNodeSlug];
+      }
+      // 3. Recherche par character comme fallback
+      else if (post.character) {
         if (characterNodesMap[post.character]) {
           characterNode = characterNodesMap[post.character];
         } else if (nodesByIdMap[post.character]) {
@@ -498,7 +702,7 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
 
       // Si le post a un nœud associé, appliquer la dispersion
       if (characterNode) {
-        // Appliquer l'effet de dispersion et voronoi
+        // Appliquer l'effet de dispersion et voronoi avec respect des frontières
         const dispersedPosition = calculatePostPosition(characterNode, {
           radius,
           minDistance,
@@ -509,18 +713,37 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
           dilatationFactor,
           useVoronoi,
           postUID: post.postUID, // Utiliser directement le postUID existant
+          allCharacterNodes: allCharacterNodes // Fournir tous les nœuds pour les calculs de frontières
         });
 
         // Mettre à jour les coordonnées du post avec la dispersion
         post.x = dispersedPosition.x;
         post.y = dispersedPosition.y;
         post.z = dispersedPosition.z;
+        // Conserver l'information de validité Voronoi pour le debugging
+        post.inValidVoronoiCell = dispersedPosition.inValidVoronoiCell;
+
+        // Si le post n'est pas dans la bonne cellule, l'ajouter à la liste pour debuggage
+        if (!post.inValidVoronoiCell) {
+          postsInWrongCells.push({
+            postId: post.id, 
+            postSlug: post.slug,
+            character: post.character,
+            associatedNodeSlug: post.associatedNodeSlug
+          });
+        }
 
         postsDispersed++;
       }
     });
 
-    console.log(`Phase 2 terminée: ${postsDispersed} posts dispersés`);
+    console.log(`Phase 2 terminée: ${postsDispersed} posts dispersés avec respect des frontières Voronoi`);
+    
+    // Debug: posts dans des cellules incorrectes
+    if (postsInWrongCells.length > 0) {
+      console.log(`ATTENTION: ${postsInWrongCells.length} posts placés dans des cellules Voronoi incorrectes`);
+      console.log(`Exemples de posts mal placés:`, postsInWrongCells.slice(0, 5));
+    }
   }
 
   // PHASE 3: Appliquer le déplacement radial pour chaque personnage
