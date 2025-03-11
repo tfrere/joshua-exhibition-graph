@@ -14,7 +14,7 @@ export const DEFAULT_FLIGHT_CONFIG = {
   maxSpeed: 35,
   acceleration: 300,
   deceleration: 0.8,
-  rotationSpeed: 0.3, // Valeur plus élevée pour une réponse directe sans accélération
+  rotationSpeed: 0.15, // Valeur plus élevée pour une réponse directe sans accélération
   deadzone: 0.1,
 };
 

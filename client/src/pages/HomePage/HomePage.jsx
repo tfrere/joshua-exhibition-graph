@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Graph from "./components/Graph.jsx";
 import Posts from "./components/Posts/Posts.jsx";
 import { useControls, folder } from "leva";
@@ -10,56 +10,27 @@ import AdvancedCameraController, {
 } from "./components/AdvancedCameraController";
 import GridReferences from "./components/GridReferences.jsx";
 import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import {
+  EffectComposer,
+  Bloom,
+  DepthOfField,
+} from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
-
-// Composant pour la sphère lumineuse
-const LightSphere = ({ radius = 30, intensity = 0.8, color = "#4080ff" }) => {
-  return (
-    <group>
-      {/* Sphère lumineuse centrale avec matériau émissif */}
-      <mesh>
-        <sphereGeometry args={[radius, 32, 32]} />
-        <meshBasicMaterial
-          color={color}
-          transparent={true}
-          opacity={0.15}
-          side={THREE.BackSide}
-        />
-      </mesh>
-
-      {/* Sphère intérieure pour renforcer l'effet de lumière */}
-      <mesh>
-        <sphereGeometry args={[radius * 0.8, 24, 24]} />
-        <MeshDistortMaterial
-          color={color}
-          emissive={color}
-          emissiveIntensity={0.6}
-          distort={0.3}
-          speed={0.5}
-          transparent={true}
-          opacity={0.1}
-        />
-      </mesh>
-
-      {/* Lumière ponctuelle supplémentaire pour l'effet volumétrique */}
-      <pointLight
-        position={[0, 0, 0]}
-        intensity={intensity * 50}
-        distance={radius * 2}
-        decay={1.5}
-        color={color}
-      />
-    </group>
-  );
-};
 
 const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
   const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
+  const [isRotated, setIsRotated] = useState(false);
+
+  // Configuration pour la rotation de la scène
+  const sceneRotation = useMemo(() => {
+    return isRotated
+      ? new THREE.Euler(0, Math.PI / 2, 0)
+      : new THREE.Euler(0, 0, 0);
+  }, [isRotated]);
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -102,12 +73,21 @@ const HomePage = () => {
     loadJsonData();
   }, []);
 
-  // Gestion du mode debug avec la touche D
+  // Fonction pour basculer la rotation
+  const toggleRotation = useCallback(() => {
+    setIsRotated((prev) => !prev);
+    console.log("Rotation basculée:", !isRotated);
+  }, [isRotated]);
+
+  // Gestion du mode debug et de la rotation avec les touches
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === "p" || event.key === "P") {
         setDebugMode((prevMode) => !prevMode);
         console.log("Mode debug:", !debugMode);
+      } else if (event.key === "r" || event.key === "R") {
+        // Touche R pour basculer la rotation
+        toggleRotation();
       }
     };
 
@@ -117,10 +97,29 @@ const HomePage = () => {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [debugMode]);
+  }, [debugMode, toggleRotation]);
 
   return (
     <div className="canvas-container">
+      {/* Bouton de rotation */}
+      <button
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          zIndex: 1000,
+          padding: "10px",
+          background: "#333",
+          color: "white",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+        onClick={toggleRotation}
+      >
+        {isRotated ? "Rotation 0°" : "Rotation 90°"}
+      </button>
+
       {/* Composant de son d'ambiance */}
       <SoundPlayer
         soundPath="/sounds/ambiant.mp3"
@@ -175,39 +174,61 @@ const HomePage = () => {
         {/* Éclairage */}
         <ambientLight intensity={3} color="white" />
 
-        {/* Lumière ponctuelle centrale optimisée */}
-        <pointLight
-          position={[0, 0, 0]}
-          intensity={18}
-          distance={300}
-          decay={0.1}
-          color="white"
-          castShadow
-          shadow-mapSize-width={128}
-          shadow-mapSize-height={128}
-        />
+        {/* Groupe englobant avec rotation basée sur l'état */}
+        <group rotation={sceneRotation}>
+          {/* Lumière ponctuelle centrale optimisée */}
+          <pointLight
+            position={[0, 0, 0]}
+            intensity={18}
+            distance={300}
+            decay={0.1}
+            color="white"
+            castShadow
+            shadow-mapSize-width={128}
+            shadow-mapSize-height={128}
+          />
 
-        {/* <pointLight
-          position={[0, 0, 100]}
-          intensity={20}
-          distance={100}
-          decay={0.1}
-          color="orange"
-        /> */}
+          {/* <pointLight
+            position={[0, 0, 100]}
+            intensity={20}
+            distance={100}
+            decay={0.1}
+            color="orange"
+          /> */}
 
-        {/* Afficher le graphe si les données sont disponibles et valides */}
-        {graphData && graphData.nodes && graphData.links && (
-          <Graph data={graphData} postsData={postsData} />
-        )}
+          {/* Afficher le graphe si les données sont disponibles et valides */}
+          {graphData && graphData.nodes && graphData.links && (
+            <Graph data={graphData} postsData={postsData} />
+          )}
 
-        {/* Afficher les posts si activés et disponibles */}
-        {postsData && <Posts data={postsData} />}
+          {/* Afficher les posts si activés et disponibles */}
+          {postsData && <Posts data={postsData} />}
+        </group>
 
-        {/* Effets de post-processing dans un composant séparé */}
+        {/* Effets de post-processing */}
         {/* <PostProcessingEffects /> */}
-        {/* <EffectComposer>
-          <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} />
-        </EffectComposer> */}
+        <EffectComposer>
+          {/* <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} /> */}
+          {/* <DepthOfField
+            // blendFunction?: import("postprocessing").BlendFunction | undefined;
+            // worldFocusDistance?: number | undefined;
+            // worldFocusRange?: number | undefined;
+            // focusDistance?: number | undefined;
+            // focalLength?: number | undefined;
+            // focusRange?: number | undefined;
+            // bokehScale?: number | undefined;
+            // resolutionScale?: number | undefined;
+            // resolutionX?: number | undefined;
+            // resolutionY?: number | undefined;
+            // width?: number | undefined;
+            // height?: number | undefined;
+
+            // worldFocusDistance={100}
+            // focusDistance={100}
+            focalLength={0.3}
+            bokehScale={3}
+          /> */}
+        </EffectComposer>
       </Canvas>
     </div>
   );

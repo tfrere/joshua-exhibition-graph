@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { Billboard } from "@react-three/drei";
+import { Billboard, PositionalAudio } from "@react-three/drei";
 
 // Default constants for the animation
 const DEFAULT_DURATION = 0.3; // seconds
@@ -40,6 +40,9 @@ export function PostActivationEffect({
   // State to track if all rings have completed their animation
   const [isComplete, setIsComplete] = useState(false);
 
+  // Ref for the positional audio
+  const sound = useRef();
+
   // Create refs for each ring
   const ringsRef = useRef(
     Array(rings)
@@ -66,6 +69,11 @@ export function PostActivationEffect({
     // Reset completion state if reused
     setIsComplete(false);
     timeRef.current = 0;
+
+    // Play the sound when effect starts
+    if (sound.current) {
+      sound.current.play();
+    }
   }, [position, ringDelay]);
 
   // Animation update
@@ -130,6 +138,14 @@ export function PostActivationEffect({
 
   return (
     <group position={[position[0], position[1], position[2]]}>
+      <PositionalAudio
+        ref={sound}
+        url="/sounds/touch.mp3"
+        distance={20}
+        intensity={1}
+        loop={false}
+      />
+
       {ringsRef.current.map((ring, index) => (
         <Billboard
           key={`ring-${index}`}

@@ -97,7 +97,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   const orbitAttempted = useRef(false); // Nouvel état pour suivre les tentatives d'activation
 
   // Paramètres d'orbite et de rotation
-  const ORBIT_SPEED = 0.15; // Vitesse de déplacement orbital (plus la valeur est élevée, plus l'orbite est rapide)
+  const ORBIT_SPEED = 0.05; // Vitesse de déplacement orbital (plus la valeur est élevée, plus l'orbite est rapide)
   const ORBIT_YAW = 0.8; // Vitesse de rotation de la caméra sur elle-même (yaw)
   const ORBIT_PITCH = 0.02; // Vitesse de tangage vertical (pitch)
   const ORBIT_ACCELERATION_TIME = 2.0; // Durée en secondes de l'accélération progressive

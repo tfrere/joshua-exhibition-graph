@@ -3,7 +3,8 @@ import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Billboard, Text } from "@react-three/drei";
 import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
-import { useSpring, animated } from "@react-spring/three";
+import { useSpring, animated, config } from "@react-spring/three";
+import NodeLabel from "./components/NodeLabel";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
 const NodeSphere = ({ size, color, isSelected }) => {
@@ -69,47 +70,6 @@ const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
         ))}
       </group>
     </Billboard>
-  );
-};
-
-// Composant pour afficher un label/texte
-const NodeLabel = ({ text, size, isSelected, isActive }) => {
-  return (
-    <group position={[0, size + 0.3, 0]}>
-      <Billboard>
-        <group>
-          {/* Background plane for better text visibility */}
-          {isActive && (
-            <mesh position={[0, 0, -0.01]}>
-              <planeGeometry args={[text.length * 0.25 + 0.3, 0.5]} />
-              <meshBasicMaterial
-                color="#000000"
-                transparent
-                opacity={0.5}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )}
-
-          {/* Text with improved visibility - uniquement pour les nœuds actifs */}
-          {true && (
-            <Text
-              fontSize={2}
-              font={"/fonts/caveat.ttf"}
-              color={"#ffffff"}
-              anchorX="center"
-              anchorY="middle"
-              outlineWidth={0.2}
-              outlineColor="#000000"
-              outlineBlur={0.2}
-              position={[0, 0, 0]}
-            >
-              {text}
-            </Text>
-          )}
-        </group>
-      </Billboard>
-    </group>
   );
 };
 
@@ -218,7 +178,6 @@ const useSVGLoader = (node) => {
 const Node = ({ node, onClick, isSelected }) => {
   const meshRef = useRef();
   const [isActive, setIsActive] = useState(false);
-  const [isLabelVisible, setIsLabelVisible] = useState(false);
   const { camera } = useThree();
 
   // Animation spring pour la position
@@ -244,9 +203,6 @@ const Node = ({ node, onClick, isSelected }) => {
 
   const svgScale = nodeSize * 0.02;
 
-  // Texte à afficher
-  const displayText = node.label || node.name || "Node";
-
   // Gestionnaires d'événements pour les interactions
   const handleClick = (e) => {
     e.stopPropagation();
@@ -262,39 +218,8 @@ const Node = ({ node, onClick, isSelected }) => {
     }
   }, [node]);
 
-  // Vérifier la visibilité du label par rapport à la position de la caméra
-  useFrame(() => {
-    // Obtenir la position de la caméra
-    const cameraPosition = new THREE.Vector3();
-    camera.getWorldPosition(cameraPosition);
-
-    // Créer un point de référence à 20 unités devant la caméra sur l'axe X uniquement
-    const referencePoint = new THREE.Vector3(
-      cameraPosition.x + 30,
-      cameraPosition.y,
-      cameraPosition.z
-    );
-
-    // Récupérer la position mondiale du nœud
-    const nodeWorldPosition = new THREE.Vector3();
-    if (meshRef.current) {
-      meshRef.current.getWorldPosition(nodeWorldPosition);
-    } else {
-      nodeWorldPosition.set(node.x, node.y, node.z);
-    }
-
-    // Calculer la distance entre le nœud et le point de référence
-    const distance = nodeWorldPosition.distanceTo(referencePoint);
-
-    // Le label est visible si la distance est inférieure à 10 mètres
-    setIsLabelVisible(distance < 30);
-
-    // Debug - affichage des positions dans la console
-    // console.log('Camera position:', cameraPosition);
-    // console.log('Reference point:', referencePoint);
-    // console.log('Node position:', nodeWorldPosition);
-    // console.log('Distance:', distance);
-  });
+  // Créer un vecteur de position pour le nœud (pour le composant NodeLabel)
+  const nodePosition = new THREE.Vector3(node.x, node.y, node.z);
 
   return (
     <animated.mesh
@@ -316,15 +241,15 @@ const Node = ({ node, onClick, isSelected }) => {
         />
       )}
 
-      {/* Afficher le label du nœud seulement s'il est à la bonne distance */}
-      {isLabelVisible && (
-        <NodeLabel
-          text={displayText}
-          size={baseSize}
-          isSelected={isSelected}
-          isActive={isActive}
-        />
-      )}
+      {/* Utiliser le composant NodeLabel externalisé avec la logique d'affichage conditionnelle */}
+      <NodeLabel
+        node={node}
+        nodePosition={nodePosition}
+        meshRef={meshRef}
+        baseSize={baseSize}
+        isSelected={isSelected}
+        isActive={isActive}
+      />
     </animated.mesh>
   );
 };

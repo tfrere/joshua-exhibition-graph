@@ -6,7 +6,6 @@ import useNearestPostDetection, {
   initSocketSync,
 } from "./hooks/useNearestPostDetection";
 import PostActivationEffect from "./effects/PostActivationEffect";
-import useSound from "use-sound";
 
 // Import des constantes et fonctions utilitaires
 import {
@@ -125,16 +124,6 @@ export function Posts({
   // Ce hook remplace la logique d'activation manuelle des posts basée sur la caméra
   const { targetPositionRef } = useNearestPostDetection(data);
 
-  // Initialiser le hook useSound pour le son de toucher
-  const [playTouchSound] = useSound("/sounds/touch.mp3", {
-    volume: 0.1, // Volume à 50%
-    interrupt: true, // Permet de jouer le son même s'il est déjà en cours
-    onplay: () => console.log("Son de toucher joué"),
-    onend: () => console.log("Son de toucher terminé"),
-    onplayerror: (id, error) =>
-      console.error("Erreur lors de la lecture du son:", error),
-  });
-
   // État pour le post actif
   const [activePostUID, setActivePostUID] = useState(null);
   const prevActivePostUIDRef = useRef(null);
@@ -220,7 +209,6 @@ export function Posts({
       // Si un nouveau post est activé, déclencher l'effet d'activation
       if (newPostUID) {
         // Jouer le son de toucher
-        playTouchSound();
 
         const postIndex = data.findIndex(
           (post) => post && post.postUID === newPostUID
@@ -827,7 +815,7 @@ export function Posts({
       <instancedMesh
         ref={meshRef}
         args={[null, null, data.length]}
-        frustumCulled={true}
+        frustumCulled={false}
         renderOrder={10}
       >
         <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
