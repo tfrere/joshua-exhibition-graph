@@ -232,8 +232,7 @@ export function calculateGradientColorByDistance({
   // Définir les couleurs du dégradé de bleu (du centre vers l'extérieur)
   const blueGradientColors = {
     center: [1.0, 0.5, 0.0], // Couleur orange saturée pour le centre
-    middle: [0.1, 0.2, 0.8], // Bleu moyen à distance intermédiaire
-    outer: [0.5, 0.0, 0.5], // Violet saturé à l'extérieur
+    outer: [0.0, 0.0, 0.6], // Bleu saturé à l'extérieur
   };
 
   // Calculer la distance au centre
@@ -248,36 +247,17 @@ export function calculateGradientColorByDistance({
   // Déterminer la couleur en fonction de la distance normalisée
   let r, g, b;
 
-  if (normalizedDistance < 0.33) {
-    // Transition entre couleur centrale et intermédiaire
-    const t = normalizedDistance / 0.33;
-    r =
-      blueGradientColors.center[0] +
-      (blueGradientColors.middle[0] - blueGradientColors.center[0]) * t;
-    g =
-      blueGradientColors.center[1] +
-      (blueGradientColors.middle[1] - blueGradientColors.center[1]) * t;
-    b =
-      blueGradientColors.center[2] +
-      (blueGradientColors.middle[2] - blueGradientColors.center[2]) * t;
-  } else if (normalizedDistance < 0.66) {
-    // Transition entre couleur intermédiaire et extérieure
-    const t = (normalizedDistance - 0.33) / 0.33;
-    r =
-      blueGradientColors.middle[0] +
-      (blueGradientColors.outer[0] - blueGradientColors.middle[0]) * t;
-    g =
-      blueGradientColors.middle[1] +
-      (blueGradientColors.outer[1] - blueGradientColors.middle[1]) * t;
-    b =
-      blueGradientColors.middle[2] +
-      (blueGradientColors.outer[2] - blueGradientColors.middle[2]) * t;
-  } else {
-    // Couleur extérieure
-    r = blueGradientColors.outer[0];
-    g = blueGradientColors.outer[1];
-    b = blueGradientColors.outer[2];
-  }
+  // Transition entre couleur centrale et extérieure
+  const t = Math.min(1, normalizedDistance);
+  r =
+    blueGradientColors.center[0] +
+    (blueGradientColors.outer[0] - blueGradientColors.center[0]) * t;
+  g =
+    blueGradientColors.center[1] +
+    (blueGradientColors.outer[1] - blueGradientColors.center[1]) * t;
+  b =
+    blueGradientColors.center[2] +
+    (blueGradientColors.outer[2] - blueGradientColors.center[2]) * t;
 
   return [r, g, b];
 }

@@ -312,32 +312,66 @@ export class FlightController {
     this.camera.quaternion.setFromEuler(this.euler);
   }
 
-  // Nouvelle méthode pour retourner à la position par défaut
+  // Méthode pour retourner à la position par défaut
   returnToDefaultPosition() {
     // Éviter des appels multiples
     if (this.isReturningToDefault) return;
 
+    console.log(
+      "Limite de 800 dépassée - Simulation d'une action utilisateur pour transition fluide"
+    );
     this.isReturningToDefault = true;
 
-    // Réinitialiser la vitesse
+    // Réinitialiser la vitesse et la rotation
     this.velocity.set(0, 0, 0);
     this.rotationVelocity = { yaw: 0, pitch: 0, roll: 0 };
 
-    // Trouver le contrôleur de caméra avancé pour lancer l'animation
-    if (window.__animateToCameraPosition) {
-      window.__animateToCameraPosition(0); // Animer vers la position 0 (vue globale)
+    // Pour simuler exactement l'action d'un utilisateur qui appuie sur une touche de position,
+    // on va accéder directement au gestionnaire d'entrées global et déclencher le nextPosition
+    if (window.getInputManager) {
+      const inputManager = window.getInputManager();
+      if (inputManager) {
+        // Déclencher l'action nextPosition comme si l'utilisateur avait appuyé sur la touche
+        inputManager.triggerNextPositionAction();
+        console.log(
+          "Action nextPosition déclenchée via le gestionnaire d'entrées"
+        );
 
-      // Réactiver les contrôles après un délai
+        // Réactiver les contrôles après la transition (après le délai d'animation)
+        setTimeout(() => {
+          this.isReturningToDefault = false;
+          console.log("Contrôles de vol réactivés après la transition");
+        }, 2500);
+        return;
+      }
+    }
+
+    // Si le gestionnaire d'entrées n'est pas disponible, on essaie avec l'animation directe
+    if (typeof window.__animateToCameraPosition === "function") {
+      console.log("Appel direct de la fonction d'animation");
+      // Appel direct de l'animation (position 0 = vue globale, true = activer orbite ensuite)
+      window.__animateToCameraPosition(0, true);
+
       setTimeout(() => {
         this.isReturningToDefault = false;
-      }, 2500); // Délai légèrement supérieur à la durée de l'animation
+        console.log("Contrôles de vol réactivés après la transition");
+      }, 2500);
     } else {
-      // Solution de secours si la fonction d'animation n'est pas accessible
-      // Téléporter directement à la position par défaut
+      // Solution de dernier recours - téléportation directe
+      console.error(
+        "Aucune méthode d'animation disponible - téléportation directe"
+      );
       this.camera.position.copy(this.defaultPosition);
       this.camera.lookAt(this.defaultTarget);
 
-      // Réactiver les contrôles après un court délai
+      // Définir les valeurs globales pour cohérence
+      window.__cameraPosition = {
+        x: this.defaultPosition.x,
+        y: this.defaultPosition.y,
+        z: this.defaultPosition.z,
+      };
+      window.__orbitModeActive = true;
+
       setTimeout(() => {
         this.isReturningToDefault = false;
       }, 500);

@@ -1,7 +1,10 @@
 import { useRef, useMemo, useState, useEffect } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { activePostRef, initSocketSync } from "../activePostRef";
+import useNearestPostDetection, {
+  activePostRef,
+  initSocketSync,
+} from "./hooks/useNearestPostDetection";
 
 // Import des constantes et fonctions utilitaires
 import {
@@ -107,6 +110,10 @@ export function Posts({
   // Références pour les instances et la caméra
   const meshRef = useRef();
   const { camera } = useThree();
+
+  // Utilisation du hook personnalisé pour la détection du post le plus proche
+  // Ce hook remplace la logique d'activation manuelle des posts basée sur la caméra
+  const { targetPositionRef } = useNearestPostDetection(data);
 
   // État pour le post actif
   const [activePostUID, setActivePostUID] = useState(null);
@@ -687,12 +694,16 @@ export function Posts({
       sizes[index] = size;
 
       // Calculer la couleur en fonction de la distance au centre
-      const [r, g, b] = calculateGradientColorByDistance({
+      let [r, g, b] = calculateGradientColorByDistance({
         x,
         y,
         z,
         maxDistance,
       });
+
+      r = 1.0;
+      g = 1.0;
+      b = 1.0;
 
       // Stocker la couleur
       colors[index * 3] = r;
@@ -729,15 +740,16 @@ export function Posts({
     <instancedMesh
       ref={meshRef}
       args={[null, null, data.length]}
-      frustumCulled={false}
+      frustumCulled={true}
       renderOrder={10}
     >
       <sphereGeometry args={[0.05, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
       <meshLambertMaterial
         transparent={true}
-        opacity={0.9}
+        opacity={1}
         color="white"
         side={THREE.DoubleSide}
+        toneMapped={false}
         depthWrite={true}
         depthTest={true}
       />

@@ -5,6 +5,7 @@ import WorkPage from "./pages/WorkPage/WorkPage";
 import WorkPageForceGraph from "./pages/WorkPageForceGraph/WorkPageForceGraph";
 import MovablePage from "./pages/MovablePage/MovablePage";
 import ExperimentGraph from "./pages/ExperimentGraph/ExperimentGraph";
+import WorkPostPage from "./pages/WorkPostPage/WorkPostPage";
 import { DataProvider } from "./contexts/DataContext";
 import "./App.css";
 
@@ -20,6 +21,7 @@ function App() {
             <Route path="/work-force-graph" element={<WorkPageForceGraph />} />
             <Route path="/movable" element={<MovablePage />} />
             <Route path="/experiment-graph" element={<ExperimentGraph />} />
+            <Route path="/work-post" element={<WorkPostPage />} />
           </Routes>
         </div>
       </BrowserRouter>

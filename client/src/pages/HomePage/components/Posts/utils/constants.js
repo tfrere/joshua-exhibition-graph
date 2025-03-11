@@ -3,10 +3,10 @@
 // ----------------------------------------------------------------------------------
 
 // Tailles et apparence
-export const SIZE = 0.125;
+export const SIZE = 0.1;
 export const ACTIVE_POST_SIZE = 20; // Taille du post actif - augmentée pour être plus visible
-export const MIN_IMPACT_SIZE = 3;
-export const MAX_IMPACT_SIZE = 8;
+export const MIN_IMPACT_SIZE = 2;
+export const MAX_IMPACT_SIZE = 5;
 export const USE_IMPACT_SIZE = true;
 export const ACTIVE_POST_COLOR = [1.0, 0, 0]; // Couleur rouge vif pour le post actif
 export const POST_ACTIVATION_DURATION = 3; // Durée de la transition en secondes

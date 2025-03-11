@@ -192,37 +192,37 @@ export class InputManager {
     const moveMultiplier = this.config.keyboardMovementMultiplier;
     const lookMultiplier = this.config.keyboardLookMultiplier;
 
-    // Mouvement avant/arrière (flèches haut/bas)
+    // Mouvement avant/arrière (ZQSD - maintenant W/S)
     const rawMoveForward =
-      (this.keysPressed["ArrowUp"] ? 1 : 0) -
-      (this.keysPressed["ArrowDown"] ? 1 : 0);
+      (this.keysPressed["KeyW"] ? 1 : 0) - (this.keysPressed["KeyS"] ? 1 : 0);
 
-    // Mouvement latéral (flèches gauche/droite)
+    // Mouvement latéral (ZQSD - maintenant A/D)
     const rawMoveRight =
-      (this.keysPressed["ArrowRight"] ? 1 : 0) -
-      (this.keysPressed["ArrowLeft"] ? 1 : 0);
+      (this.keysPressed["KeyD"] ? 1 : 0) - (this.keysPressed["KeyA"] ? 1 : 0);
 
-    // Mouvement vertical (E/C)
+    // Mouvement vertical (E/C) - inchangé
     const rawMoveUp =
       (this.keysPressed["KeyE"] ? 1 : 0) - (this.keysPressed["KeyC"] ? 1 : 0);
 
-    // Second stick virtuel (ZQSD) pour les rotations
+    // Second stick virtuel (flèches) pour les rotations
     const rawLookVertical =
-      (this.keysPressed["KeyW"] ? 1 : 0) - (this.keysPressed["KeyS"] ? 1 : 0);
+      (this.keysPressed["ArrowUp"] ? 1 : 0) -
+      (this.keysPressed["ArrowDown"] ? 1 : 0);
 
     const rawLookHorizontal =
-      (this.keysPressed["KeyD"] ? 1 : 0) - (this.keysPressed["KeyA"] ? 1 : 0);
+      (this.keysPressed["ArrowRight"] ? 1 : 0) -
+      (this.keysPressed["ArrowLeft"] ? 1 : 0);
 
     // Appliquer les multiplicateurs appropriés
     this.keyboardInputs.moveForward = rawMoveForward * moveMultiplier;
     this.keyboardInputs.moveRight = rawMoveRight * moveMultiplier;
     this.keyboardInputs.moveUp = rawMoveUp * moveMultiplier;
 
-    // Rotation avec ZQSD (second stick) - sensibilité réduite
+    // Rotation avec les flèches (second stick) - sensibilité réduite
     this.keyboardInputs.lookHorizontal = rawLookHorizontal * lookMultiplier;
     this.keyboardInputs.lookVertical = rawLookVertical * lookMultiplier;
 
-    // Roll avec Q/E
+    // Roll avec Q/E - inchangé
     this.keyboardInputs.roll =
       (this.keysPressed["KeyQ"] ? 1 : 0) - (this.keysPressed["KeyE"] ? 1 : 0);
 
@@ -364,6 +364,29 @@ export class InputManager {
   // Vérifier si une manette est connectée
   isGamepadConnected() {
     return this.gamepadConnected;
+  }
+
+  // Méthode pour simuler l'action de changement de position
+  triggerNextPositionAction() {
+    console.log("InputManager: Simulation de l'action nextPosition");
+
+    // Réinitialiser d'abord toutes les entrées pour éviter des conflits
+    this.resetInputs();
+
+    // Définir nextPosition à true (comme si l'utilisateur avait appuyé sur la touche)
+    this.keyboardInputs.nextPosition = true;
+
+    // Combiner et notifier
+    this.combineInputs();
+    this.notifyListeners();
+
+    // Puis remettre à false au prochain cycle (simule le relâchement de la touche)
+    setTimeout(() => {
+      this.keyboardInputs.nextPosition = false;
+      this.combineInputs();
+      this.notifyListeners();
+      console.log("InputManager: Action nextPosition terminée");
+    }, 50);
   }
 }
 

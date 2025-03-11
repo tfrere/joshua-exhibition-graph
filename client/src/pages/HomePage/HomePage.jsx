@@ -8,12 +8,52 @@ import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
-import PostProcessingEffects from "./components/PostProcessingEffects.jsx";
 import GridReferences from "./components/GridReferences.jsx";
 import AmbientSound from "./components/Audio/AmbientSound.jsx";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
-
+import * as THREE from "three";
 import "./HomePage.css";
+
+// Composant pour la sphère lumineuse
+const LightSphere = ({ radius = 30, intensity = 0.8, color = "#4080ff" }) => {
+  return (
+    <group>
+      {/* Sphère lumineuse centrale avec matériau émissif */}
+      <mesh>
+        <sphereGeometry args={[radius, 32, 32]} />
+        <meshBasicMaterial
+          color={color}
+          transparent={true}
+          opacity={0.15}
+          side={THREE.BackSide}
+        />
+      </mesh>
+
+      {/* Sphère intérieure pour renforcer l'effet de lumière */}
+      <mesh>
+        <sphereGeometry args={[radius * 0.8, 24, 24]} />
+        <MeshDistortMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={0.6}
+          distort={0.3}
+          speed={0.5}
+          transparent={true}
+          opacity={0.1}
+        />
+      </mesh>
+
+      {/* Lumière ponctuelle supplémentaire pour l'effet volumétrique */}
+      <pointLight
+        position={[0, 0, 0]}
+        intensity={intensity * 50}
+        distance={radius * 2}
+        decay={1.5}
+        color={color}
+      />
+    </group>
+  );
+};
 
 const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
@@ -88,6 +128,7 @@ const HomePage = () => {
 
       <Canvas
         shadows
+        // gl={{ toneMapping: THREE.NoToneMapping }}
         camera={{ position: [0, 0, 600], fov: 50, near: 0.1, far: 1000000 }}
       >
         <Stats />
@@ -96,24 +137,32 @@ const HomePage = () => {
         <AdvancedCameraController />
 
         {/* Éclairage */}
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={3} color="white" />
 
         {/* Lumière ponctuelle centrale optimisée */}
         <pointLight
           position={[0, 0, 0]}
-          intensity={100}
-          distance={60000}
+          intensity={18}
+          distance={300}
           decay={0.1}
-          color="blue"
+          color="white"
           castShadow
           shadow-mapSize-width={128}
           shadow-mapSize-height={128}
         />
 
+        {/* <pointLight
+          position={[0, 0, 100]}
+          intensity={20}
+          distance={100}
+          decay={0.1}
+          color="orange"
+        /> */}
+
         {/* Afficher le graphe si les données sont disponibles et valides */}
-        {graphData && graphData.nodes && graphData.links && (
+        {/* {graphData && graphData.nodes && graphData.links && (
           <Graph data={graphData} postsData={postsData} />
-        )}
+        )} */}
 
         {/* Afficher les posts si activés et disponibles */}
         {postsData && <Posts data={postsData} />}
@@ -121,7 +170,7 @@ const HomePage = () => {
         {/* Effets de post-processing dans un composant séparé */}
         {/* <PostProcessingEffects /> */}
         {/* <EffectComposer>
-          <Bloom intensity={0.2} threshold={0.1} radius={0.1} amount={0.1} />
+          <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} />
         </EffectComposer> */}
       </Canvas>
     </div>

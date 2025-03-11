@@ -811,6 +811,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
       // Exposer la fonction animateToCameraPosition au niveau global
       window.__animateToCameraPosition = animateToCameraPosition;
+
+      // Exposer également le gestionnaire d'entrées au niveau global pour le FlightController
+      window.getInputManager = getInputManager;
     }
   }, [camera, config]);
 

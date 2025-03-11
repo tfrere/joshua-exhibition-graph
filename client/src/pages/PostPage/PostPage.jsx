@@ -4,7 +4,7 @@ import {
   initSocketSync,
   addEventListener,
   removeEventListener,
-} from "../HomePage/components/activePostRef";
+} from "../HomePage/components/Posts/hooks/useNearestPostDetection";
 import TextScramble from "../../components/TextScramble";
 import "../../components/TextScramble.css";
 

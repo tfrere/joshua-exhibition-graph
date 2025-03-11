@@ -77,38 +77,24 @@ export function DataProvider({ children }) {
           throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
-        const characterData = await response.json();
+        // Les données sont une liste plate de posts
+        const postsData = await response.json();
 
-        // Extraire les posts de chaque personnage
-        let allPosts = [];
-        let characterCount = 0;
-        let postsCount = 0;
+        // Traitement des posts directement depuis la liste plate
+        const allPosts = postsData.map((post) => ({
+          ...post,
+          // Assurer que les propriétés nécessaires sont présentes
+          isJoshuaCharacter:
+            post.character?.includes("joshua") ||
+            post.slug?.includes("joshua") ||
+            false,
+          // Initialiser les coordonnées si elles n'existent pas
+          coordinates: post.coordinates || { x: 0, y: 0, z: 0 },
+          // Initialiser la couleur si elle n'existe pas
+          color: post.color || [0.8, 0.4, 0.0],
+        }));
 
-        characterData.forEach((character) => {
-          characterCount++;
-
-          // Vérifier si le personnage a des posts
-          if (character.posts && Array.isArray(character.posts)) {
-            // Pour chaque post, ajouter des informations du personnage parent
-            const characterPosts = character.posts.map((post) => ({
-              ...post,
-              // Assurer que le post a une référence au personnage via le slug
-              slug: character.slug,
-              isJoshuaCharacter: character.isJoshua === true,
-              // Initialiser les coordonnées si elles n'existent pas
-              coordinates: post.coordinates || { x: 0, y: 0, z: 0 },
-              // Initialiser la couleur si elle n'existe pas
-              color: post.color || [0.8, 0.4, 0.0],
-            }));
-
-            postsCount += characterPosts.length;
-            allPosts = [...allPosts, ...characterPosts];
-          }
-        });
-
-        console.log(
-          `[CYCLE DE VIE] Posts chargés: ${postsCount} posts de ${characterCount} personnages`
-        );
+        console.log(`[CYCLE DE VIE] Posts chargés: ${allPosts.length} posts`);
 
         setPostsData(allPosts);
       } catch (err) {

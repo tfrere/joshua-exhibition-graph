@@ -46,24 +46,24 @@ const LinkLine = ({
 
     return geometry;
   }, [points, isDashed]);
-  // Animation subtile
-  useFrame((state) => {
-    if (meshRef.current) {
-      const elapsedTime = state.clock.getElapsedTime();
-      const initialDelay = 3; // 3 secondes
-      const depthDelay = 0.6 * depth; // 300ms par depth
+  // // Animation subtile
+  // useFrame((state) => {
+  //   if (meshRef.current) {
+  //     const elapsedTime = state.clock.getElapsedTime();
+  //     const initialDelay = 3; // 3 secondes
+  //     const depthDelay = 0.6 * depth; // 300ms par depth
 
-      if (elapsedTime < initialDelay + depthDelay) {
-        meshRef.current.material.opacity = 0;
-      } else {
-        meshRef.current.material.opacity = THREE.MathUtils.lerp(
-          0.6,
-          1.0,
-          (elapsedTime - initialDelay - depthDelay) / 1
-        );
-      }
-    }
-  });
+  //     if (elapsedTime < initialDelay + depthDelay) {
+  //       meshRef.current.material.opacity = 0;
+  //     } else {
+  //       meshRef.current.material.opacity = THREE.MathUtils.lerp(
+  //         0.6,
+  //         1.0,
+  //         (elapsedTime - initialDelay - depthDelay) / 1
+  //       );
+  //     }
+  //   }
+  // });
   return (
     <line ref={meshRef}>
       <bufferGeometry attach="geometry" {...lineGeometry} />
@@ -73,7 +73,7 @@ const LinkLine = ({
           color={linkColor}
           linewidth={linkWidth}
           transparent={true}
-          opacity={0.6}
+          opacity={0.2}
           dashSize={dashSize}
           gapSize={gapSize}
           scale={1} // Ajout d'un facteur de scale explicite
@@ -84,7 +84,7 @@ const LinkLine = ({
           color={linkColor}
           linewidth={linkWidth}
           transparent={true}
-          opacity={0.6}
+          opacity={0.2}
           linecap="round"
           linejoin="round"
         />
