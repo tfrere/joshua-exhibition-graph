@@ -5,7 +5,7 @@ const GridReferences = ({
   rotationInterval = 15,
   maxRotation = 360,
   circleRadii = [50, 100, 150, 200, 250],
-  color = "#888888",
+  color = "#FFF",
   opacity = 0.4,
 }) => {
   // Calculate how many grid planes to create based on rotation interval

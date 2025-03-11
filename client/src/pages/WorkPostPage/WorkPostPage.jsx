@@ -50,51 +50,55 @@ const loadJSON = async (url) => {
  * @param {number} luminance - Luminosité de la couleur (0-1, défaut: 0.5)
  * @returns {Array} Tableau RGB normalisé [r, g, b] avec des valeurs entre 0 et 1
  */
-function generateColorFromCharacter(character, saturation = 0.8, luminance = 0.6) {
+function generateColorFromCharacter(
+  character,
+  saturation = 0.8,
+  luminance = 0.6
+) {
   if (!character) {
     // Couleur par défaut si pas de character
     return [0.8, 0.8, 0.8]; // Gris clair
   }
-  
+
   // Convertir le character en chaîne si ce n'est pas déjà le cas
   const charString = String(character);
-  
+
   // Calculer un nombre de hachage simple pour la chaîne
   let hash = 0;
   for (let i = 0; i < charString.length; i++) {
     hash = charString.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   // Convertir le hash en une valeur de teinte (0-360)
   const hue = Math.abs(hash % 360);
-  
+
   // Convertir HSL en RGB
   const h = hue / 360;
   const s = saturation;
   const l = luminance;
-  
+
   let r, g, b;
-  
+
   if (s === 0) {
     r = g = b = l; // Niveaux de gris
   } else {
     const hue2rgb = (p, q, t) => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
-    
+
     const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
     const p = 2 * l - q;
-    
-    r = hue2rgb(p, q, h + 1/3);
+
+    r = hue2rgb(p, q, h + 1 / 3);
     g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1/3);
+    b = hue2rgb(p, q, h - 1 / 3);
   }
-  
+
   return [r, g, b];
 }
 
@@ -593,7 +597,7 @@ const WorkPostPage = () => {
       },
       {
         name: "spherize",
-        enabled: false, // Désactiver spherize pour le moment
+        enabled: true, // Désactiver spherize pour le moment
         config: {
           sphereRadius: 250,
           volumeExponent: 2 / 3,
@@ -692,7 +696,7 @@ const WorkPostPage = () => {
         newPost.x += (Math.random() * 2 - 1) * 10;
         newPost.y += (Math.random() * 2 - 1) * 10;
         newPost.z += (Math.random() * 2 - 1) * 10;
-        
+
         // Attribuer une couleur basée sur le character
         newPost.color = generateColorFromCharacter(newPost.slug);
 

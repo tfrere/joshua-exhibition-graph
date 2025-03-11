@@ -149,14 +149,6 @@ const HomePage = () => {
       {/* Interface utilisateur en dehors du Canvas - conditionnée par le mode debug */}
       {debugMode && <NavigationUI />}
 
-      {/* Afficher les références de grille si activées */}
-      <GridReferences
-        rotationInterval={20}
-        maxRotation={180}
-        circleRadii={[50, 100, 150, 200, 250]}
-        opacity={1}
-      />
-
       {/* Indicateur de connexion de manette - conditionné par le mode debug */}
       {debugMode && <GamepadIndicator />}
 
@@ -170,6 +162,14 @@ const HomePage = () => {
         <color attach="background" args={["#000000"]} />
 
         <AdvancedCameraController />
+
+        {/* Afficher les références de grille */}
+        {/* <GridReferences
+          rotationInterval={360}
+          maxRotation={180}
+          circleRadii={[50, 100, 150, 200, 250]}
+          opacity={0.3}
+        /> */}
 
         {/* Éclairage */}
         <ambientLight intensity={3} color="white" />

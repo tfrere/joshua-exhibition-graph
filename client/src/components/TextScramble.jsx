@@ -48,9 +48,13 @@ const TextScramble = ({
 
     if (complete === queue.length) {
       isAnimatingRef.current = false;
-      cancelAnimationFrame(frameRequestRef.current);
+      frameRequestRef.current = null;
     } else {
       frameRef.current++;
+      // Nettoyer le frame précédent avant d'en demander un nouveau
+      if (frameRequestRef.current) {
+        cancelAnimationFrame(frameRequestRef.current);
+      }
       frameRequestRef.current = requestAnimationFrame(update);
     }
   };
@@ -63,7 +67,10 @@ const TextScramble = ({
     previousTextRef.current = newText;
 
     // Annuler toute animation en cours
-    cancelAnimationFrame(frameRequestRef.current);
+    if (frameRequestRef.current) {
+      cancelAnimationFrame(frameRequestRef.current);
+      frameRequestRef.current = null;
+    }
 
     // Préparation de la nouvelle animation
     const length = Math.max(oldText.length, newText.length);
@@ -87,14 +94,23 @@ const TextScramble = ({
   useEffect(() => {
     if (text !== undefined && text !== displayText) {
       setDisplayText(text);
+      // Annuler l'animation en cours avant d'en démarrer une nouvelle
+      if (isAnimatingRef.current && frameRequestRef.current) {
+        cancelAnimationFrame(frameRequestRef.current);
+        frameRequestRef.current = null;
+      }
       scrambleText(text);
     }
-  }, [text]);
+  }, [text, displayText]);
 
   // Nettoyage à la destruction du composant
   useEffect(() => {
     return () => {
-      cancelAnimationFrame(frameRequestRef.current);
+      if (frameRequestRef.current) {
+        cancelAnimationFrame(frameRequestRef.current);
+        frameRequestRef.current = null;
+      }
+      isAnimatingRef.current = false;
     };
   }, []);
 

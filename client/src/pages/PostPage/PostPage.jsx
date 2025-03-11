@@ -19,6 +19,22 @@ function PostPage() {
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
   const changeTimeoutRef = useRef(null);
+  const abortControllerRef = useRef(null);
+
+  // Fonction pour nettoyer toutes les ressources en cours
+  const cleanupResources = useCallback(() => {
+    // Nettoyer les timeouts
+    if (changeTimeoutRef.current) {
+      clearTimeout(changeTimeoutRef.current);
+      changeTimeoutRef.current = null;
+    }
+
+    // Annuler les fetch en cours
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
 
   // Charger toutes les données au montage du composant
   useEffect(() => {
@@ -87,7 +103,12 @@ function PostPage() {
 
     // Initialiser la connexion socket
     initSocketSync();
-  }, []);
+
+    // Nettoyage des ressources à la destruction du composant
+    return () => {
+      cleanupResources();
+    };
+  }, [cleanupResources]);
 
   // Fonction mémorisée pour trouver un personnage par son slug
   const findCharacter = useCallback(
@@ -113,6 +134,36 @@ function PostPage() {
     [postsData]
   );
 
+  // Vérifier si l'image du personnage existe avec gestion de l'annulation
+  const checkImageExists = useCallback(async (slug) => {
+    // Annuler toute requête fetch précédente
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Créer un nouveau AbortController pour cette requête
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const response = await fetch(`/public/img/characters/${slug}.svg`, {
+        signal: abortControllerRef.current.signal,
+      });
+      // Il faut vérifier si le contenu de la réponse est une image SVG valide
+      // Un statut 200 n'est pas suffisant car le serveur peut renvoyer une page 404 personnalisée avec un statut 200
+      const contentType = response.headers.get("content-type");
+      const text = await response.text();
+      const isSvg =
+        contentType && contentType.includes("svg") && text.includes("<svg");
+      setCharacterImageExists(isSvg);
+    } catch (error) {
+      // Ne pas afficher d'erreur si la requête a été annulée intentionnellement
+      if (error.name !== "AbortError") {
+        console.error("Erreur lors de la vérification de l'image:", error);
+      }
+      setCharacterImageExists(false);
+    }
+  }, []);
+
   // Écouter les changements du post actif
   useEffect(() => {
     const handleActivePostChange = (post) => {
@@ -121,12 +172,8 @@ function PostPage() {
 
       pendingPostChangeRef.current = post;
 
-      if (changeTimeoutRef.current) {
-        console.log(
-          "Changement de post déjà en attente, mise à jour de la demande en attente"
-        );
-        return;
-      }
+      // Nettoyer le timeout précédent s'il existe
+      cleanupResources();
 
       console.log("Attente de 2 secondes avant de changer de post...");
       changeTimeoutRef.current = setTimeout(() => {
@@ -142,29 +189,7 @@ function PostPage() {
           if (character) {
             setActiveCharacterData(character);
             // Vérifier si l'image du personnage existe
-            const checkImageExists = async () => {
-              try {
-                const response = await fetch(
-                  `/public/img/characters/${pendingPost.slug}.svg`
-                );
-                // Il faut vérifier si le contenu de la réponse est une image SVG valide
-                // Un statut 200 n'est pas suffisant car le serveur peut renvoyer une page 404 personnalisée avec un statut 200
-                const contentType = response.headers.get("content-type");
-                const text = await response.text();
-                const isSvg =
-                  contentType &&
-                  contentType.includes("svg") &&
-                  text.includes("<svg");
-                setCharacterImageExists(isSvg);
-              } catch (error) {
-                console.error(
-                  "Erreur lors de la vérification de l'image:",
-                  error
-                );
-                setCharacterImageExists(false);
-              }
-            };
-            checkImageExists();
+            checkImageExists(pendingPost.slug);
           } else {
             console.warn(
               "Personnage actif non trouvé dans la base de données:",
@@ -189,7 +214,7 @@ function PostPage() {
         setIsLoading(false);
 
         changeTimeoutRef.current = null;
-      }, 300);
+      }, 0);
     };
 
     addEventListener("activePostChanged", handleActivePostChange);
@@ -202,12 +227,23 @@ function PostPage() {
 
     return () => {
       removeEventListener("activePostChanged", handleActivePostChange);
-      if (changeTimeoutRef.current) {
-        clearTimeout(changeTimeoutRef.current);
-        changeTimeoutRef.current = null;
-      }
+      cleanupResources();
     };
-  }, [postsData, databaseData, findCharacter, findCurrentPost]);
+  }, [
+    postsData,
+    databaseData,
+    findCharacter,
+    findCurrentPost,
+    checkImageExists,
+    cleanupResources,
+  ]);
+
+  // Nettoyage global lors du démontage du composant
+  useEffect(() => {
+    return () => {
+      cleanupResources();
+    };
+  }, [cleanupResources]);
 
   // Mémoriser le contenu pour éviter des re-renders inutiles
   const pageContent = useMemo(() => {
