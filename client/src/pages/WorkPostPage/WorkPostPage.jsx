@@ -10,6 +10,7 @@ import { spatializePostsAroundJoshuaNodes } from "./components/PostRenderer/util
 import { normalizePostsInSphere } from "./components/PostRenderer/utils/spherizePass.js";
 import { animatePostsInFlowfield } from "./components/PostRenderer/utils/flowfieldPass.js";
 import { applyRadialDisplacement } from "./components/PostRenderer/utils/displacementPass.js";
+import { spatializePostsAroundJoshuaNodesVND } from "./components/PostRenderer/utils/voronoiWithDisplacementPass.js";
 
 // Fonction utilitaire pour télécharger un fichier JSON
 const downloadJSON = (content, fileName) => {
@@ -84,12 +85,26 @@ const WorkPostPage = () => {
     passes: [
       {
         name: "voronoi",
-        enabled: true, // Activer la passe voronoi pour spatialiser tous les posts
+        enabled: false, // Activer la passe voronoi pour spatialiser tous les posts
         config: {
+          secondPass: false, // Activer la passe 2 (voronoi)
           perlinScale: 0.05,
           perlinAmplitude: 1,
           dilatationFactor: 1.2,
-          twoPhases: true, // Activer le traitement en deux phases
+        },
+      },
+      {
+        name: "vnp",
+        enabled: true, // Activer la passe voronoi pour spatialiser tous les posts
+        config: {
+          secondPass: true, // Activer la passe 2 (voronoi)
+          perlinScale: 0.05,
+          perlinAmplitude: 1,
+          dilatationFactor: 1.2,
+          thirdPass: true, // Activer la passe 3 (displacement)
+          displacementIntensity: 10,
+          displacementFrequency: Math.PI,
+          displacementSeed: 42,
         },
       },
       {
@@ -247,10 +262,11 @@ const WorkPostPage = () => {
         );
 
         // Exécuter la passe appropriée en fonction de son nom
+        console.log("pass.name", pass.name);
         switch (pass.name.toLowerCase()) {
           case "voronoi":
             console.log(
-              `Spatialisation voronoi avec échelle ${pass.config.perlinScale}, amplitude ${pass.config.perlinAmplitude}, dilatation ${pass.config.dilatationFactor}, deux phases: ${pass.config.twoPhases}`
+              `Spatialisation voronoi avec échelle ${pass.config.perlinScale}, amplitude ${pass.config.perlinAmplitude}, dilatation ${pass.config.dilatationFactor}, deux phases: ${pass.config.secondPass}`
             );
 
             // Appliquer la spatialisation voronoi
@@ -270,9 +286,56 @@ const WorkPostPage = () => {
                 perlinScale: pass.config.perlinScale,
                 perlinAmplitude: pass.config.perlinAmplitude,
                 dilatationFactor: pass.config.dilatationFactor,
-                twoPhases:
-                  pass.config.twoPhases !== undefined
-                    ? pass.config.twoPhases
+                secondPass:
+                  pass.config.secondPass !== undefined
+                    ? pass.config.secondPass
+                    : true,
+                thirdPass:
+                  pass.config.thirdPass !== undefined
+                    ? pass.config.thirdPass
+                    : true,
+                useVoronoi: true,
+              }
+            );
+
+            console.log(
+              `Voronoi terminé, ${processedPosts.length} posts spatialisés`
+            );
+            break;
+
+          case "vnp":
+            console.log(
+              `Spatialisation vnp avec échelle ${pass.config.perlinScale}, amplitude ${pass.config.perlinAmplitude}, dilatation ${pass.config.dilatationFactor}, deux phases: ${pass.config.secondPass}`
+            );
+
+            // Appliquer la spatialisation voronoi
+            processedPosts = spatializePostsAroundJoshuaNodesVND(
+              processedPosts,
+              nodes,
+              {
+                // Options générales
+                joshuaOnly: options.joshuaOnly,
+                preserveOtherPositions: options.preserveOtherPositions,
+                radius: options.radius,
+                minDistance: options.minDistance,
+                verticalSpread: options.verticalSpread,
+                horizontalSpread: options.horizontalSpread,
+
+                // Options spécifiques à voronoi
+                perlinScale: pass.config.perlinScale,
+                perlinAmplitude: pass.config.perlinAmplitude,
+                dilatationFactor: pass.config.dilatationFactor,
+                // Options pour la Phase 3 de displacement
+                displacementIntensity: pass.config.displacementIntensity,
+                displacementFrequency: pass.config.displacementFrequency,
+                displacementSeed: pass.config.displacementSeed,
+                secondPass:
+                  pass.config.secondPass !== undefined
+                    ? pass.config.secondPass
+                    : true,
+                thirdPass:
+                  pass.config.thirdPass !== undefined
+                    ? pass.config.thirdPass
                     : true,
                 useVoronoi: true,
               }

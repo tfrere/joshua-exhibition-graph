@@ -20,6 +20,9 @@
  * @param {boolean} options.useVoronoi - Si true, applique l'effet de dilatation Voronoi (défaut: true)
  * @param {boolean} options.applyDispersion - Si true, applique la dispersion autour du nœud (défaut: true)
  * @param {string} options.postUID - Identifiant unique du post (défaut: '')
+ * @param {number} options.displacementIntensity - Intensité du déplacement (défaut: 10)
+ * @param {number} options.displacementFrequency - Fréquence du bruit de Perlin (défaut: 0.05)
+ * @param {number} options.displacementSeed - Valeur de graine pour le bruit (défaut: 42)
  * @returns {Object} Coordonnées {x, y, z} du post
  */
 export function calculatePostPosition(characterNode, options = {}) {
@@ -116,6 +119,119 @@ export function calculatePostPosition(characterNode, options = {}) {
   return { x, y, z };
 }
 
+// Importer la fonction de bruit de Perlin depuis displacementPass.js
+function perlinNoise(x, y, z, scale = 1, seed = 0) {
+  // Ajuster les coordonnées avec l'échelle et le seed
+  x = x * scale + seed;
+  y = y * scale + seed * 2;
+  z = z * scale + seed * 3;
+
+  // Utiliser des fonctions trigonométriques pour simuler le bruit de Perlin
+  const noise =
+    Math.sin(x * 1.7 + Math.sin(y * 0.5) + Math.sin(z * 0.3)) * 0.5 +
+    Math.sin(y * 2.3 + Math.sin(z * 0.7) + Math.sin(x * 0.9)) * 0.3 +
+    Math.sin(z * 1.9 + Math.sin(x * 1.1) + Math.sin(y * 0.5)) * 0.2;
+
+  return noise;
+}
+
+/**
+ * Applique un déplacement radial à un post par rapport à son nœud de personnage
+ * 
+ * @param {Object} post - Le post à déplacer
+ * @param {Object} characterNode - Le nœud de personnage servant de centre
+ * @param {Object} options - Options de déplacement
+ * @param {number} options.intensity - Intensité du déplacement (défaut: 10)
+ * @param {number} options.frequency - Fréquence du bruit de Perlin (défaut: 0.05)
+ * @param {number} options.seed - Valeur de graine pour le bruit (défaut: 42)
+ * @param {number} options.minRadius - Rayon minimal à préserver (défaut: 0)
+ * @returns {Object} Post avec coordonnées mises à jour
+ */
+function applyCharacterRadialDisplacement(post, characterNode, options = {}) {
+  const intensity = options.intensity || 10;
+  const frequency = options.frequency || 0.05;
+  const seed = options.seed || 42;
+  const minRadius = options.minRadius || 0;
+  
+  // Centre du déplacement = position du personnage
+  const center = {
+    x: characterNode.x,
+    y: characterNode.y,
+    z: characterNode.z
+  };
+
+  // S'assurer que les coordonnées existent
+  if (post.x === undefined || post.y === undefined || post.z === undefined) {
+    // Initialiser les coordonnées si elles n'existent pas
+    return {
+      ...post,
+      x: center.x,
+      y: center.y,
+      z: center.z,
+    };
+  }
+
+  // S'assurer que les coordonnées sont numériques
+  const x = typeof post.x === "number" ? post.x : center.x;
+  const y = typeof post.y === "number" ? post.y : center.y;
+  const z = typeof post.z === "number" ? post.z : center.z;
+
+  // Calculer le vecteur de direction depuis le centre
+  const dx = x - center.x;
+  const dy = y - center.y;
+  const dz = z - center.z;
+
+  // Distance au centre
+  const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  // Éviter la division par zéro
+  if (distance < 0.0001) {
+    return post;
+  }
+
+  // Direction radiale normalisée
+  const dirX = dx / distance;
+  const dirY = dy / distance;
+  const dirZ = dz / distance;
+
+  // Calculer la valeur de bruit pour ce point
+  const noiseValue = perlinNoise(dirX, dirY, dirZ, frequency, seed);
+
+  // Calculer l'amplitude du déplacement
+  const displacementFactor = intensity * noiseValue;
+
+  // Appliquer le déplacement dans la direction radiale, en respectant le rayon minimal
+  // Si minRadius est défini, s'assurer que le post ne se rapproche pas trop du centre
+  let newX = x + dirX * displacementFactor;
+  let newY = y + dirY * displacementFactor;
+  let newZ = z + dirZ * displacementFactor;
+
+  // Vérifier si le déplacement respecte le rayon minimal
+  if (minRadius > 0) {
+    const newDx = newX - center.x;
+    const newDy = newY - center.y;
+    const newDz = newZ - center.z;
+    const newDistance = Math.sqrt(newDx * newDx + newDy * newDy + newDz * newDz);
+    
+    // Si la nouvelle distance est inférieure au rayon minimal, ajuster la position
+    if (newDistance < minRadius) {
+      const scaleFactor = minRadius / newDistance;
+      newX = center.x + newDx * scaleFactor;
+      newY = center.y + newDy * scaleFactor;
+      newZ = center.z + newDz * scaleFactor;
+    }
+  }
+
+  return {
+    ...post,
+    x: newX,
+    y: newY,
+    z: newZ,
+    // Attribut additionnel pour tracking
+    displacementValue: displacementFactor
+  };
+}
+
 /**
  * Spatialise les posts autour des nœuds Joshua en utilisant l'algorithme de dispersion Voronoi.
  * Cette fonction utilise une approche en deux phases :
@@ -128,6 +244,7 @@ export function calculatePostPosition(characterNode, options = {}) {
  * @param {boolean} options.joshuaOnly - Si true, ne traite que les posts liés à Joshua (défaut: true)
  * @param {boolean} options.preserveOtherPositions - Si true, ne modifie pas les positions des posts non-Joshua (défaut: true)
  * @param {boolean} options.secondPass - Si true, effectue le traitement en deux phases (défaut: true)
+ * @param {boolean} options.thirdPass - Si true, effectue le traitement en deux phases (défaut: true)
  * @param {number} options.radius - Rayon de dispersion (défaut: 15)
  * @param {number} options.minDistance - Distance minimale du nœud (défaut: 5)
  * @param {number} options.verticalSpread - Facteur de dispersion verticale (défaut: 1.5)
@@ -140,11 +257,12 @@ export function calculatePostPosition(characterNode, options = {}) {
  * @param {Array} options.customNodes - Nœuds personnalisés avec leurs positions actuelles, utilisés à la place des nœuds standards
  * @returns {Array} Posts spatialisés avec coordonnées mises à jour
  */
-export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
+export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) {
   const {
     joshuaOnly = true,
     preserveOtherPositions = true,
     secondPass = true,
+    thirdPass = true,
     // Options de positionnement pour les posts
     radius = 15,
     minDistance = 5,
@@ -155,6 +273,10 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     perlinAmplitude = 5,
     dilatationFactor = 1.2,
     useVoronoi = true,
+    // Options pour la Phase 3 de displacement
+    displacementIntensity = 10,
+    displacementFrequency = 0.05,
+    displacementSeed = 42,
     // Option pour les couleurs uniques par personnage
     useUniqueColorsPerCharacter = true, // eslint-disable-line no-unused-vars
     // Nœuds personnalisés avec positions actuelles de la simulation
@@ -262,11 +384,11 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
   // Créer une copie profonde des posts pour éviter de modifier l'original
   const spatializedPosts = JSON.parse(JSON.stringify(posts));
 
-  if (secondPass) {
-    console.log(
-      "PHASE 1: Positionnement des posts aux coordonnées exactes des personnages"
-    );
-  }
+  // PHASE 1: Positionnement des posts aux coordonnées exactes des personnages
+  // Cette phase est toujours exécutée
+  console.log(
+    "PHASE 1: Positionnement des posts aux coordonnées exactes des personnages"
+  );
 
   // Traiter chaque post
   let postsWithCharacter = 0;
@@ -308,38 +430,17 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     if (characterNode) {
       postsWithCharacter++;
 
-      // PHASE 1: Positionner d'abord le post exactement aux coordonnées du personnage
-      if (secondPass) {
-        // Positionner exactement aux coordonnées du personnage (sans dispersion)
-        const nodePosition = {
-          x: characterNode.x,
-          y: characterNode.y,
-          z: characterNode.z,
-        };
+      // Positionner exactement aux coordonnées du personnage (sans dispersion)
+      const nodePosition = {
+        x: characterNode.x,
+        y: characterNode.y,
+        z: characterNode.z,
+      };
 
-        // Mettre à jour les coordonnées du post
-        post.x = nodePosition.x;
-        post.y = nodePosition.y;
-        post.z = nodePosition.z;
-      } else {
-        // Mode standard: calculer la position avec dispersion en une seule étape
-        const postPosition = calculatePostPosition(characterNode, {
-          radius,
-          minDistance,
-          verticalSpread,
-          horizontalSpread,
-          perlinScale,
-          perlinAmplitude,
-          dilatationFactor,
-          useVoronoi,
-          postUID: post.postUID, // Utiliser directement le postUID existant
-        });
-
-        // Mettre à jour les coordonnées du post
-        post.x = postPosition.x;
-        post.y = postPosition.y;
-        post.z = postPosition.z;
-      }
+      // Mettre à jour les coordonnées du post
+      post.x = nodePosition.x;
+      post.y = nodePosition.y;
+      post.z = nodePosition.z;
 
       totalPostsWithCoordinates++;
     } else {
@@ -372,6 +473,7 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
   `);
 
   // PHASE 2: Appliquer la dispersion autour des positions des personnages
+  // Cette phase n'est exécutée que si secondPass est true
   if (secondPass) {
     console.log(
       "PHASE 2: Application de la dispersion autour des positions de base"
@@ -396,16 +498,8 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
 
       // Si le post a un nœud associé, appliquer la dispersion
       if (characterNode) {
-        // Créer un nœud temporaire avec les coordonnées actuelles du post
-        // pour calculer la dispersion à partir de la position actuelle
-        const basePosition = {
-          x: characterNode.x,
-          y: characterNode.y,
-          z: characterNode.z,
-        };
-
         // Appliquer l'effet de dispersion et voronoi
-        const dispersedPosition = calculatePostPosition(basePosition, {
+        const dispersedPosition = calculatePostPosition(characterNode, {
           radius,
           minDistance,
           verticalSpread,
@@ -427,6 +521,181 @@ export function spatializePostsAroundJoshuaNodes(posts, nodes, options = {}) {
     });
 
     console.log(`Phase 2 terminée: ${postsDispersed} posts dispersés`);
+  }
+
+  // PHASE 3: Appliquer le déplacement radial pour chaque personnage
+  // Cette phase n'est exécutée que si thirdPass est true
+  if (thirdPass) {
+    console.log("=== DÉBUT DU DÉPLACEMENT RADIAL PAR PERSONNAGE (PHASE 3) ===");
+    console.log(`Application de déplacement radial avec du bruit de Perlin sur ${spatializedPosts.length} posts (intensité: ${displacementIntensity}, fréquence: ${displacementFrequency}, seed: ${displacementSeed})`);
+
+    const displacementOptions = {
+      intensity: displacementIntensity,
+      frequency: displacementFrequency,
+      seed: displacementSeed,
+      minRadius: options.minRadius || 0
+    };
+
+    // Pour le debugging, échantillonner quelques posts avant déplacement
+    if (spatializedPosts.length > 0) {
+      const samplePost = spatializedPosts[0];
+      console.log(
+        "Coordonnées AVANT déplacement (premier post):",
+        JSON.stringify({
+          x: samplePost.x,
+          y: samplePost.y,
+          z: samplePost.z,
+        })
+      );
+
+      // Calculer les statistiques initiales (min, max, moyenne)
+      const validDistances = [];
+      for (const post of spatializedPosts) {
+        // Vérifier que les coordonnées sont numériques
+        if (
+          typeof post.x === "number" &&
+          typeof post.y === "number" &&
+          typeof post.z === "number"
+        ) {
+          // Trouver le nœud correspondant
+          let characterNode = null;
+          if (post.slug && characterNodesMap[post.slug]) {
+            characterNode = characterNodesMap[post.slug];
+          } else if (post.character) {
+            if (characterNodesMap[post.character]) {
+              characterNode = characterNodesMap[post.character];
+            } else if (nodesByIdMap[post.character]) {
+              characterNode = nodesByIdMap[post.character];
+            }
+          }
+
+          if (characterNode) {
+            const dx = post.x - characterNode.x;
+            const dy = post.y - characterNode.y;
+            const dz = post.z - characterNode.z;
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (!isNaN(distance) && isFinite(distance)) {
+              validDistances.push(distance);
+            }
+          }
+        }
+      }
+
+      let minDist = 0,
+          maxDist = 0,
+          avgDist = 0;
+      if (validDistances.length > 0) {
+        minDist = Math.min(...validDistances);
+        maxDist = Math.max(...validDistances);
+        avgDist =
+          validDistances.reduce((sum, d) => sum + d, 0) / validDistances.length;
+      }
+
+      console.log(
+        `Statistiques avant déplacement: min=${minDist.toFixed(
+          2
+        )}, max=${maxDist.toFixed(2)}, moyenne=${avgDist.toFixed(2)}`
+      );
+    }
+
+    let postsDisplaced = 0;
+
+    spatializedPosts.forEach((post) => {
+      // Rechercher à nouveau le nœud correspondant
+      let characterNode = null;
+
+      if (post.slug && characterNodesMap[post.slug]) {
+        characterNode = characterNodesMap[post.slug];
+      } else if (post.character) {
+        if (characterNodesMap[post.character]) {
+          characterNode = characterNodesMap[post.character];
+        } else if (nodesByIdMap[post.character]) {
+          characterNode = nodesByIdMap[post.character];
+        }
+      }
+
+      // Si le post a un nœud associé, appliquer le déplacement radial
+      if (characterNode) {
+        const displacedPost = applyCharacterRadialDisplacement(
+          post,
+          characterNode,
+          displacementOptions
+        );
+
+        // Mettre à jour les coordonnées du post
+        post.x = displacedPost.x;
+        post.y = displacedPost.y;
+        post.z = displacedPost.z;
+        post.displacementValue = displacedPost.displacementValue;
+
+        postsDisplaced++;
+      }
+    });
+
+    // Pour le debugging, échantillonner quelques posts après déplacement
+    if (spatializedPosts.length > 0) {
+      const samplePost = spatializedPosts[0];
+      console.log(
+        "Coordonnées APRÈS déplacement (premier post):",
+        JSON.stringify({
+          x: samplePost.x,
+          y: samplePost.y,
+          z: samplePost.z,
+        })
+      );
+
+      // Calculer les statistiques après déplacement
+      const validDistances = [];
+      for (const post of spatializedPosts) {
+        // Vérifier que les coordonnées sont numériques
+        if (
+          typeof post.x === "number" &&
+          typeof post.y === "number" &&
+          typeof post.z === "number"
+        ) {
+          // Trouver le nœud correspondant
+          let characterNode = null;
+          if (post.slug && characterNodesMap[post.slug]) {
+            characterNode = characterNodesMap[post.slug];
+          } else if (post.character) {
+            if (characterNodesMap[post.character]) {
+              characterNode = characterNodesMap[post.character];
+            } else if (nodesByIdMap[post.character]) {
+              characterNode = nodesByIdMap[post.character];
+            }
+          }
+
+          if (characterNode) {
+            const dx = post.x - characterNode.x;
+            const dy = post.y - characterNode.y;
+            const dz = post.z - characterNode.z;
+            const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (!isNaN(distance) && isFinite(distance)) {
+              validDistances.push(distance);
+            }
+          }
+        }
+      }
+
+      let minDist = 0,
+          maxDist = 0,
+          avgDist = 0;
+      if (validDistances.length > 0) {
+        minDist = Math.min(...validDistances);
+        maxDist = Math.max(...validDistances);
+        avgDist =
+          validDistances.reduce((sum, d) => sum + d, 0) / validDistances.length;
+      }
+
+      console.log(
+        `Statistiques après déplacement: min=${minDist.toFixed(
+          2
+        )}, max=${maxDist.toFixed(2)}, moyenne=${avgDist.toFixed(2)}`
+      );
+    }
+
+    console.log(`Phase 3 terminée: ${postsDisplaced} posts déplacés radialement`);
+    console.log("=== FIN DU DÉPLACEMENT RADIAL PAR PERSONNAGE ===");
   }
 
   return spatializedPosts;
