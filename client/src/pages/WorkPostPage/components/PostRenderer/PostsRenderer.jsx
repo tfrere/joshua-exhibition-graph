@@ -59,11 +59,11 @@ export function PostsRenderer({ posts, isLoading }) {
         value: SIZE,
         min: 0.1,
         max: 1,
-        step: 0.1,
+        step: 0.01,
         label: "Taille des points",
       },
       useImpactSize: {
-        value: true,
+        value: false,
         label: "Utiliser la valeur d'impact pour la taille",
       },
     }),

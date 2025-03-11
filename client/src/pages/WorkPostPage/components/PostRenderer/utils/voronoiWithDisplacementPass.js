@@ -24,6 +24,11 @@
  * @param {number} options.displacementFrequency - Fréquence du bruit de Perlin (défaut: 0.05)
  * @param {number} options.displacementSeed - Valeur de graine pour le bruit (défaut: 42)
  * @param {Array} options.allCharacterNodes - Tous les nœuds de personnage (pour vérifier les frontières Voronoi)
+ * @param {number} options.maxAttempts - Nombre maximal de tentatives pour trouver une position valide (défaut: 50)
+ * @param {number} options.cellPadding - Marge à garder par rapport aux frontières Voronoi (0-1) (défaut: 0)
+ * @param {string} options.distributionStrategy - Stratégie de distribution: "uniform", "clustered", "balanced" (défaut: "balanced")
+ * @param {string} options.fallbackStrategy - Stratégie de repli en cas d'échec: "shrink", "center", "random" (défaut: "shrink")
+ * @param {number} options.weightValue - Valeur à utiliser pour la pondération (ex: impact du post) (défaut: 1)
  * @returns {Object} Coordonnées {x, y, z} du post
  */
 export function calculatePostPosition(characterNode, options = {}) {
@@ -50,8 +55,15 @@ export function calculatePostPosition(characterNode, options = {}) {
     options.useVoronoi !== undefined ? options.useVoronoi : true;
   const applyDispersion =
     options.applyDispersion !== undefined ? options.applyDispersion : true;
-  const postUID = options.postUID || ''; // Ajouter le postUID comme option
+  const postUID = options.postUID || 0; // Utiliser directement postUID comme valeur numérique
   const allCharacterNodes = options.allCharacterNodes || []; // Tous les nœuds pour calculer les frontières Voronoi
+  
+  // Nouveaux paramètres additionnels
+  const maxAttempts = options.maxAttempts || 50;
+  const cellPadding = options.cellPadding || 0;
+  const distributionStrategy = options.distributionStrategy || "balanced";
+  const fallbackStrategy = options.fallbackStrategy || "shrink";
+  const weightValue = options.weightValue || 1;
 
   // Si on ne veut pas appliquer de dispersion, retourner simplement la position du nœud
   if (!applyDispersion) {
@@ -92,11 +104,11 @@ export function calculatePostPosition(characterNode, options = {}) {
   let attempts = 0;
   let x, y, z;
   
-  // Essayer jusqu'à 50 fois de trouver une position valide
-  while (!isValid && attempts < 50) {
-    // Deux approches différentes pour générer des positions, alternée aléatoirement
-    // pour éviter les motifs réguliers
-    if (pseudoRandom(attempts, 1) < 0.5) {
+  // Essayer jusqu'au nombre maximal de tentatives pour trouver une position valide
+  while (!isValid && attempts < maxAttempts) {
+    // Deux approches différentes pour générer des positions, selon la stratégie de distribution
+    if (distributionStrategy === "uniform" || 
+        (distributionStrategy === "balanced" && pseudoRandom(attempts, 1) < 0.5)) {
       // Approche 1: Coordonnées sphériques aléatoires avec perturbation
       const theta = pseudoRandom(attempts, 2) * Math.PI * 2; // Angle horizontal (0-2π)
       const phi = Math.acos(2 * pseudoRandom(attempts, 3) - 1); // Angle vertical (0-π)
@@ -106,9 +118,19 @@ export function calculatePostPosition(characterNode, options = {}) {
       const phiNoise = (pseudoRandom(attempts, 5) - 0.5) * 0.3;
       
       // Calculer une distance entre minDistance et radius avec distribution non uniforme
-      const distancePower = pseudoRandom(attempts, 6) * 2; // Entre 0 et 2
+      let distancePower = pseudoRandom(attempts, 6) * 2; // Entre 0 et 2
+      
+      // Si on utilise la stratégie "clustered", favoriser les positions plus proches du centre
+      if (distributionStrategy === "clustered") {
+        distancePower = distancePower * 2; // Plus concentré au centre
+      }
+      
+      // Si le poids est utilisé, ajuster la distance en fonction du poids (plus d'impact = plus loin)
+      const normalizedWeight = weightValue > 1 ? Math.log(weightValue) / Math.log(1000) : 0;
+      const weightScale = 1 + normalizedWeight;
+      
       const normalizedDistance = Math.pow(pseudoRandom(attempts, 7), distancePower); 
-      const distance = minDistance + normalizedDistance * (radius - minDistance);
+      const distance = minDistance + normalizedDistance * (radius - minDistance) * weightScale;
       
       // Calculer les coordonnées avec les angles perturbés
       x = nodeX + Math.sin(phi + phiNoise) * Math.cos(theta + thetaNoise) * distance * horizontalSpread;
@@ -146,7 +168,12 @@ export function calculatePostPosition(characterNode, options = {}) {
       
       // Calculer une distance entre minDistance et radius non linéaire
       const distanceRatio = minDistance / radius;
-      const distance = radius * (distanceRatio + (1 - distanceRatio) * pseudoRandom(attempts, 11));
+      
+      // Si le poids est utilisé, ajuster la distance en fonction du poids
+      const normalizedWeight = weightValue > 1 ? Math.log(weightValue) / Math.log(1000) : 0;
+      const weightScale = 1 + normalizedWeight;
+      
+      const distance = radius * (distanceRatio + (1 - distanceRatio) * pseudoRandom(attempts, 11)) * weightScale;
       
       // Calculer les coordonnées finales
       x = nodeX + nx * distance * horizontalSpread;
@@ -199,9 +226,20 @@ export function calculatePostPosition(characterNode, options = {}) {
         }
         
         const distanceToOther = distanceBetween(newPosition, otherNode);
-        if (distanceToOther < distanceToSite) {
-          isValid = false;
-          break;
+        
+        // Si cellPadding est utilisé, vérifier avec une marge
+        if (cellPadding > 0) {
+          // distanceToOther * (1 - cellPadding) < distanceToSite signifie qu'on est trop proche de la frontière
+          if (distanceToOther * (1 - cellPadding) < distanceToSite) {
+            isValid = false;
+            break;
+          }
+        } else {
+          // Vérification standard sans marge
+          if (distanceToOther < distanceToSite) {
+            isValid = false;
+            break;
+          }
         }
       }
     } else {
@@ -213,60 +251,82 @@ export function calculatePostPosition(characterNode, options = {}) {
   }
 
   // Si après plusieurs tentatives on n'a pas trouvé de position valide,
-  // on revient à une position plus proche du personnage pour garantir qu'elle est dans sa cellule
+  // on utilise la stratégie de repli sélectionnée
   if (!isValid) {
-    // Approche de repli plus intelligente
-    // Essayer des distances de plus en plus petites jusqu'à trouver une position valide
-    let fallbackValid = false;
-    let fallbackAttempts = 0;
-    
-    while (!fallbackValid && fallbackAttempts < 10) {
-      // Réduire progressivement le rayon
-      const fallbackRadius = minDistance * (1 - fallbackAttempts * 0.1);
+    if (fallbackStrategy === "shrink") {
+      // Approche de repli avec réduction progressive du rayon
+      let fallbackValid = false;
+      let fallbackAttempts = 0;
       
-      // Générer des angles vraiment aléatoires pour cette tentative de repli
-      const theta = pseudoRandom(1000 + fallbackAttempts, 1) * Math.PI * 2;
-      const phi = Math.acos(2 * pseudoRandom(2000 + fallbackAttempts, 2) - 1);
-      
-      x = nodeX + Math.sin(phi) * Math.cos(theta) * fallbackRadius * horizontalSpread;
-      y = nodeY + Math.sin(phi) * Math.sin(theta) * fallbackRadius * horizontalSpread;
-      z = nodeZ + Math.cos(phi) * fallbackRadius * verticalSpread;
-      
-      // Vérifier si cette position est dans la cellule Voronoi
-      if (allCharacterNodes.length > 0) {
-        fallbackValid = true;
-        const newPosition = { x, y, z };
-        const distanceToSite = distanceBetween(newPosition, characterNode);
+      while (!fallbackValid && fallbackAttempts < 10) {
+        // Réduire progressivement le rayon
+        const fallbackRadius = minDistance * (1 - fallbackAttempts * 0.1);
         
-        for (const otherNode of allCharacterNodes) {
-          if (otherNode === characterNode || 
-              (otherNode.id && characterNode.id && otherNode.id === characterNode.id) ||
-              (otherNode.slug && characterNode.slug && otherNode.slug === characterNode.slug)) {
-            continue;
-          }
+        // Générer des angles vraiment aléatoires pour cette tentative de repli
+        const theta = pseudoRandom(1000 + fallbackAttempts, 1) * Math.PI * 2;
+        const phi = Math.acos(2 * pseudoRandom(2000 + fallbackAttempts, 2) - 1);
+        
+        x = nodeX + Math.sin(phi) * Math.cos(theta) * fallbackRadius * horizontalSpread;
+        y = nodeY + Math.sin(phi) * Math.sin(theta) * fallbackRadius * horizontalSpread;
+        z = nodeZ + Math.cos(phi) * fallbackRadius * verticalSpread;
+        
+        // Vérifier si cette position est dans la cellule Voronoi
+        if (allCharacterNodes.length > 0) {
+          fallbackValid = true;
+          const newPosition = { x, y, z };
+          const distanceToSite = distanceBetween(newPosition, characterNode);
           
-          const distanceToOther = distanceBetween(newPosition, otherNode);
-          if (distanceToOther < distanceToSite) {
-            fallbackValid = false;
-            break;
+          for (const otherNode of allCharacterNodes) {
+            if (otherNode === characterNode || 
+                (otherNode.id && characterNode.id && otherNode.id === characterNode.id) ||
+                (otherNode.slug && characterNode.slug && otherNode.slug === characterNode.slug)) {
+              continue;
+            }
+            
+            const distanceToOther = distanceBetween(newPosition, otherNode);
+            if (distanceToOther < distanceToSite) {
+              fallbackValid = false;
+              break;
+            }
           }
+        } else {
+          fallbackValid = true;
         }
-      } else {
-        fallbackValid = true;
+        
+        fallbackAttempts++;
       }
       
-      fallbackAttempts++;
-    }
-    
-    // Si toujours pas de position valide, juste utiliser une position très proche
-    if (!fallbackValid) {
-      const minimalOffset = minDistance * 0.1;
+      // Si toujours pas de position valide, utiliser une position très proche
+      if (!fallbackValid) {
+        const minimalOffset = minDistance * 0.1;
+        x = nodeX + (pseudoRandom(3000, 3) - 0.5) * minimalOffset;
+        y = nodeY + (pseudoRandom(4000, 4) - 0.5) * minimalOffset;
+        z = nodeZ + (pseudoRandom(5000, 5) - 0.5) * minimalOffset;
+      }
+      
+      isValid = fallbackValid;
+    } 
+    else if (fallbackStrategy === "center") {
+      // Positionnement au centre avec une très légère variation
+      const minimalOffset = minDistance * 0.05;
       x = nodeX + (pseudoRandom(3000, 3) - 0.5) * minimalOffset;
       y = nodeY + (pseudoRandom(4000, 4) - 0.5) * minimalOffset;
       z = nodeZ + (pseudoRandom(5000, 5) - 0.5) * minimalOffset;
+      isValid = true;
     }
-    
-    isValid = fallbackValid;
+    else if (fallbackStrategy === "random") {
+      // Position complètement aléatoire à l'intérieur d'une cellule contrainte
+      // Essayer avec un rayon très petit
+      const tinyRadius = minDistance * 0.3;
+      const randomTheta = pseudoRandom(6000, 6) * Math.PI * 2;
+      const randomPhi = Math.acos(2 * pseudoRandom(7000, 7) - 1);
+      
+      x = nodeX + Math.sin(randomPhi) * Math.cos(randomTheta) * tinyRadius;
+      y = nodeY + Math.sin(randomPhi) * Math.sin(randomTheta) * tinyRadius;
+      z = nodeZ + Math.cos(randomPhi) * tinyRadius;
+      isValid = true;
+    }
+    // Par défaut, on utilise la stratégie "shrink" déjà existante
   }
 
   // Retourner les coordonnées calculées
@@ -414,6 +474,12 @@ function applyCharacterRadialDisplacement(post, characterNode, options = {}) {
  * @param {boolean} options.useVoronoi - Si true, applique l'effet de dilatation Voronoi (défaut: true)
  * @param {boolean} options.useUniqueColorsPerCharacter - Si true, attribue une couleur unique par personnage (défaut: true)
  * @param {Array} options.customNodes - Nœuds personnalisés avec leurs positions actuelles, utilisés à la place des nœuds standards
+ * @param {number} options.maxAttempts - Nombre maximal de tentatives pour trouver une position valide (défaut: 50)
+ * @param {number} options.cellPadding - Marge à garder par rapport aux frontières Voronoi (0-1) (défaut: 0)
+ * @param {string} options.distributionStrategy - Stratégie de distribution: "uniform", "clustered", "balanced" (défaut: "balanced")
+ * @param {string} options.fallbackStrategy - Stratégie de repli en cas d'échec: "shrink", "center", "random" (défaut: "shrink")
+ * @param {string} options.weightField - Nom du champ à utiliser pour la pondération (ex: "impact") (défaut: aucun)
+ * @param {boolean} options.useStrictSlugMatching - Si true, utilise strictement les slugs pour les correspondances (défaut: false)
  * @returns {Array} Posts spatialisés avec coordonnées mises à jour
  */
 export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) {
@@ -440,6 +506,13 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
     useUniqueColorsPerCharacter = true, // eslint-disable-line no-unused-vars
     // Nœuds personnalisés avec positions actuelles de la simulation
     customNodes = null,
+    // Nouveaux paramètres pour la fonction spatializePostsAroundJoshuaNodesVND
+    maxAttempts = 50,
+    cellPadding = 0,
+    distributionStrategy = "balanced",
+    fallbackStrategy = "shrink",
+    weightField = "",
+    useStrictSlugMatching = false,
   } = options;
 
   // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
@@ -580,8 +653,8 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
     if (post.slug && characterNodesMap[post.slug]) {
       characterNode = characterNodesMap[post.slug];
     } 
-    // 2. Si aucun nœud trouvé par slug et que post.character existe, l'utiliser
-    else if (!characterNode && post.character) {
+    // 2. Si aucun nœud trouvé par slug et que post.character existe, l'utiliser (sauf si useStrictSlugMatching est true)
+    else if (!characterNode && post.character && !useStrictSlugMatching) {
       // Essayer d'abord comme slug dans characterNodesMap
       if (characterNodesMap[post.character]) {
         characterNode = characterNodesMap[post.character];
@@ -702,6 +775,12 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
 
       // Si le post a un nœud associé, appliquer la dispersion
       if (characterNode) {
+        // Extraire la valeur de poids si un champ de poids est spécifié
+        let weightValue = 1;
+        if (weightField && post[weightField] !== undefined) {
+          weightValue = post[weightField];
+        }
+
         // Appliquer l'effet de dispersion et voronoi avec respect des frontières
         const dispersedPosition = calculatePostPosition(characterNode, {
           radius,
@@ -713,7 +792,12 @@ export function spatializePostsAroundJoshuaNodesVND(posts, nodes, options = {}) 
           dilatationFactor,
           useVoronoi,
           postUID: post.postUID, // Utiliser directement le postUID existant
-          allCharacterNodes: allCharacterNodes // Fournir tous les nœuds pour les calculs de frontières
+          allCharacterNodes: allCharacterNodes, // Fournir tous les nœuds pour les calculs de frontières
+          maxAttempts: maxAttempts, // Nombre maximal de tentatives
+          cellPadding: cellPadding, // Marge par rapport aux frontières
+          distributionStrategy: distributionStrategy, // Stratégie de distribution
+          fallbackStrategy: fallbackStrategy, // Stratégie de repli
+          weightValue: weightValue // Valeur de poids (ex: impact du post)
         });
 
         // Mettre à jour les coordonnées du post avec la dispersion
