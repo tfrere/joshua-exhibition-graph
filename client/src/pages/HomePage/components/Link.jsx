@@ -73,7 +73,7 @@ const LinkLine = ({
           color={linkColor}
           linewidth={linkWidth}
           transparent={true}
-          opacity={0.2}
+          opacity={0.4}
           dashSize={dashSize}
           gapSize={gapSize}
           scale={1} // Ajout d'un facteur de scale explicite
@@ -84,7 +84,7 @@ const LinkLine = ({
           color={linkColor}
           linewidth={linkWidth}
           transparent={true}
-          opacity={0.2}
+          opacity={0.4}
           linecap="round"
           linejoin="round"
         />

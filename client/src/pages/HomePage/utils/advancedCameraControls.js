@@ -14,10 +14,10 @@ export const DEFAULT_FLIGHT_CONFIG = {
   maxSpeed: 500,
   acceleration: 1000,
   deceleration: 0.95,
-  rotationSpeed: 2.0,
-  rotationAcceleration: 2.0, // Nouvelle propriété : accélération de rotation
+  rotationSpeed: 0.8,
+  rotationAcceleration: 1.0, // Nouvelle propriété : accélération de rotation
   rotationDeceleration: 0.85, // Nouvelle propriété : décélération de rotation
-  maxRotationSpeed: 4.0, // Nouvelle propriété : vitesse maximale de rotation
+  maxRotationSpeed: 2.0, // Nouvelle propriété : vitesse maximale de rotation
   deadzone: 0.1,
 };
 

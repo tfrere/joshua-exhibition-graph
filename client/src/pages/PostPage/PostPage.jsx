@@ -16,6 +16,8 @@ function PostPage() {
   const [activePost, setactivePost] = useState(null);
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
+  const pendingPostChangeRef = useRef(null);
+  const changeTimeoutRef = useRef(null);
 
   // Charger toutes les données au montage du composant
   useEffect(() => {
@@ -114,55 +116,70 @@ function PostPage() {
   useEffect(() => {
     const handleActivePostChange = (post) => {
       if (!post) return;
-      console.log("Mise à jour du post actif:", post);
+      console.log("Mise à jour du post actif reçue:", post);
 
-      // Ne pas montrer le loading si on a déjà les données
-      if (!dataLoadedRef.current) {
-        setIsLoading(true);
+      pendingPostChangeRef.current = post;
+
+      if (changeTimeoutRef.current) {
+        console.log(
+          "Changement de post déjà en attente, mise à jour de la demande en attente"
+        );
+        return;
       }
 
-      // Trouver le personnage dans les données déjà chargées
-      if (databaseData && post.slug) {
-        const character = findCharacter(post.slug);
-        if (character) {
-          setActiveCharacterData(character);
-        } else {
-          console.warn(
-            "Personnage actif non trouvé dans la base de données:",
-            post.slug
-          );
-          setActiveCharacterData(null);
+      console.log("Attente de 2 secondes avant de changer de post...");
+      changeTimeoutRef.current = setTimeout(() => {
+        const pendingPost = pendingPostChangeRef.current;
+        console.log("Appliquant le changement vers le post:", pendingPost);
+
+        if (!dataLoadedRef.current) {
+          setIsLoading(true);
         }
-      }
 
-      // Trouver le post dans les données déjà chargées
-      if (postsData && post.postUID !== undefined) {
-        const fullPost = findCurrentPost(post.postUID);
-        if (fullPost) {
-          setactivePost(fullPost);
-        } else {
-          setactivePost(post);
+        if (databaseData && pendingPost.slug) {
+          const character = findCharacter(pendingPost.slug);
+          if (character) {
+            setActiveCharacterData(character);
+          } else {
+            console.warn(
+              "Personnage actif non trouvé dans la base de données:",
+              pendingPost.slug
+            );
+            setActiveCharacterData(null);
+          }
         }
-      } else {
-        setactivePost(post);
-      }
 
-      setIsLoading(false);
+        if (postsData && pendingPost.postUID !== undefined) {
+          const fullPost = findCurrentPost(pendingPost.postUID);
+          if (fullPost) {
+            setactivePost(fullPost);
+          } else {
+            setactivePost(pendingPost);
+          }
+        } else {
+          setactivePost(pendingPost);
+        }
+
+        setIsLoading(false);
+
+        changeTimeoutRef.current = null;
+      }, 2000);
     };
 
-    // Ajouter l'écouteur d'événement
     addEventListener("activePostChanged", handleActivePostChange);
 
-    // Vérifier si un post est déjà actif
     if (activePostRef.current && dataLoadedRef.current) {
       handleActivePostChange(activePostRef.current);
     } else if (!activePostRef.current) {
       setIsLoading(false);
     }
 
-    // Nettoyer l'écouteur d'événement lors du démontage
     return () => {
       removeEventListener("activePostChanged", handleActivePostChange);
+      if (changeTimeoutRef.current) {
+        clearTimeout(changeTimeoutRef.current);
+        changeTimeoutRef.current = null;
+      }
     };
   }, [postsData, databaseData, findCharacter, findCurrentPost]);
 
@@ -403,6 +420,7 @@ function PostPage() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  justifyItems: "center",
                   fontSize: "0.8rem",
                   color: "#fff",
                   marginTop: "1rem",
@@ -411,7 +429,7 @@ function PostPage() {
                   height: "30px",
                 }}
               >
-                <div style={{ display: "flex", gap: "1rem" }}>
+                <div style={{ display: "flex", gap: ".3rem" }}>
                   <span style={{ opacity: 0.5 }}> Posté le</span>
                   {activePost && activePost.creationDate ? (
                     <span>
@@ -422,33 +440,25 @@ function PostPage() {
                   ) : (
                     <span>01/01/2023</span>
                   )}
-                  <span style={{ opacity: 0.5 }}>sur</span>
+                </div>
+
+                {/* Plateforme alignée à droite */}
+                <div>
                   {activePost && activePost.source ? (
-                    <span>
-                      {/* <TextScramble text={activePost.source} /> */}
+                    <span
+                      style={{
+                        color: "#ffffff",
+                        fontSize: "0.85rem",
+                        padding: "0.25rem 0.5rem",
+                        borderRadius: "0.25rem",
+                      }}
+                    >
                       {activePost.source}
                     </span>
                   ) : (
                     <span>Source inconnue</span>
                   )}
                 </div>
-                {activePost && (
-                  <span
-                    style={{
-                      color: "#ffffff",
-                      fontSize: "0.85rem",
-                      //backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      padding: "0.25rem 0.5rem",
-                      borderRadius: "0.25rem",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <TextScramble
-                      text={`Viralité: ${activePost.impact || 1}`}
-                    />
-                  </span>
-                )}
               </div>
             </div>
           </div>
