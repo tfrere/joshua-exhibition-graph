@@ -4,10 +4,9 @@ import useSound from "use-sound";
 import { IconButton, Tooltip } from "@mui/material";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 // Constante pour le volume du son au démarrage et dans toute l'application
-const DEFAULT_VOLUME = 0.1; // 30% du volume maximum
+const DEFAULT_VOLUME = 0.1; // 10% du volume maximum
 
 // Component dedicated to ambient sound management
 const AmbientSound = () => {
@@ -131,15 +130,25 @@ const AmbientSound = () => {
   const toggleMute = () => {
     console.log("Toggle mute:", !isMuted);
     setIsMuted((prev) => !prev);
-    setHasInteracted(true); // Mark that user has interacted
   };
 
-  // Handle initial audio start
-  const startAudio = () => {
-    console.log("Starting audio - user interaction received");
-    setIsLoading(true);
-    setHasInteracted(true);
-  };
+  // Écoute le premier clic sur la page
+  useEffect(() => {
+    const handleFirstClick = () => {
+      if (!hasInteracted) {
+        console.log("Premier clic détecté - démarrage de l'audio");
+        setHasInteracted(true);
+      }
+    };
+
+    // Ajouter l'écouteur d'événement sur tout le document
+    document.addEventListener("click", handleFirstClick);
+
+    // Nettoyage de l'écouteur d'événement
+    return () => {
+      document.removeEventListener("click", handleFirstClick);
+    };
+  }, [hasInteracted]);
 
   // Suggestion for file size optimization
   useEffect(() => {
@@ -148,56 +157,37 @@ const AmbientSound = () => {
     );
   }, []);
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: "20px",
-        right: "20px",
-        zIndex: 1000,
-      }}
-    >
-      {!hasInteracted ? (
-        // First-time audio start button
-        <Tooltip title="Activer le son">
-          <IconButton
-            onClick={startAudio}
-            aria-label="activer le son"
-            size="large"
-            sx={{
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              color: "white",
-              "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-              },
-              boxShadow: "0 2px 5px rgba(0, 0, 0, 0.3)",
-              transition: "all 0.2s ease",
-            }}
-          >
-            <PlayArrowIcon />
-          </IconButton>
-        </Tooltip>
-      ) : (
-        // Mute/unmute toggle button
-        <Tooltip title={isMuted ? "Activer le son" : "Couper le son"}>
-          <IconButton
-            onClick={toggleMute}
-            aria-label={isMuted ? "activer le son" : "couper le son"}
-            size="large"
-            sx={{
-              backgroundColor: "rgba(0, 0, 0, 0.6)",
-              color: isLoading ? "gray" : "white",
-              "&:hover": {
-                backgroundColor: "rgba(0, 0, 0, 0.8)",
-              },
-            }}
-          >
-            {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
-          </IconButton>
-        </Tooltip>
-      )}
-    </div>
-  );
+  // return (
+  //   <div
+  //     style={{
+  //       position: "absolute",
+  //       top: "20px",
+  //       right: "20px",
+  //       zIndex: 1000,
+  //     }}
+  //   >
+  //     {/* N'afficher le bouton de contrôle du son que si l'utilisateur a déjà interagi avec la page */}
+  //     {hasInteracted && (
+  //       <Tooltip title={isMuted ? "Activer le son" : "Couper le son"}>
+  //         <IconButton
+  //           onClick={toggleMute}
+  //           aria-label={isMuted ? "activer le son" : "couper le son"}
+  //           size="large"
+  //           sx={{
+  //             backgroundColor: "rgba(0, 0, 0, 0.6)",
+  //             color: isLoading ? "gray" : "white",
+  //             "&:hover": {
+  //               backgroundColor: "rgba(0, 0, 0, 0.8)",
+  //             },
+  //           }}
+  //         >
+  //           {isMuted ? <VolumeOffIcon /> : <VolumeUpIcon />}
+  //         </IconButton>
+  //       </Tooltip>
+  //     )}
+  //   </div>
+  // );
+  return null;
 };
 
 export default AmbientSound;

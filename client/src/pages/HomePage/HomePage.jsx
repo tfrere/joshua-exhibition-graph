@@ -59,6 +59,7 @@ const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
   const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [debugMode, setDebugMode] = useState(false);
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -101,6 +102,23 @@ const HomePage = () => {
     loadJsonData();
   }, []);
 
+  // Gestion du mode debug avec la touche D
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "p" || event.key === "P") {
+        setDebugMode((prevMode) => !prevMode);
+        console.log("Mode debug:", !debugMode);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Nettoyage de l'écouteur d'événement
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [debugMode]);
+
   return (
     <div className="canvas-container">
       {/* Composant de son d'ambiance */}
@@ -112,8 +130,8 @@ const HomePage = () => {
         </div>
       )}
 
-      {/* Interface utilisateur en dehors du Canvas */}
-      <NavigationUI />
+      {/* Interface utilisateur en dehors du Canvas - conditionnée par le mode debug */}
+      {debugMode && <NavigationUI />}
 
       {/* Afficher les références de grille si activées */}
       <GridReferences
@@ -123,15 +141,16 @@ const HomePage = () => {
         opacity={1}
       />
 
-      {/* Indicateur de connexion de manette */}
-      <GamepadIndicator />
+      {/* Indicateur de connexion de manette - conditionné par le mode debug */}
+      {debugMode && <GamepadIndicator />}
 
       <Canvas
         shadows
         // gl={{ toneMapping: THREE.NoToneMapping }}
         camera={{ position: [0, 0, 600], fov: 50, near: 0.1, far: 1000000 }}
       >
-        <Stats />
+        {/* Affichage des stats (FPS) conditionné par le mode debug */}
+        {debugMode && <Stats />}
         <color attach="background" args={["#000000"]} />
 
         <AdvancedCameraController />
@@ -160,9 +179,9 @@ const HomePage = () => {
         /> */}
 
         {/* Afficher le graphe si les données sont disponibles et valides */}
-        {/* {graphData && graphData.nodes && graphData.links && (
+        {graphData && graphData.nodes && graphData.links && (
           <Graph data={graphData} postsData={postsData} />
-        )} */}
+        )}
 
         {/* Afficher les posts si activés et disponibles */}
         {postsData && <Posts data={postsData} />}
