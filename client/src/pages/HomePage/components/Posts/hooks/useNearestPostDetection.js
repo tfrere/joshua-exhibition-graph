@@ -3,6 +3,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { io } from "socket.io-client";
 import { SOCKET_SERVER_URL } from "../../../../../config";
+import { getInputManager } from "../../../utils/inputManager";
 
 // Référence partagée pour le post actif
 export const activePostRef = { current: null };
@@ -120,6 +121,14 @@ export const updateActivePost = (post) => {
     activePostRef.current.postUID !== post.postUID
   ) {
     console.log("Envoi du post actif via socket:", post);
+    
+    // Activer la vibration de la manette lors du changement de post
+    const inputManager = getInputManager();
+    if (inputManager) {
+      // Vibration courte mais forte pour signaler le changement de focus
+      inputManager.vibrateGamepad(20, 0.0, 0.1);
+    }
+    
     activePostRef.current = post;
 
     // Notifier tous les écouteurs du changement

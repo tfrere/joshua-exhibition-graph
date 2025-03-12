@@ -1,19 +1,16 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Graph from "./components/Graph.jsx";
 import Posts from "./components/Posts/Posts.jsx";
-import { useControls, folder } from "leva";
 import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
-import GridReferences from "./components/GridReferences.jsx";
 import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
 import {
   EffectComposer,
   Bloom,
-  DepthOfField,
 } from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
@@ -74,12 +71,6 @@ const HomePage = () => {
     console.log("Audio démarré");
   }, []);
 
-  // Fonction pour démarrer le jeu
-  const startGame = useCallback(() => {
-    setGameStarted(true);
-    console.log("Jeu démarré");
-  }, []);
-
   // Gestion du mode debug et de la rotation avec les touches
   useEffect(() => {
     const handleKeyDown = (event) => {
@@ -87,9 +78,28 @@ const HomePage = () => {
         setDebugMode((prevMode) => !prevMode);
         console.log("Mode debug:", !debugMode);
       }
+      
+      // Ajout d'un test pour la vibration de la manette avec la touche "v"
+      if (event.key === "v" || event.key === "V") {
+        // Import dynamique pour éviter les dépendances circulaires
+        import("./utils/inputManager").then(({ getInputManager }) => {
+          const inputManager = getInputManager();
+          if (inputManager) {
+            console.log("Test de vibration du gamepad");
+            inputManager.vibrateGamepad(100, 0.5, 1.0);
+          } else {
+            console.log("InputManager non disponible pour le test de vibration");
+          }
+        });
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    
+    // Nettoyer l'écouteur d'événements lors du démontage
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [debugMode]);
 
   return (

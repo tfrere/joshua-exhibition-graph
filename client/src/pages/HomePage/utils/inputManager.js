@@ -414,6 +414,43 @@ export class InputManager {
       console.log("InputManager: Action nextPosition terminée");
     }, 50);
   }
+
+  /**
+   * Fait vibrer la manette lorsqu'elle est connectée
+   * @param {number} duration - Durée de la vibration en ms
+   * @param {number} weakMagnitude - Intensité de la vibration faible (0-1)
+   * @param {number} strongMagnitude - Intensité de la vibration forte (0-1)
+   * @returns {Promise|null} - Une promesse qui se résout lorsque la vibration est terminée, ou null si la manette n'est pas disponible
+   */
+  vibrateGamepad(duration = 200, weakMagnitude = 0.5, strongMagnitude = 0.8) {
+    // Vérifier si au moins une manette est connectée
+    const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gamepad = gamepads[0]; // On utilise la première manette
+
+    if (!gamepad || !this.gamepadConnected) {
+      console.log("Pas de manette disponible pour la vibration");
+      return null;
+    }
+
+    // Tenter d'utiliser vibrationActuator (plus largement supporté)
+    if (gamepad.vibrationActuator && typeof gamepad.vibrationActuator.playEffect === 'function') {
+      console.log("Vibration via vibrationActuator");
+      return gamepad.vibrationActuator.playEffect("dual-rumble", {
+        startDelay: 0,
+        duration: duration,
+        weakMagnitude: weakMagnitude,
+        strongMagnitude: strongMagnitude,
+      });
+    } 
+    // Alternative : utiliser hapticActuators si disponible
+    else if (gamepad.hapticActuators && gamepad.hapticActuators.length > 0) {
+      console.log("Vibration via hapticActuators");
+      return gamepad.hapticActuators[0].pulse(strongMagnitude, duration);
+    } else {
+      console.log("Cette manette ne prend pas en charge la vibration");
+      return null;
+    }
+  }
 }
 
 // Instance singleton pour partager le même gestionnaire d'entrées

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { getInputManager } from "../../../utils/inputManager";
 
 /**
  * Custom hook to check if an object is within a certain distance of a reference point
@@ -11,10 +12,13 @@ const useProximityCheck = ({
   objectPosition,
   threshold = 50,
   referenceOffset = 20,
+  vibrateOnProximity = false,
+  vibrationOptions = { duration: 100, weakMagnitude: 0.2, strongMagnitude: 0.5 },
 }) => {
   const [isInProximity, setIsInProximity] = useState(false);
+  const previousProximityState = useRef(false);
   const { camera } = useThree();
-
+  
   // Check object proximity based on distance from reference point
   useFrame(() => {
     // Get camera position
@@ -45,6 +49,23 @@ const useProximityCheck = ({
     // Update proximity state
     setIsInProximity(newProximityState);
   });
+  
+  // Effect pour la vibration lors de l'entrée en zone de proximité
+  useEffect(() => {
+    // Si la vibration est activée et que l'état de proximité vient de passer de false à true
+    if (vibrateOnProximity && isInProximity && !previousProximityState.current) {
+      // Récupérer l'instance du gestionnaire d'entrées
+      const inputManager = getInputManager();
+      if (inputManager) {
+        // Déclencher la vibration avec les options spécifiées
+        const { duration, weakMagnitude, strongMagnitude } = vibrationOptions;
+        inputManager.vibrateGamepad(duration, weakMagnitude, strongMagnitude);
+      }
+    }
+    
+    // Mettre à jour l'état précédent pour la prochaine comparaison
+    previousProximityState.current = isInProximity;
+  }, [isInProximity, vibrateOnProximity, vibrationOptions]);
 
   return isInProximity;
 };

@@ -233,7 +233,6 @@ const Node = ({ node, onClick, isSelected }) => {
         nodePosition={nodePosition}
         meshRef={meshRef}
         baseSize={baseSize}
-        isSelected={isSelected}
         isActive={isActive}
       />
     </animated.mesh>

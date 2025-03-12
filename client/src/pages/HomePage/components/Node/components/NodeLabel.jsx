@@ -10,7 +10,6 @@ const NodeLabel = ({
   nodePosition,
   meshRef,
   baseSize,
-  isSelected,
   isActive,
 }) => {
   const [shouldPlaySound, setShouldPlaySound] = useState(false);
@@ -23,6 +22,13 @@ const NodeLabel = ({
     objectPosition: nodePosition,
     threshold: 50,
     referenceOffset: 20,
+    vibrateOnProximity: true, // Activer la vibration pour tous les nœuds
+    vibrationOptions: { 
+      duration: 100, 
+      // Des intensités différentes en fonction du type de nœud
+      weakMagnitude: node.type === "character" ? 0.3 : 0.15,
+      strongMagnitude: node.type === "character" ? 0.7 : 0.4
+    }
   });
 
   // Animation de fade in/fade out avec des paramètres améliorés pour une transition plus douce
