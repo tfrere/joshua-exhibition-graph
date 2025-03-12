@@ -15,13 +15,11 @@ function PostPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePost, setactivePost] = useState(null);
   const [characterImageExists, setCharacterImageExists] = useState(false);
-  const [imageKey, setImageKey] = useState(0); // État pour forcer l'animation
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
   const changeTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
-  const previousSlugRef = useRef(null);
 
   // Fonction pour nettoyer toutes les ressources en cours
   const cleanupResources = useCallback(() => {
@@ -147,16 +145,14 @@ function PostPage() {
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch(`/public/img/characters/${slug}.svg`, {
+      const response = await fetch(`/public/img/characters/${slug}.png`, {
         signal: abortControllerRef.current.signal,
       });
-      // Il faut vérifier si le contenu de la réponse est une image SVG valide
+      // Il faut vérifier si le contenu de la réponse est une image PNG valide
       // Un statut 200 n'est pas suffisant car le serveur peut renvoyer une page 404 personnalisée avec un statut 200
       const contentType = response.headers.get("content-type");
-      const text = await response.text();
-      const isSvg =
-        contentType && contentType.includes("svg") && text.includes("<svg");
-      setCharacterImageExists(isSvg);
+      const isPng = contentType && contentType.includes("png");
+      setCharacterImageExists(isPng);
     } catch (error) {
       // Ne pas afficher d'erreur si la requête a été annulée intentionnellement
       if (error.name !== "AbortError") {
@@ -187,12 +183,6 @@ function PostPage() {
         }
 
         if (databaseData && pendingPost.slug) {
-          // Déclencher l'animation seulement si le slug a changé
-          if (previousSlugRef.current !== pendingPost.slug) {
-            setImageKey((prevKey) => prevKey + 1);
-            previousSlugRef.current = pendingPost.slug;
-          }
-
           const character = findCharacter(pendingPost.slug);
           if (character) {
             setActiveCharacterData(character);
@@ -328,72 +318,49 @@ function PostPage() {
             padding: "2rem 1.5rem",
           }}
         >
-          {/* Photo de profil avec transition */}
-          <div
-            className="profile-image-container"
-            style={{ position: "relative" }}
-          >
-            {characterImageExists ? (
-              <img
-                key={`img-${imageKey}`}
-                src={`/public/img/characters/${activeCharacterData.slug}.png`}
-                alt={
-                  activeCharacterData.displayName || activeCharacterData.slug
-                }
-                style={{
-                  width: "320px",
-                  height: "320px",
-                  borderRadius: "0px",
-                  marginBottom: "1.25rem",
-                  border: "4px solid #222",
-                  objectFit: "cover",
-                  background: "#ffffff",
-                  boxSizing: "border-box",
-                  animation: "fadeInZoom 0.6s ease-out",
-                }}
-              />
-            ) : (
-              <div
-                key={`letter-${imageKey}`}
-                style={{
-                  width: "320px",
-                  height: "320px",
-                  borderRadius: "0px",
-                  background: "#000000",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginBottom: "1.25rem",
-                  color: "#ffffff",
-                  fontSize: "6rem",
-                  fontWeight: "bold",
-                  border: "4px solid #222",
-                  boxSizing: "border-box",
-                  animation: "fadeInZoom 0.6s ease-out",
-                }}
-              >
-                {(
-                  activeCharacterData.displayName ||
-                  activeCharacterData.slug ||
-                  "?"
-                )
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-            )}
-            <style>{`
-              @keyframes fadeInZoom {
-                0% {
-                  opacity: 0;
-                  transform: scale(0.95);
-                }
-                100% {
-                  opacity: 1;
-                  transform: scale(1);
-                }
-              }
-            `}</style>
-          </div>
+          {/* Photo de profil */}
+          {characterImageExists ? (
+            <img
+              src={`/public/img/characters/${activeCharacterData.slug}.png`}
+              alt={activeCharacterData.displayName || activeCharacterData.slug}
+              style={{
+                width: "320px",
+                height: "320px",
+                borderRadius: "0px",
+                marginBottom: "1.25rem",
+                border: "4px solid #222",
+                objectFit: "cover",
+                background: "#ffffff",
+                boxSizing: "border-box",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "320px",
+                height: "320px",
+                borderRadius: "0px",
+                background: "#000000",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: "1.25rem",
+                color: "#ffffff",
+                fontSize: "6rem",
+                fontWeight: "bold",
+                border: "4px solid #222",
+                boxSizing: "border-box",
+              }}
+            >
+              {(
+                activeCharacterData.displayName ||
+                activeCharacterData.slug ||
+                "?"
+              )
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+          )}
 
           {/* Nom du personnage et badge Joshua */}
           <div
@@ -576,13 +543,7 @@ function PostPage() {
         </div>
       </div>
     );
-  }, [
-    isLoading,
-    activeCharacterData,
-    activePost,
-    characterImageExists,
-    imageKey,
-  ]);
+  }, [isLoading, activeCharacterData, activePost, characterImageExists]);
 
   return pageContent;
 }

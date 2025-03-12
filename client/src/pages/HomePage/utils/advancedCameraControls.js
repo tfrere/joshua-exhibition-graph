@@ -254,20 +254,6 @@ export class FlightController {
     // Exposer le facteur d'accélération actuel pour le NavigationUI
     window.__accelerationFactor = accelerationFactor;
 
-    // Log pour debug (à retirer une fois le problème résolu)
-    if (Math.floor(Date.now() / 1000) % 5 === 0) {
-      // Log toutes les 5 secondes environ
-      console.log(
-        `Distance: ${distanceFromCenter.toFixed(
-          2
-        )}, Accélération: ${accelerationFactor.toFixed(
-          2
-        )}x, Vitesse maximale: ${(config.maxSpeed * accelerationFactor).toFixed(
-          2
-        )}`
-      );
-    }
-
     // Interpoler progressivement entre les entrées actuelles et les entrées cibles
     this.input.thrust +=
       (this.targetInput.thrust - this.input.thrust) * this.smoothFactor;
@@ -333,11 +319,6 @@ export class FlightController {
 
     // Vérifier si le joueur est en dehors de la sphère limite
     if (distanceFromCenter > this.boundingSphereRadius) {
-      console.log(
-        `Joueur hors limites (${distanceFromCenter.toFixed(2)} > ${
-          this.boundingSphereRadius
-        }), retour à la position par défaut`
-      );
       this.returnToDefaultPosition();
       return;
     }
@@ -402,14 +383,10 @@ export class FlightController {
       if (inputManager) {
         // Déclencher l'action nextPosition comme si l'utilisateur avait appuyé sur la touche
         inputManager.triggerNextPositionAction();
-        console.log(
-          "Action nextPosition déclenchée via le gestionnaire d'entrées"
-        );
 
         // Réactiver les contrôles après la transition (après le délai d'animation)
         setTimeout(() => {
           this.isReturningToDefault = false;
-          console.log("Contrôles de vol réactivés après la transition");
         }, 2500);
         return;
       }
@@ -423,13 +400,9 @@ export class FlightController {
 
       setTimeout(() => {
         this.isReturningToDefault = false;
-        console.log("Contrôles de vol réactivés après la transition");
       }, 2500);
     } else {
       // Solution de dernier recours - téléportation directe
-      console.error(
-        "Aucune méthode d'animation disponible - téléportation directe"
-      );
       this.camera.position.copy(this.defaultPosition);
       this.camera.lookAt(this.defaultTarget);
 

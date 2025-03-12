@@ -16,10 +16,10 @@ import * as THREE from "three";
 export function SphereRenderer({
   meshRef,
   data,
-  SPHERE_SEGMENTS = 8,
+  SPHERE_SEGMENTS = 6,
   SIZE = 0.125,
-  MIN_IMPACT_SIZE = 10,
-  MAX_IMPACT_SIZE = 50,
+  MIN_IMPACT_SIZE = 7,
+  MAX_IMPACT_SIZE = 40,
 }) {
   // Référence interne si aucune n'est fournie
   const internalMeshRef = useRef();

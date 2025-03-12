@@ -211,8 +211,6 @@ export function Posts({
       ? activePostRef.current.postUID
       : null;
     if (newPostUID !== activePostUID) {
-      console.log("UID du post actif mis à jour:", newPostUID);
-
       // Si un nouveau post est activé, déclencher l'effet d'activation
       if (newPostUID) {
         // Jouer le son de toucher
@@ -235,10 +233,6 @@ export function Posts({
             const position = new THREE.Vector3();
             position.setFromMatrixPosition(matrix);
             postPosition = [position.x, position.y, position.z];
-            console.log(
-              `Position réelle du post ${newPostUID} au moment du touch:`,
-              postPosition
-            );
           }
           // Fallback si la matrice n'est pas disponible
           else if (
@@ -247,25 +241,14 @@ export function Posts({
             post.z !== undefined
           ) {
             postPosition = [post.x, post.y, post.z];
-            console.log(
-              `Utilisation de la position statique du post ${newPostUID}:`,
-              postPosition
-            );
           } else if (post.coordinates && post.coordinates.x !== undefined) {
             postPosition = [
               post.coordinates.x,
               post.coordinates.y,
               post.coordinates.z,
             ];
-            console.log(
-              `Utilisation des coordonnées du post ${newPostUID}:`,
-              postPosition
-            );
           } else {
             postPosition = [0, 0, 0];
-            console.warn(
-              `Aucune position trouvée pour le post ${newPostUID}, utilisation de [0,0,0]`
-            );
           }
 
           // Créer un nouvel effet avec un ID unique
@@ -285,9 +268,6 @@ export function Posts({
 
       // Si l'ancien post était activé et est encore en transition, on le termine proprement
       if (oldPostUID && oldPostUID in transitionProgressRef.current) {
-        console.log(
-          `Terminaison propre de la transition pour l'ancien post actif ${oldPostUID}`
-        );
         // Commencer la désactivation depuis l'état actuel
         activationTimeRef.current[oldPostUID] = timeRef.current;
       }
@@ -297,22 +277,13 @@ export function Posts({
         const currentProgress = transitionProgressRef.current[newPostUID];
         if (currentProgress < 1.0) {
           // La transition est déjà en cours, on ne fait rien (elle continuera naturellement)
-          console.log(
-            `Post ${newPostUID} déjà en transition d'activation, progress=${currentProgress}`
-          );
         } else {
           // La transition est terminée, mais dans le mauvais sens (désactivation), on réinitialise
-          console.log(
-            `Réinitialisation de la transition pour le nouveau post actif ${newPostUID}`
-          );
           transitionProgressRef.current[newPostUID] = 0.0;
           activationTimeRef.current[newPostUID] = timeRef.current;
         }
       } else if (newPostUID) {
         // Nouveau post actif, commencer une nouvelle transition
-        console.log(
-          `Initialisation de transition pour le nouveau post actif ${newPostUID}`
-        );
         transitionProgressRef.current[newPostUID] = 0.0;
         activationTimeRef.current[newPostUID] = timeRef.current;
       }
@@ -398,9 +369,6 @@ export function Posts({
         const transitionProgress = isInTransition
           ? transitionProgressRef.current[activePostUID]
           : "N/A";
-        console.log(
-          `[Frame ${frameCountRef.current}] État du post actif ${activePostUID}: en transition=${isInTransition}, progress=${transitionProgress}, taille attendue=${ACTIVE_POST_SIZE}`
-        );
       }
     }
   }
@@ -614,17 +582,6 @@ export function Posts({
 
     // Mise à jour du progrès
     transitionProgressRef.current[postUID] = progress;
-
-    // Log périodique pour suivre l'animation
-    if (Math.random() < 0.01) {
-      console.log(
-        `Animation ${
-          isActivation ? "activation" : "désactivation"
-        } du post ${postUID}: progress=${progress.toFixed(
-          2
-        )}, taille=${baseSize} -> ${isActivation ? ACTIVE_POST_SIZE : baseSize}`
-      );
-    }
 
     // Changement: ne modifier que la taille, pas la couleur pour les posts actifs
     const baseColor = [

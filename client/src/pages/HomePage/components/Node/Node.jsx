@@ -149,21 +149,16 @@ const useSVGLoader = (node) => {
               setSvgData(data);
               setSvgBounds(calculateSVGBounds(data.paths));
             } else {
-              console.log(`SVG for ${svgFileName} doesn't have valid paths`);
               setUseImage(false);
             }
           } catch (parseError) {
-            console.log(`Error parsing SVG for ${svgFileName}:`, parseError);
             setUseImage(false);
           }
         } else {
-          console.log(
-            `SVG not found for ${svgFileName} (status: ${response.status})`
-          );
+          console.log();
           setUseImage(false);
         }
       } catch (error) {
-        console.log(`Error fetching SVG for ${svgFileName}:`, error);
         setUseImage(false);
       }
     };
@@ -208,15 +203,6 @@ const Node = ({ node, onClick, isSelected }) => {
     e.stopPropagation();
     onClick && onClick(node);
   };
-
-  // Ajouter un log pour le débogage
-  useEffect(() => {
-    if (node.isJoshua) {
-      console.log(
-        `Nœud Joshua détecté: ${node.id}, utilisant l'image character.svg`
-      );
-    }
-  }, [node]);
 
   // Créer un vecteur de position pour le nœud (pour le composant NodeLabel)
   const nodePosition = new THREE.Vector3(node.x, node.y, node.z);

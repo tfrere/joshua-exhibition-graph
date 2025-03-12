@@ -155,10 +155,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   // Mise à jour de l'état global quand le mode orbite change
   useEffect(() => {
     window.__orbitModeActive = orbitModeActive;
-    console.log(
-      "Orbit mode global state updated:",
-      orbitModeActive ? "active" : "inactive"
-    );
 
     // Si l'orbite est activée, enregistrer le temps de démarrage pour l'accélération
     if (orbitModeActive) {
@@ -206,7 +202,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     if (camera) {
       // Définir la position initiale de la caméra avec un délai pour permettre
       // au système de se stabiliser au démarrage
-      console.log("Setting initial camera position");
 
       // On commence par désactiver toute transition ou orbite
       transitioning.current.active = false;
@@ -219,7 +214,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       // Une fois la position initiale définie, on démarrer le timer d'inactivité
       // avec un délai pour éviter les conflits avec la transition initiale
       setTimeout(() => {
-        console.log("Initializing inactivity timer after startup");
         detectUserActivity();
       }, 2000); // Délai de 2 secondes
     }
@@ -227,7 +221,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
   // Function to detect user activity
   const detectUserActivity = () => {
-    console.log("User activity detected, resetting timers");
     lastInteractionTime.current = Date.now();
     orbitAttempted.current = false; // Réinitialiser également cet état
 
@@ -241,12 +234,10 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     }
 
     if (orbitModeActive) {
-      console.log("Disabling orbit mode due to user activity");
       setOrbitModeActive(false);
 
       // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
       if (flightController.current) {
-        console.log("Resetting flight controller to stop rotation momentum");
         flightController.current.reset();
       }
     }
@@ -267,62 +258,23 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     if (!transitioning.current.active && !orbitModeActive) {
       // Program auto rotation activation after delay
       autoRotateTimerId.current = setTimeout(() => {
-        console.log("Auto-rotation timer expired, checking conditions...");
         // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
         if (!transitioning.current.active && !orbitModeActive) {
-          console.log("Activating auto-rotation");
           setAutoRotateEnabled(true);
         } else {
-          console.log(
-            "Auto-rotation cancelled - camera in transition or orbit mode"
-          );
         }
       }, AUTO_ROTATE_DELAY);
 
       // Program orbit mode activation after delay
       orbitTimerId.current = setTimeout(() => {
-        console.log("Orbit timer expired, checking conditions...");
-
         // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
         if (!transitioning.current.active && !orbitModeActive) {
-          console.log(
-            "Conditions met - Activating orbit mode after inactivity"
-          );
           orbitAttempted.current = true;
 
           // Retour à la position par défaut PUIS activation du mode orbite
           animateToCameraPosition(0, true); // Le second paramètre indique qu'il faut activer l'orbite après
-        } else {
-          console.log(
-            "Orbit activation cancelled - camera already in transition or orbit mode"
-          );
-          console.log(
-            "  transitioning.current.active:",
-            transitioning.current.active
-          );
-          console.log("  orbitModeActive:", orbitModeActive);
         }
       }, AUTO_ORBIT_DELAY);
-
-      console.log(
-        "Auto-rotation timer set to expire in",
-        AUTO_ROTATE_DELAY / 1000,
-        "seconds"
-      );
-      console.log(
-        "Orbit timer set to expire in",
-        AUTO_ORBIT_DELAY / 1000,
-        "seconds"
-      );
-    } else {
-      console.log(
-        "Not scheduling auto-rotation/orbit timers - camera in transition or orbit mode"
-      );
-      console.log(
-        "  transitioning.current.active:",
-        transitioning.current.active
-      );
-      console.log("  orbitModeActive:", orbitModeActive);
     }
   };
 
@@ -409,12 +361,10 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         inputs.action2;
 
       if (hasAnyInput) {
-        console.log("User input detected, disabling orbit mode");
         setOrbitModeActive(false);
 
         // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
         if (flightController.current) {
-          console.log("Resetting flight controller to stop rotation momentum");
           flightController.current.reset();
         }
 
@@ -672,7 +622,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         inputs.roll !== 0
       ) {
         if (orbitModeActive) {
-          console.log("User input detected in flight mode - disabling orbit");
           setOrbitModeActive(false);
           detectUserActivity();
         }

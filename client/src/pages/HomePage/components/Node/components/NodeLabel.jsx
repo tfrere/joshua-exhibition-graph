@@ -47,6 +47,7 @@ const NodeLabel = ({
   useEffect(() => {
     if (isVisible) {
       // Choisir aléatoirement entre les deux fichiers audio
+      console.log(node);
       const randomSound =
         Math.random() < 0.5
           ? "/sounds/character-touch.mp3"
