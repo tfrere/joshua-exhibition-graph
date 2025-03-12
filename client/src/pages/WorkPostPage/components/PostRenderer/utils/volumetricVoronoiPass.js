@@ -50,7 +50,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     minCharacterDistance = 50,
     useStrictSlugMatching = false,
     customNodes = null,
-    voronoiPermissivity = 0.1
+    voronoiPermissivity = 0
   } = options;
 
   // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
@@ -220,7 +220,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
       const characterVolume = totalVolume * volumeRatio;
       
       // Rayon effectif pour ce volume (en supposant une sphère)
-      const effectiveRadius = Math.pow((3 * characterVolume) / (4 * Math.PI), 1/3);
+      const effectiveRadius = Math.pow((4 * characterVolume) / (4 * Math.PI), 1/3);
       
       characterVolumeInfo[characterKey] = {
         postCount,
@@ -431,7 +431,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     posts.forEach((post) => {
       let validPosition = false;
       let attempts = 0;
-      const maxAttempts = 100; // Augmenter les tentatives pour garantir un placement correct
+      const maxAttempts = 5000; // Augmenter les tentatives pour garantir un placement correct
       
       while (!validPosition && attempts < maxAttempts) {
         // Utiliser une distribution uniforme dans la sphère

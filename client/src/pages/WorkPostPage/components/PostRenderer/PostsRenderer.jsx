@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useControls, folder } from "leva";
@@ -22,12 +22,25 @@ const MAX_IMPACT_SIZE = 50;
 const vertexShader = `
   attribute float size;
   varying vec3 vColor;
+  varying float vHighlight;
+  
+  uniform vec3 mousePosition;
+  uniform float radius;
+  uniform bool isEditMode;
   
   void main() {
     vColor = color;
     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = size * (300.0 / -mvPosition.z);
     gl_Position = projectionMatrix * mvPosition;
+
+    // Calculer la surbrillance basée sur la distance à la souris en mode édition
+    if (isEditMode) {
+      float dist = distance(position, mousePosition);
+      vHighlight = dist < radius ? 1.0 - (dist / radius) : 0.0;
+    } else {
+      vHighlight = 0.0;
+    }
   }
 `;
 
@@ -35,9 +48,13 @@ const vertexShader = `
 const fragmentShader = `
   uniform sampler2D pointTexture;
   varying vec3 vColor;
+  varying float vHighlight;
   
   void main() {
-    gl_FragColor = vec4(vColor, 1.0) * texture2D(pointTexture, gl_PointCoord);
+    vec4 texColor = texture2D(pointTexture, gl_PointCoord);
+    // Utiliser directement la surbrillance pour mélanger avec du blanc pur
+    vec3 finalColor = mix(vColor, vec3(1.0), vHighlight);
+    gl_FragColor = vec4(finalColor, 1.0) * texColor;
     if (gl_FragColor.a < 0.3) discard;
   }
 `;
@@ -45,15 +62,21 @@ const fragmentShader = `
 /**
  * Composant pour le rendu ultra-optimisé des posts
  */
-export function PostsRenderer({ posts, isLoading }) {
+export function PostsRenderer({ posts, isLoading, orbitControlsRef }) {
   const pointsRef = useRef();
-  const { camera } = useThree();
+  const sphereRef = useRef();
+  const { camera, raycaster, mouse, gl } = useThree();
+  const [isDragging, setIsDragging] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const mousePositionRef = useRef(new THREE.Vector3());
+  const lastMousePositionRef = useRef(new THREE.Vector3());
 
   // Référence pour conserver les tailles originales basées sur l'impact
   const originalSizesRef = useRef(null);
+  const originalPositionsRef = useRef(null);
 
-  // Ajouter un contrôle Leva pour la taille des points dans un groupe dédié
-  const { pointSize, useImpactSize } = useControls({
+  // Ajouter des contrôles pour l'effet de répulsion et le mode d'édition
+  const { pointSize, useImpactSize, radius, strength } = useControls({
     "Posts Renderer": folder({
       pointSize: {
         value: SIZE,
@@ -66,6 +89,33 @@ export function PostsRenderer({ posts, isLoading }) {
         value: false,
         label: "Utiliser la valeur d'impact pour la taille",
       },
+      editMode: {
+        value: false,
+        label: "Mode édition",
+        onChange: (value) => {
+          setIsEditMode(value);
+          // Réinitialiser isDragging quand on désactive le mode édition
+          if (!value) setIsDragging(false);
+          // Activer/désactiver les contrôles de la caméra
+          if (orbitControlsRef?.current) {
+            orbitControlsRef.current.enabled = !value;
+          }
+        }
+      },
+      radius: {
+        value: 50,
+        min: 10,
+        max: 200,
+        step: 1,
+        label: "Rayon de répulsion",
+      },
+      strength: {
+        value: 50,
+        min: 1,
+        max: 200,
+        step: 1,
+        label: "Force de répulsion",
+      }
     }),
   });
 
@@ -180,6 +230,9 @@ export function PostsRenderer({ posts, isLoading }) {
       const mat = new THREE.ShaderMaterial({
         uniforms: {
           pointTexture: { value: pointTexture },
+          mousePosition: { value: new THREE.Vector3() },
+          radius: { value: radius },
+          isEditMode: { value: false }
         },
         vertexShader,
         fragmentShader,
@@ -201,12 +254,158 @@ export function PostsRenderer({ posts, isLoading }) {
         });
       }
 
+      // Stocker les positions originales
+      originalPositionsRef.current = positions.slice();
+
       return [geo, mat];
     } catch (error) {
       console.error("Erreur lors de la création de la géométrie:", error);
       return [null, null];
     }
-  }, [pointTexture, useImpactSize, pointSize]); // On inclut pointSize ici car c'est utilisé pour l'initialisation
+  }, [pointTexture, useImpactSize, pointSize, radius]);
+
+  // Mettre à jour les uniforms quand le mode d'édition change
+  useEffect(() => {
+    if (material) {
+      material.uniforms.isEditMode.value = isEditMode;
+    }
+  }, [isEditMode, material]);
+
+  // Mettre à jour les uniforms quand le rayon change
+  useEffect(() => {
+    if (material) {
+      material.uniforms.radius.value = radius;
+    }
+  }, [radius, material]);
+
+  // Créer un plan qui suit l'orientation de la caméra
+  const updateMousePosition = (mousePosition) => {
+    // Obtenir la direction de vue de la caméra
+    const cameraDirection = new THREE.Vector3();
+    camera.getWorldDirection(cameraDirection);
+    
+    // Créer un plan perpendiculaire à la direction de la caméra
+    const plane = new THREE.Plane();
+    plane.setFromNormalAndCoplanarPoint(
+      cameraDirection,
+      new THREE.Vector3(0, 0, 0)
+    );
+    
+    // Projeter le rayon de la souris sur ce plan
+    raycaster.setFromCamera(mouse, camera);
+    const intersect = raycaster.ray.intersectPlane(plane, mousePosition);
+    
+    return intersect;
+  };
+
+  // Animation et mise à jour des positions
+  useFrame(() => {
+    if (!geometry || !isEditMode) return;
+
+    // Mettre à jour la position de la souris dans l'espace 3D
+    const intersect = updateMousePosition(mousePositionRef.current);
+    
+    if (!intersect) return;
+
+    // Mettre à jour la position de la sphère d'influence
+    if (sphereRef.current) {
+      sphereRef.current.position.copy(mousePositionRef.current);
+    }
+
+    // Mettre à jour la position de la souris dans le shader
+    if (material) {
+      material.uniforms.mousePosition.value.copy(mousePositionRef.current);
+      material.uniformsNeedUpdate = true;  // Forcer la mise à jour des uniforms
+    }
+
+    if (!isDragging) return;
+
+    // Calculer le déplacement de la souris
+    const mouseDelta = mousePositionRef.current.clone().sub(lastMousePositionRef.current);
+
+    const positions = geometry.attributes.position.array;
+    const originalPositions = originalPositionsRef.current;
+    
+    if (!originalPositions) return;
+
+    // Mettre à jour les positions des points
+    for (let i = 0; i < positions.length; i += 3) {
+      const pointPosition = new THREE.Vector3(
+        positions[i],
+        positions[i + 1],
+        positions[i + 2]
+      );
+
+      // Calculer la distance entre le point et la souris
+      const distance = pointPosition.distanceTo(lastMousePositionRef.current);
+
+      // Déplacer les points qui sont dans le rayon d'influence
+      if (distance < radius) {
+        // Calculer un facteur d'influence basé sur la distance avec une fonction quadratique
+        // (1 - x)² donne une courbe qui décroit plus rapidement vers les bords
+        const normalizedDistance = distance / radius;
+        const influence = Math.pow(1 - normalizedDistance, 2);
+        
+        // Appliquer le déplacement avec l'influence
+        positions[i] += mouseDelta.x * influence * strength * 0.01;
+        positions[i + 1] += mouseDelta.y * influence * strength * 0.01;
+        positions[i + 2] += mouseDelta.z * influence * strength * 0.01;
+      }
+    }
+
+    // Mettre à jour la dernière position de la souris
+    lastMousePositionRef.current.copy(mousePositionRef.current);
+
+    geometry.attributes.position.needsUpdate = true;
+  });
+
+  // Gestionnaires d'événements pour la souris
+  useEffect(() => {
+    const canvas = gl.domElement;
+
+    const handleMouseDown = (event) => {
+      if (isEditMode && event.button === 0) {
+        setIsDragging(true);
+        // Initialiser la dernière position de la souris
+        updateMousePosition(mousePositionRef.current);
+        lastMousePositionRef.current.copy(mousePositionRef.current);
+        event.stopPropagation();
+      }
+    };
+
+    const handleMouseUp = (event) => {
+      if (isEditMode && event.button === 0) {
+        setIsDragging(false);
+        // Mettre à jour les positions originales avec les positions actuelles
+        if (geometry && originalPositionsRef.current) {
+          const currentPositions = geometry.attributes.position.array;
+          originalPositionsRef.current = currentPositions.slice();
+        }
+        event.stopPropagation();
+      }
+    };
+
+    const handleMouseMove = (event) => {
+      // Si on est en train de déplacer les posts, empêcher les contrôles de caméra
+      if (isDragging) {
+        event.stopPropagation();
+      }
+    };
+
+    if (isEditMode) {
+      canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mouseup', handleMouseUp);
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseleave', handleMouseUp);
+    }
+
+    return () => {
+      canvas.removeEventListener('mousedown', handleMouseDown);
+      canvas.removeEventListener('mouseup', handleMouseUp);
+      canvas.removeEventListener('mousemove', handleMouseMove);
+      canvas.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, [gl, isEditMode, isDragging, geometry]);
 
   // Mettre à jour les positions lorsque les posts changent
   useEffect(() => {
@@ -282,7 +481,25 @@ export function PostsRenderer({ posts, isLoading }) {
     return null;
   }
 
-  return <points ref={pointsRef} geometry={geometry} material={material} />;
+  return (
+    <>
+      <points ref={pointsRef} geometry={geometry} material={material} />
+      {isEditMode && (
+        <group ref={sphereRef}>
+          {/* Cercle pour représenter le bord de la sphère face à la caméra */}
+          <mesh>
+            <ringGeometry args={[radius - 0.5, radius, 64]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.2} side={THREE.FrontSide} />
+          </mesh>
+          {/* Point central */}
+          <mesh>
+            <sphereGeometry args={[2, 16, 16]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        </group>
+      )}
+    </>
+  );
 }
 
 export default PostsRenderer;

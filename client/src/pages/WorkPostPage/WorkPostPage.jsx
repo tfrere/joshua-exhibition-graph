@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useControls, folder } from "leva";
 import PostsRenderer from "./components/PostRenderer/PostsRenderer.jsx";
 import { OrbitControls } from "@react-three/drei";
@@ -111,7 +111,7 @@ const SimpleNodes = ({ nodes }) => {
       {nodes.map((node) => (
         <mesh key={node.id} position={[node.x || 0, node.y || 0, node.z || 0]}>
           <sphereGeometry args={[2, 16, 16]} />
-          <meshBasicMaterial color={node.isJoshua ? "red" : "white"} />
+          <meshBasicMaterial color={node.isJoshua ? "red" : "grey"} />
         </mesh>
       ))}
     </group>
@@ -511,6 +511,7 @@ const WorkPostPage = () => {
   const [isLoadingNodes, setIsLoadingNodes] = useState(true);
   const [processedPosts, setProcessedPosts] = useState([]);
   const [showVoronoiCells, setShowVoronoiCells] = useState(false);
+  const orbitControlsRef = useRef();
 
   // Configuration par défaut pour la spatialisation des posts
   const DEFAULT_POSTS_SPATIAL_CONFIG = {
@@ -580,7 +581,7 @@ const WorkPostPage = () => {
         config: {
           globalSphereRadius: 200, // Rayon de la sphère globale
           proportionalVolume: true, // Volumes proportionnels au nombre de posts
-          perlinScale: 0.05, // Échelle du bruit de Perlin pour la variation
+          perlinScale: 0.03, // Échelle du bruit de Perlin pour la variation
           perlinAmplitude: 5, // Amplitude du bruit de Perlin
           minCharacterDistance: 20, // Distance minimale entre caractères
           useStrictSlugMatching: false // Permettre la correspondance par ID si nécessaire
@@ -597,7 +598,7 @@ const WorkPostPage = () => {
       },
       {
         name: "spherize",
-        enabled: true, // Désactiver spherize pour le moment
+        enabled: false, // Désactiver spherize pour le moment
         config: {
           sphereRadius: 250,
           volumeExponent: 2 / 3,
@@ -1045,7 +1046,12 @@ const WorkPostPage = () => {
       <Canvas camera={{ position: [0, 0, 500] }}>
         {debug && <Stats />}
         <color attach="background" args={[backgroundColor]} />
-        <OrbitControls enablePan={true} enableZoom={true} makeDefault={true} />
+        <OrbitControls 
+          ref={orbitControlsRef}
+          enablePan={true} 
+          enableZoom={true} 
+          makeDefault={true} 
+        />
         {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
         {/* Nœuds simplifiés (sphères rouges) */}
@@ -1060,7 +1066,11 @@ const WorkPostPage = () => {
         )}
         {/* Rendu des posts avec les positions traitées */}
         {processedPosts.length > 0 && (
-          <PostsRenderer posts={processedPosts} isLoading={isLoadingPosts} />
+          <PostsRenderer 
+            posts={processedPosts} 
+            isLoading={isLoadingPosts} 
+            orbitControlsRef={orbitControlsRef}
+          />
         )}
         <EffectComposer>
           <Bloom
