@@ -43,9 +43,9 @@ const Link = ({
       calculateLinkPoints(
         sourceNode,
         targetNode,
+        arcHeight,
         actualStartOffset, // Utiliser la valeur calculée ici
-        endOffset,
-        arcHeight
+        endOffset
       ),
     [sourceNode, targetNode, actualStartOffset, endOffset, arcHeight] // Mettre à jour les dépendances
   );

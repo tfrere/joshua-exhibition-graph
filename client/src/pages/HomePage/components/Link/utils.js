@@ -19,7 +19,9 @@ export const calculateBezierTangent = (p0, p1, p2, t) => {
 export const calculateLinkPoints = (
   sourceNode,
   targetNode,
-  arcHeight = 0.5 // Paramètre d'intensité de la courbe (défaut : 0.5)
+  arcHeight = 0.5, // Paramètre d'intensité de la courbe (défaut : 0.5)
+  startOffset = 10,
+  endOffset = 10
 ) => {
   // Calculate source and target positions
   const sourcePos = new THREE.Vector3(sourceNode.x, sourceNode.y, sourceNode.z);
@@ -56,7 +58,7 @@ export const calculateLinkPoints = (
   // L'intensité de la courbe est proportionnelle à la distance entre les nœuds
   const controlPoint = new THREE.Vector3()
     .copy(midPoint)
-    .add(perpendicularVector.multiplyScalar(distance / 50 * arcHeight));
+    .add(perpendicularVector.multiplyScalar(distance * arcHeight));
 
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
@@ -64,9 +66,6 @@ export const calculateLinkPoints = (
     controlPoint,
     targetPos
   );
-
-  // Distance fixe depuis les nœuds en unités réelles
-  const FIXED_DISTANCE_FROM_NODE = 12.0; // Distance fixe en unités (à ajuster selon les besoins)
 
   // Initialiser les variables pour stocker les résultats
   let startT = 0, endT = 1;
@@ -85,8 +84,8 @@ export const calculateLinkPoints = (
   // S'assurer que c'est un nombre pair
   if (numPoints % 2 !== 0) numPoints++;
 
-  // Cas spécial: si FIXED_DISTANCE_FROM_NODE est 0, utiliser les points exacts des nœuds
-  if (FIXED_DISTANCE_FROM_NODE === 0) {
+  // Cas spécial: si les deux distances sont 0, utiliser les points exacts des nœuds
+  if (startOffset === 0 && endOffset === 0) {
     return {
       points: [sourcePos, ...curve.getPoints(numPoints - 2), targetPos],
       curve: curve,
@@ -97,15 +96,15 @@ export const calculateLinkPoints = (
   // Générer un grand nombre de points pour l'approximation
   const allPoints = curve.getPoints(numPoints * 2);
   
-  // Trouver le premier point qui est à FIXED_DISTANCE_FROM_NODE du nœud source
-  // et le dernier point qui est à FIXED_DISTANCE_FROM_NODE du nœud cible
+  // Trouver le premier point qui est à startOffset du nœud source
+  // et le dernier point qui est à endOffset du nœud cible
   let startIndex = 0;
   let endIndex = allPoints.length - 1;
   
   // Trouver le point de départ (à distance constante du nœud source)
   for (let i = 0; i < allPoints.length; i++) {
     const distanceFromSource = allPoints[i].distanceTo(sourcePos);
-    if (distanceFromSource >= FIXED_DISTANCE_FROM_NODE) {
+    if (distanceFromSource >= startOffset) {
       startIndex = i;
       
       // Calculer le paramètre t approximatif pour ce point
@@ -117,7 +116,7 @@ export const calculateLinkPoints = (
   // Trouver le point d'arrivée (à distance constante du nœud cible)
   for (let i = allPoints.length - 1; i >= 0; i--) {
     const distanceFromTarget = allPoints[i].distanceTo(targetPos);
-    if (distanceFromTarget >= FIXED_DISTANCE_FROM_NODE) {
+    if (distanceFromTarget >= endOffset) {
       endIndex = i;
       
       // Calculer le paramètre t approximatif pour ce point
