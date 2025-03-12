@@ -15,6 +15,8 @@ function PostPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePost, setactivePost] = useState(null);
   const [characterImageExists, setCharacterImageExists] = useState(false);
+  const [visitedPosts, setVisitedPosts] = useState([]);
+  const [totalPosts, setTotalPosts] = useState(0);
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
@@ -72,6 +74,7 @@ function PostPage() {
 
         setPostsData(postsData);
         setDatabaseData(databaseData);
+        setTotalPosts(postsData.length);
         dataLoadedRef.current = true;
 
         // Si un post est déjà actif, charger ses données immédiatement
@@ -87,6 +90,11 @@ function PostPage() {
 
           if (post.postUID !== undefined && postsData[post.postUID]) {
             setactivePost(postsData[post.postUID]);
+
+            // Add to visited posts if not already visited
+            if (post.postUID !== undefined) {
+              updateVisitedPosts(post.postUID);
+            }
           } else {
             setactivePost(post);
           }
@@ -102,13 +110,39 @@ function PostPage() {
     loadAllData();
 
     // Initialiser la connexion socket
-    initSocketSync();
+    const socket = initSocketSync();
+
+    // Écouter le signal de réinitialisation
+    if (socket) {
+      socket.on("resetView", () => {
+        console.log(
+          "Signal de réinitialisation reçu, remise à zéro du compteur de visites"
+        );
+        setVisitedPosts([]);
+      });
+    }
 
     // Nettoyage des ressources à la destruction du composant
     return () => {
       cleanupResources();
+      // Supprimer l'écouteur d'événement resetView
+      if (socket) {
+        socket.off("resetView");
+      }
     };
   }, [cleanupResources]);
+
+  // Function to update visited posts
+  const updateVisitedPosts = useCallback((postUID) => {
+    if (postUID === undefined) return;
+
+    setVisitedPosts((prevVisited) => {
+      if (!prevVisited.includes(postUID)) {
+        return [...prevVisited, postUID];
+      }
+      return prevVisited;
+    });
+  }, []);
 
   // Fonction mémorisée pour trouver un personnage par son slug
   const findCharacter = useCallback(
@@ -202,6 +236,8 @@ function PostPage() {
           const fullPost = findCurrentPost(pendingPost.postUID);
           if (fullPost) {
             setactivePost(fullPost);
+            // Add to visited posts
+            updateVisitedPosts(pendingPost.postUID);
           } else {
             setactivePost(pendingPost);
           }
@@ -234,6 +270,7 @@ function PostPage() {
     findCurrentPost,
     checkImageExists,
     cleanupResources,
+    updateVisitedPosts,
   ]);
 
   // Nettoyage global lors du démontage du composant
@@ -290,6 +327,12 @@ function PostPage() {
       );
     }
 
+    // Calculate visited percentage
+    const visitedPercentage =
+      totalPosts > 0
+        ? ((visitedPosts.length / totalPosts) * 100).toFixed(2)
+        : 0;
+
     // Afficher les informations du personnage
     return (
       <div
@@ -302,20 +345,74 @@ function PostPage() {
           justifyContent: "center",
           alignItems: "center",
           padding: "1rem",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        {/* Fond flouté en arrière-plan */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 0,
+            opacity: 0.25,
+            filter: "blur(15px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            overflow: "hidden",
+          }}
+        >
+          {characterImageExists ? (
+            <img
+              src={`/public/img/characters/${activeCharacterData.slug}.png`}
+              alt=""
+              style={{
+                width: "250%",
+                height: "250%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                fontSize: "80vh",
+                fontWeight: "bold",
+                color: "#111111",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                height: "100%",
+              }}
+            >
+              {(
+                activeCharacterData.displayName ||
+                activeCharacterData.slug ||
+                "?"
+              )
+                .charAt(0)
+                .toUpperCase()}
+            </div>
+          )}
+        </div>
+
         <div
           style={{
             width: "100%",
             maxWidth: "500px",
-            background: "#000000",
+            background: "transparent",
             borderRadius: "8px",
             overflow: "hidden",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             padding: "2rem 1.5rem",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {/* Photo de profil */}
@@ -416,6 +513,7 @@ function PostPage() {
                 display: "-webkit-box",
                 WebkitLineClamp: 3,
                 WebkitBoxOrient: "vertical",
+                textShadow: "0 0 10px rgba(0, 0, 0, 0.7)",
               }}
             >
               <TextScramble
@@ -452,15 +550,17 @@ function PostPage() {
 
             <div
               style={{
-                //background: "#1a1a1a",
+                background: "transparent",
                 padding: "1rem",
                 borderRadius: "0.5rem",
-                border: "1px solid #555",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
                 height: "auto",
                 minHeight: "180px",
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                backdropFilter: "blur(2.5px)",
+                WebkitBackdropFilter: "blur(2.5px)",
               }}
             >
               <div
@@ -474,13 +574,14 @@ function PostPage() {
                     margin: 0,
                     lineHeight: "1.5",
                     fontSize: "0.95rem",
-                    color: "#eee",
+                    color: "#fff",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     textAlign: "center",
                     display: "-webkit-box",
                     WebkitLineClamp: 4,
                     WebkitBoxOrient: "vertical",
+                    textShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
                   }}
                 >
                   <TextScramble
@@ -502,7 +603,7 @@ function PostPage() {
                   fontSize: "0.8rem",
                   color: "#fff",
                   marginTop: "1rem",
-                  borderTop: "1px solid #333",
+                  borderTop: "1px solid rgba(255, 255, 255, 0.2)",
                   paddingTop: "0.75rem",
                   height: "30px",
                 }}
@@ -541,9 +642,33 @@ function PostPage() {
             </div>
           </div>
         </div>
+
+        {/* Indicateur de progression en bas de page */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "1rem",
+            left: "0",
+            right: "0",
+            textAlign: "center",
+            fontSize: "0.8rem",
+            color: "rgba(255, 255, 255, 0.5)",
+            zIndex: "2",
+          }}
+        >
+          Vous avez visité {visitedPercentage}% du total ({visitedPosts.length}{" "}
+          sur {totalPosts} posts)
+        </div>
       </div>
     );
-  }, [isLoading, activeCharacterData, activePost, characterImageExists]);
+  }, [
+    isLoading,
+    activeCharacterData,
+    activePost,
+    characterImageExists,
+    visitedPosts,
+    totalPosts,
+  ]);
 
   return pageContent;
 }

@@ -87,7 +87,7 @@ const IntroScreen = ({ onStart, onStartAudio }) => {
             textAlign: "center",
           }}
         >
-          Inside Joshua's Thought Loop
+          Goldberg's Variations
         </h1>
         <p
           style={{
@@ -99,26 +99,42 @@ const IntroScreen = ({ onStart, onStartAudio }) => {
             lineHeight: "1.5",
           }}
         >
-          Une expérience interactive explorant les réflexions et les connexions
-          mentales derrière les récits artistiques de Joshua.
+          A journey inside Joshua’s Thought Loop
         </p>
 
         {dataReady ? (
-          <animated.p
+          <div
             style={{
-              fontSize: "16px",
-              opacity: 0.4,
-              fontWeight: "300",
-              textAlign: "center",
-              animation: "oscillation 2s infinite",
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "8px",
             }}
           >
-            Cliquez pour commencer l'expérience
-          </animated.p>
+            <animated.p
+              style={{
+                fontSize: "16px",
+                opacity: 0.4,
+                fontWeight: "300",
+                textAlign: "center",
+                animation: "oscillation 2s infinite",
+                margin: 0,
+              }}
+            >
+              Cliquez pour commencer l'expérience
+            </animated.p>
+          </div>
         ) : (
           <div
             className="spinner-container"
-            style={{ height: "1.5rem", marginTop: "8px" }}
+            style={{
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "8px",
+            }}
           >
             <div
               className="spinner"

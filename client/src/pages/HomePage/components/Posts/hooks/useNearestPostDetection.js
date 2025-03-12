@@ -62,6 +62,23 @@ const triggerEvent = (event, data) => {
   }
 };
 
+// Fonction pour envoyer un signal de réinitialisation
+export const sendResetSignal = () => {
+  if (socket && socket.connected) {
+    console.log("Envoi du signal de reset via socket");
+    try {
+      socket.emit("resetView");
+      console.log("Signal de reset envoyé avec succès");
+    } catch (error) {
+      console.error("Erreur lors de l'envoi du signal de reset:", error);
+    }
+  } else {
+    console.error(
+      "Socket non connecté, impossible d'envoyer le signal de reset"
+    );
+  }
+};
+
 // Initialiser la connexion socket
 export const initSocketSync = () => {
   console.log(

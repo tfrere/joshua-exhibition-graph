@@ -23,52 +23,61 @@ const NodeSphere = ({ size, color, isSelected }) => {
 };
 
 // Composant pour afficher un SVG chargé
-const NodeSVG = ({ svgData, svgBounds, scale, isSelected }) => {
+const NodeSVG = ({ svgData, svgBounds, scale, isSelected, isPlatform }) => {
   if (!svgData || !svgBounds) return null;
 
-  return (
-    <Billboard>
-      <group scale={[scale, scale, scale]}>
-        {svgData.paths.map((path, i) => (
-          <group
-            key={i}
-            // Properly center the SVG on the node
-            position={[
-              -svgBounds.centerX,
-              svgBounds.centerY, // Invert Y position for correct centering
-              0,
-            ]}
-          >
-            {path.subPaths.map((subPath, j) => {
-              // Create a line for each subpath
-              const points = subPath.getPoints();
-              return (
-                <line key={`${i}-${j}`}>
-                  <bufferGeometry attach="geometry">
-                    <bufferAttribute
-                      attach="attributes-position"
-                      count={points.length}
-                      array={
-                        new Float32Array(
-                          points.flatMap((p) => [p.x, -p.y, 0]) // Invert Y axis
-                        )
-                      }
-                      itemSize={3}
-                    />
-                  </bufferGeometry>
-                  <lineBasicMaterial
-                    attach="material"
-                    color={isSelected ? "#ff9500" : "#FFFFFF"}
-                    linewidth={2}
-                    linecap="round"
-                    linejoin="round"
+  const SvgContent = () => (
+    <group scale={[scale, scale, scale]}>
+      {svgData.paths.map((path, i) => (
+        <group
+          key={i}
+          // Properly center the SVG on the node
+          position={[
+            -svgBounds.centerX,
+            svgBounds.centerY, // Invert Y position for correct centering
+            0,
+          ]}
+        >
+          {path.subPaths.map((subPath, j) => {
+            // Create a line for each subpath
+            const points = subPath.getPoints();
+            return (
+              <line key={`${i}-${j}`}>
+                <bufferGeometry attach="geometry">
+                  <bufferAttribute
+                    attach="attributes-position"
+                    count={points.length}
+                    array={
+                      new Float32Array(
+                        points.flatMap((p) => [p.x, -p.y, 0]) // Invert Y axis
+                      )
+                    }
+                    itemSize={3}
                   />
-                </line>
-              );
-            })}
-          </group>
-        ))}
-      </group>
+                </bufferGeometry>
+                <lineBasicMaterial
+                  attach="material"
+                  color={isSelected ? "#ff9500" : "#FFFFFF"}
+                  linewidth={2}
+                  linecap="round"
+                  linejoin="round"
+                />
+              </line>
+            );
+          })}
+        </group>
+      ))}
+    </group>
+  );
+
+  // Utiliser Billboard uniquement pour les nœuds qui ne sont pas des plateformes
+  return isPlatform ? (
+    <group>
+      <SvgContent />
+    </group>
+  ) : (
+    <Billboard>
+      <SvgContent />
     </Billboard>
   );
 };
@@ -186,6 +195,9 @@ const Node = ({ node, onClick, isSelected }) => {
   // Charger le SVG si disponible
   const { useImage, svgData, svgBounds } = useSVGLoader(node);
 
+  // Vérifier si le nœud est une plateforme
+  const isPlatform = node.type === "platform";
+
   // Couleurs et propriétés visuelles
   const defaultColor = isSelected ? "#ff9500" : "#0088ff";
   const nodeColor =
@@ -224,6 +236,7 @@ const Node = ({ node, onClick, isSelected }) => {
           svgBounds={svgBounds}
           scale={svgScale / nodeScale} // Ajuster l'échelle pour compenser le scale du mesh parent
           isSelected={isSelected}
+          isPlatform={isPlatform}
         />
       )}
 
