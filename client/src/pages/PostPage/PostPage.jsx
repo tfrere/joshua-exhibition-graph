@@ -15,11 +15,13 @@ function PostPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [activePost, setactivePost] = useState(null);
   const [characterImageExists, setCharacterImageExists] = useState(false);
+  const [imageKey, setImageKey] = useState(0); // État pour forcer l'animation
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
   const changeTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const previousSlugRef = useRef(null);
 
   // Fonction pour nettoyer toutes les ressources en cours
   const cleanupResources = useCallback(() => {
@@ -185,6 +187,12 @@ function PostPage() {
         }
 
         if (databaseData && pendingPost.slug) {
+          // Déclencher l'animation seulement si le slug a changé
+          if (previousSlugRef.current !== pendingPost.slug) {
+            setImageKey((prevKey) => prevKey + 1);
+            previousSlugRef.current = pendingPost.slug;
+          }
+
           const character = findCharacter(pendingPost.slug);
           if (character) {
             setActiveCharacterData(character);
@@ -320,49 +328,72 @@ function PostPage() {
             padding: "2rem 1.5rem",
           }}
         >
-          {/* Photo de profil */}
-          {characterImageExists ? (
-            <img
-              src={`/public/img/characters/${activeCharacterData.slug}.svg`}
-              alt={activeCharacterData.displayName || activeCharacterData.slug}
-              style={{
-                width: "120px",
-                height: "120px",
-                borderRadius: "60px",
-                marginBottom: "1.25rem",
-                border: "4px solid #222",
-                objectFit: "cover",
-                background: "#ffffff",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                width: "120px",
-                height: "120px",
-                borderRadius: "60px",
-                background: activeCharacterData.isJoshua
-                  ? "#ffffff"
-                  : "#888888",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: "1.25rem",
-                color: "#000",
-                fontSize: "3rem",
-                fontWeight: "bold",
-                border: "4px solid #222",
-              }}
-            >
-              {(
-                activeCharacterData.displayName ||
-                activeCharacterData.slug ||
-                "?"
-              )
-                .charAt(0)
-                .toUpperCase()}
-            </div>
-          )}
+          {/* Photo de profil avec transition */}
+          <div
+            className="profile-image-container"
+            style={{ position: "relative" }}
+          >
+            {characterImageExists ? (
+              <img
+                key={`img-${imageKey}`}
+                src={`/public/img/characters/${activeCharacterData.slug}.png`}
+                alt={
+                  activeCharacterData.displayName || activeCharacterData.slug
+                }
+                style={{
+                  width: "320px",
+                  height: "320px",
+                  borderRadius: "0px",
+                  marginBottom: "1.25rem",
+                  border: "4px solid #222",
+                  objectFit: "cover",
+                  background: "#ffffff",
+                  boxSizing: "border-box",
+                  animation: "fadeInZoom 0.6s ease-out",
+                }}
+              />
+            ) : (
+              <div
+                key={`letter-${imageKey}`}
+                style={{
+                  width: "320px",
+                  height: "320px",
+                  borderRadius: "0px",
+                  background: "#000000",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: "1.25rem",
+                  color: "#ffffff",
+                  fontSize: "6rem",
+                  fontWeight: "bold",
+                  border: "4px solid #222",
+                  boxSizing: "border-box",
+                  animation: "fadeInZoom 0.6s ease-out",
+                }}
+              >
+                {(
+                  activeCharacterData.displayName ||
+                  activeCharacterData.slug ||
+                  "?"
+                )
+                  .charAt(0)
+                  .toUpperCase()}
+              </div>
+            )}
+            <style>{`
+              @keyframes fadeInZoom {
+                0% {
+                  opacity: 0;
+                  transform: scale(0.95);
+                }
+                100% {
+                  opacity: 1;
+                  transform: scale(1);
+                }
+              }
+            `}</style>
+          </div>
 
           {/* Nom du personnage et badge Joshua */}
           <div
@@ -545,7 +576,13 @@ function PostPage() {
         </div>
       </div>
     );
-  }, [isLoading, activeCharacterData, activePost, characterImageExists]);
+  }, [
+    isLoading,
+    activeCharacterData,
+    activePost,
+    characterImageExists,
+    imageKey,
+  ]);
 
   return pageContent;
 }
