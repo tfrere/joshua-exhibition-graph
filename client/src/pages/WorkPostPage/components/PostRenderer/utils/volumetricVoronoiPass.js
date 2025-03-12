@@ -698,5 +698,311 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     console.log(`Variation terminée: ${postsDisturbed} posts perturbés avec du bruit de Perlin`);
   }
 
+  // ÉTAPE FINALE: Uniformisation itérative de la densité
+  console.log("Début de l'uniformisation itérative de la densité");
+
+  const GRID_SIZE = 16;
+  const voxelSize = (globalSphereRadius * 2) / GRID_SIZE;
+  const voxels = new Map();
+  
+  const getVoxelKey = (x, y, z) => {
+    const vx = Math.floor((x + globalSphereRadius) / voxelSize);
+    const vy = Math.floor((y + globalSphereRadius) / voxelSize);
+    const vz = Math.floor((z + globalSphereRadius) / voxelSize);
+    return `${vx},${vy},${vz}`;
+  };
+
+  const isVoxelInSphere = (vx, vy, vz) => {
+    const centerX = (vx + 0.5) * voxelSize - globalSphereRadius;
+    const centerY = (vy + 0.5) * voxelSize - globalSphereRadius;
+    const centerZ = (vz + 0.5) * voxelSize - globalSphereRadius;
+    return Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ) <= globalSphereRadius;
+  };
+
+  let totalVoxelsInSphere = 0;
+  for (let x = 0; x < GRID_SIZE; x++) {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let z = 0; z < GRID_SIZE; z++) {
+        if (isVoxelInSphere(x, y, z)) {
+          totalVoxelsInSphere++;
+        }
+      }
+    }
+  }
+
+  const targetDensityPerVoxel = Math.ceil(spatializedPosts.length / totalVoxelsInSphere);
+  const MAX_ITERATIONS = 10;
+  const CONVERGENCE_THRESHOLD = 0.1;
+  let iteration = 0;
+  let previousEmptyVoxels = Infinity;
+
+  function redistributePosts() {
+    voxels.clear();
+    
+    spatializedPosts.forEach(post => {
+      if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
+      const voxelKey = getVoxelKey(post.x, post.y, post.z);
+      if (!voxels.has(voxelKey)) {
+        voxels.set(voxelKey, []);
+      }
+      voxels.get(voxelKey).push(post);
+    });
+
+    const emptyVoxels = [];
+    const denseVoxels = [];
+    
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let z = 0; z < GRID_SIZE; z++) {
+          if (!isVoxelInSphere(x, y, z)) continue;
+          
+          const voxelKey = `${x},${y},${z}`;
+          const postsInVoxel = voxels.get(voxelKey) || [];
+          
+          if (postsInVoxel.length === 0) {
+            const centerX = (x + 0.5) * voxelSize - globalSphereRadius;
+            const centerY = (y + 0.5) * voxelSize - globalSphereRadius;
+            const centerZ = (z + 0.5) * voxelSize - globalSphereRadius;
+            
+            const distanceToCenter = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ);
+            if (distanceToCenter <= globalSphereRadius * 0.95) {
+              emptyVoxels.push({
+                key: voxelKey,
+                center: { x: centerX, y: centerY, z: centerZ }
+              });
+            }
+          } else if (postsInVoxel.length > targetDensityPerVoxel * 1.2) {
+            denseVoxels.push({
+              key: voxelKey,
+              posts: postsInVoxel,
+              density: postsInVoxel.length,
+              center: {
+                x: (x + 0.5) * voxelSize - globalSphereRadius,
+                y: (y + 0.5) * voxelSize - globalSphereRadius,
+                z: (z + 0.5) * voxelSize - globalSphereRadius
+              }
+            });
+          }
+        }
+      }
+    }
+
+    if (emptyVoxels.length === 0) {
+      return { emptyVoxels: 0, improvement: 0 };
+    }
+
+    denseVoxels.sort((a, b) => b.density - a.density);
+
+    emptyVoxels.forEach(emptyVoxel => {
+      const sortedDenseVoxels = denseVoxels
+        .filter(dv => dv.density > targetDensityPerVoxel)
+        .sort((a, b) => {
+          const distA = Math.sqrt(
+            Math.pow(a.center.x - emptyVoxel.center.x, 2) +
+            Math.pow(a.center.y - emptyVoxel.center.y, 2) +
+            Math.pow(a.center.z - emptyVoxel.center.z, 2)
+          );
+          const distB = Math.sqrt(
+            Math.pow(b.center.x - emptyVoxel.center.x, 2) +
+            Math.pow(b.center.y - emptyVoxel.center.y, 2) +
+            Math.pow(b.center.z - emptyVoxel.center.z, 2)
+          );
+          return distA - distB;
+        });
+
+      let postsToMove = [];
+      const targetCount = Math.ceil(targetDensityPerVoxel * 0.7);
+
+      for (const denseVoxel of sortedDenseVoxels) {
+        if (postsToMove.length >= targetCount) break;
+        
+        const availablePosts = denseVoxel.posts;
+        const postsToTake = Math.min(
+          targetCount - postsToMove.length,
+          Math.floor(availablePosts.length - targetDensityPerVoxel)
+        );
+
+        if (postsToTake <= 0) continue;
+
+        const selectedPosts = availablePosts
+          .slice(0, postsToTake)
+          .sort((a, b) => {
+            const distA = Math.sqrt(
+              Math.pow(a.x - emptyVoxel.center.x, 2) +
+              Math.pow(a.y - emptyVoxel.center.y, 2) +
+              Math.pow(a.z - emptyVoxel.center.z, 2)
+            );
+            const distB = Math.sqrt(
+              Math.pow(b.x - emptyVoxel.center.x, 2) +
+              Math.pow(b.y - emptyVoxel.center.y, 2) +
+              Math.pow(b.z - emptyVoxel.center.z, 2)
+            );
+            return distA - distB;
+          });
+
+        postsToMove = postsToMove.concat(selectedPosts);
+
+        selectedPosts.forEach(post => {
+          const index = availablePosts.indexOf(post);
+          if (index !== -1) {
+            availablePosts.splice(index, 1);
+          }
+        });
+
+        denseVoxel.density = availablePosts.length;
+      }
+
+      if (postsToMove.length > 0) {
+        postsToMove.forEach((post) => {
+          const effectiveSize = voxelSize * 0.8;
+          const localX = (Math.random() - 0.5) * effectiveSize;
+          const localY = (Math.random() - 0.5) * effectiveSize;
+          const localZ = (Math.random() - 0.5) * effectiveSize;
+          
+          post.x = emptyVoxel.center.x + localX;
+          post.y = emptyVoxel.center.y + localY;
+          post.z = emptyVoxel.center.z + localZ;
+
+          const distanceToOrigin = Math.sqrt(
+            post.x * post.x + post.y * post.y + post.z * post.z
+          );
+          if (distanceToOrigin > globalSphereRadius) {
+            const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
+            post.x *= scale;
+            post.y *= scale;
+            post.z *= scale;
+          }
+        });
+      }
+    });
+
+    let emptyVoxelsAfter = 0;
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        for (let z = 0; z < GRID_SIZE; z++) {
+          if (!isVoxelInSphere(x, y, z)) continue;
+          const voxelKey = `${x},${y},${z}`;
+          const postsInVoxel = voxels.get(voxelKey) || [];
+          if (postsInVoxel.length === 0) emptyVoxelsAfter++;
+        }
+      }
+    }
+
+    return {
+      emptyVoxels: emptyVoxelsAfter,
+      improvement: previousEmptyVoxels - emptyVoxelsAfter
+    };
+  }
+
+  while (iteration < MAX_ITERATIONS) {
+    console.log(`\nItération ${iteration + 1}/${MAX_ITERATIONS}`);
+    
+    const result = redistributePosts();
+    const improvement = result.improvement;
+    const currentEmptyVoxels = result.emptyVoxels;
+
+    console.log(`- Voxels vides: ${currentEmptyVoxels}`);
+    console.log(`- Amélioration: ${improvement}`);
+
+    if (improvement < CONVERGENCE_THRESHOLD || currentEmptyVoxels === 0) {
+      console.log(`Convergence atteinte après ${iteration + 1} itérations`);
+      break;
+    }
+
+    previousEmptyVoxels = currentEmptyVoxels;
+    iteration++;
+  }
+
+  const finalStats = {
+    min: Infinity,
+    max: 0,
+    total: 0,
+    voxels: 0,
+    empty: 0
+  };
+
+  for (let x = 0; x < GRID_SIZE; x++) {
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let z = 0; z < GRID_SIZE; z++) {
+        if (!isVoxelInSphere(x, y, z)) continue;
+        
+        const voxelKey = getVoxelKey(
+          (x + 0.5) * voxelSize - globalSphereRadius,
+          (y + 0.5) * voxelSize - globalSphereRadius,
+          (z + 0.5) * voxelSize - globalSphereRadius
+        );
+        const postsInVoxel = voxels.get(voxelKey) || [];
+        
+        if (postsInVoxel.length === 0) {
+          finalStats.empty++;
+        } else {
+          finalStats.min = Math.min(finalStats.min, postsInVoxel.length);
+          finalStats.max = Math.max(finalStats.max, postsInVoxel.length);
+          finalStats.total += postsInVoxel.length;
+          finalStats.voxels++;
+        }
+      }
+    }
+  }
+
+  console.log({
+    "Voxels vides": finalStats.empty,
+    "Densité minimale": finalStats.min,
+    "Densité maximale": finalStats.max,
+    "Densité moyenne": (finalStats.total / finalStats.voxels).toFixed(2)
+  });
+
+  // ÉTAPE FINALE: Ajout de bruit pour casser l'aspect cubique des voxels
+  console.log("Application d'une perturbation finale pour casser l'aspect cubique");
+  
+  const finalNoiseScale = 0.1; // Échelle plus fine que le bruit précédent
+  const finalNoiseAmplitude = voxelSize * 2.0; // 30% de la taille d'un voxel
+  const finalSeed = Math.floor(Math.random() * 10000); // Seed aléatoire
+  
+  spatializedPosts.forEach(post => {
+    if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
+
+    // Calculer le bruit avec des fréquences différentes pour chaque axe
+    const noiseX = perlinNoise(
+      post.x * finalNoiseScale,
+      post.y * finalNoiseScale * 1.1,
+      post.z * finalNoiseScale * 0.9,
+      1,
+      finalSeed
+    ) * finalNoiseAmplitude;
+
+    const noiseY = perlinNoise(
+      post.y * finalNoiseScale * 1.2,
+      post.z * finalNoiseScale * 0.8,
+      post.x * finalNoiseScale * 1.3,
+      1,
+      finalSeed + 1
+    ) * finalNoiseAmplitude;
+
+    const noiseZ = perlinNoise(
+      post.z * finalNoiseScale * 0.7,
+      post.x * finalNoiseScale * 1.4,
+      post.y * finalNoiseScale * 1.1,
+      1,
+      finalSeed + 2
+    ) * finalNoiseAmplitude;
+
+    // Appliquer la perturbation
+    post.x += noiseX;
+    post.y += noiseY;
+    post.z += noiseZ;
+
+    // S'assurer que le point reste dans la sphère globale
+    const distanceToOrigin = Math.sqrt(post.x * post.x + post.y * post.y + post.z * post.z);
+    if (distanceToOrigin > globalSphereRadius) {
+      const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
+      post.x *= scale;
+      post.y *= scale;
+      post.z *= scale;
+    }
+  });
+
+  console.log("Perturbation finale appliquée pour casser la régularité des voxels");
+
   return spatializedPosts;
-} 
+}

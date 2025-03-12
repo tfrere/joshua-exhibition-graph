@@ -8,7 +8,8 @@ import * as THREE from "three";
 import { spatializePostsAroundJoshuaNodes } from "./components/PostRenderer/utils/voronoiPass.js";
 import { normalizePostsInSphere } from "./components/PostRenderer/utils/spherizePass.js";
 import { animatePostsInFlowfield } from "./components/PostRenderer/utils/flowfieldPass.js";
-import { applyRadialDisplacement } from "./components/PostRenderer/utils/displacementPass.js";
+import { applyRadialDisplacement } from "./components/PostRenderer/utils/smoothDisplacementPass.js";
+// import { applyRadialDisplacement } from "./components/PostRenderer/utils/displacementPass.js";
 import { spatializePostsAroundJoshuaNodesVND } from "./components/PostRenderer/utils/voronoiWithDisplacementPass.js";
 import { spatializePostsWithVolumetricDistribution } from "./components/PostRenderer/utils/volumetricVoronoiPass.js";
 
@@ -694,9 +695,9 @@ const WorkPostPage = () => {
       },
       {
         name: "displacement",
-        enabled: false,
+        enabled: true,
         config: {
-          intensity: 1000,
+          intensity: 10,
           frequency: 0.2,
           seed: 42,
           minRadius: 5,
