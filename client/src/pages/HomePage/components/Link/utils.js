@@ -72,8 +72,8 @@ export const calculateLinkPoints = (
   let startT = 0, endT = 1;
 
   // Calculer le nombre de points en fonction de la distance
-  const MIN_POINTS = 64; // Minimum de points pour les courtes distances
-  const MAX_POINTS = 256; // Maximum de points pour les longues distances
+  const MIN_POINTS = 32; // Minimum de points pour les courtes distances
+  const MAX_POINTS = 64; // Maximum de points pour les longues distances
   const POINTS_PER_UNIT = 10; // Facteur de points par unité de distance
   
   // Calculer le nombre de points basé sur la distance
