@@ -49,21 +49,48 @@ const NodeLabel = ({
   // Texte à afficher
   const displayText = node.label || node.name || "Node";
 
+  // Type du node à afficher avec logique personnalisée
+  let displayType = "";
+  if (node.type === "character") {
+    displayType = node.isJoshua === true ? "persona" : "victime";
+  } else if (node.type === "central") {
+    displayType = "protagoniste";
+  } else {
+    displayType = node.type || "";
+  }
+
   // Gestion de l'apparition/disparition du label et du son
   useEffect(() => {
     if (isVisible) {
-      // Choisir aléatoirement entre les deux fichiers audio
+      // Définir le son en fonction du type de nœud
+      let soundToPlay;
+
+      if (node.type === "character") {
+        if (node.isJoshua === true) {
+          // Son pour "persona"
+          soundToPlay = "/sounds/persona.mp3";
+        } else {
+          // Son pour "victime"
+          soundToPlay = "/sounds/victime.mp3";
+        }
+      } else if (node.type === "central") {
+        // Son pour "protagoniste"
+        soundToPlay = "/sounds/joshua.mp3";
+      } else {
+        // Son par défaut pour les autres types ou choix aléatoire
+        soundToPlay =
+          Math.random() < 0.5
+            ? "/sounds/character-touch.mp3"
+            : "/sounds/character-touch-2.mp3";
+      }
+
       console.log(node);
-      const randomSound =
-        Math.random() < 0.5
-          ? "/sounds/character-touch.mp3"
-          : "/sounds/character-touch-2.mp3";
-      setAudioFile(randomSound);
+      setAudioFile(soundToPlay);
       setShouldPlaySound(true);
     } else {
       setShouldPlaySound(false);
     }
-  }, [isVisible]);
+  }, [isVisible, node]);
 
   // Jouer le son quand shouldPlaySound devient true
   useEffect(() => {
@@ -96,21 +123,8 @@ const NodeLabel = ({
 
       <Billboard>
         <animated.group opacity={opacity} scale={scale} position-y={positionY}>
-          {/* Background plane for better text visibility */}
-          {isActive && (
-            <mesh position={[0, 0, -0.01]}>
-              <planeGeometry args={[displayText.length * 0.25 + 0.3, 0.5]} />
-              <animated.meshBasicMaterial
-                color="#000000"
-                transparent
-                opacity={opacity.to((o) => o * 0.5)} // Lier l'opacité du fond à l'animation
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          )}
-
-          {/* Text with improved visibility and animation */}
           <animated.group>
+            {/* Node name with custom font */}
             <Text
               fontSize={2}
               font={"/fonts/caveat.ttf"}
@@ -120,7 +134,7 @@ const NodeLabel = ({
               outlineWidth={0.2}
               outlineColor="#000000"
               outlineBlur={0.2}
-              position={[2, 5, 0]}
+              position={[0, 5.3, 0]}
             >
               <animated.meshStandardMaterial
                 attach="material"
@@ -130,6 +144,28 @@ const NodeLabel = ({
               />
               {displayText}
             </Text>
+
+            {/* Node type with standard font, smaller size */}
+            {displayType && (
+              <Text
+                fontSize={0.5}
+                color={"#cccccc"}
+                anchorX="center"
+                anchorY="middle"
+                outlineWidth={0.1}
+                outlineColor="#000000"
+                outlineBlur={0.1}
+                position={[0, 6.6, 0]}
+              >
+                <animated.meshStandardMaterial
+                  attach="material"
+                  color={"#cccccc"}
+                  transparent
+                  opacity={opacity}
+                />
+                {displayType}
+              </Text>
+            )}
           </animated.group>
         </animated.group>
       </Billboard>

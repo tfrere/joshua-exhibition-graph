@@ -8,10 +8,7 @@ import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
-import {
-  EffectComposer,
-  Bloom,
-} from "@react-three/postprocessing";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
 import IntroScreen from "./components/IntroScreen.jsx";
@@ -78,7 +75,7 @@ const HomePage = () => {
         setDebugMode((prevMode) => !prevMode);
         console.log("Mode debug:", !debugMode);
       }
-      
+
       // Ajout d'un test pour la vibration de la manette avec la touche "v"
       if (event.key === "v" || event.key === "V") {
         // Import dynamique pour éviter les dépendances circulaires
@@ -88,14 +85,16 @@ const HomePage = () => {
             console.log("Test de vibration du gamepad");
             inputManager.vibrateGamepad(100, 0.5, 1.0);
           } else {
-            console.log("InputManager non disponible pour le test de vibration");
+            console.log(
+              "InputManager non disponible pour le test de vibration"
+            );
           }
         });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    
+
     // Nettoyer l'écouteur d'événements lors du démontage
     return () => {
       window.removeEventListener("keydown", handleKeyDown);

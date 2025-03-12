@@ -10,6 +10,7 @@ import {
   calculateCameraTransition,
 } from "../utils/advancedCameraControls";
 import { getInputManager, useInputs } from "../utils/inputManager";
+import { sendResetSignal } from "./Posts/hooks/useNearestPostDetection";
 
 /**
  * Indicateur de connexion de manette
@@ -90,7 +91,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   const lastInteractionTime = useRef(Date.now());
   const autoRotateTimerId = useRef(null);
   const AUTO_ROTATE_DELAY = 10000; // 10 seconds before auto rotation activation
-  const AUTO_ORBIT_DELAY = 10000; // 10 seconds before orbit mode
+  const AUTO_ORBIT_DELAY = 60000; // 10 seconds before orbit mode
   const AUTO_ROTATE_SPEED = 0.025; // Auto rotation speed
   const [orbitModeActive, setOrbitModeActive] = useState(false);
   const orbitTimerId = useRef(null);
@@ -270,6 +271,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
         if (!transitioning.current.active && !orbitModeActive) {
           orbitAttempted.current = true;
+
+          // Envoyer le signal de reset via socket
+          sendResetSignal();
 
           // Retour à la position par défaut PUIS activation du mode orbite
           animateToCameraPosition(0, true); // Le second paramètre indique qu'il faut activer l'orbite après

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import Node from "./Node/Node";
-import Link from "./Link";
+import Link from "./Link/Link";
 
 // Main Graph component
 const Graph = ({ data, postsData }) => {
