@@ -1,6 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats, OrbitControls, Text } from "@react-three/drei";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useControls, folder } from "leva";
 import PostsRenderer from "./components/PostRenderer/PostsRenderer.jsx";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
