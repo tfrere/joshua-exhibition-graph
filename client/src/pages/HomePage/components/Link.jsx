@@ -339,9 +339,9 @@ const calculateLinkPoints = (
 
   // Calculer le nombre de points en fonction de la distance
   // Formule: nombre de points proportionnel à la distance, avec des limites min et max
-  const MIN_POINTS = 20; // Minimum de points pour les courtes distances
-  const MAX_POINTS = 200; // Maximum de points pour les longues distances
-  const POINTS_PER_UNIT = 2; // Facteur de points par unité de distance
+  const MIN_POINTS = 32; // Minimum de points pour les courtes distances
+  const MAX_POINTS = 256; // Maximum de points pour les longues distances
+  const POINTS_PER_UNIT = 10; // Facteur de points par unité de distance
   
   // Calculer le nombre de points basé sur la distance
   let numPoints = Math.round(distance * POINTS_PER_UNIT);
@@ -357,28 +357,36 @@ const calculateLinkPoints = (
   
   // Nouvelle approche: conserver une distance physique constante du nœud
   // quelle que soit la longueur de la courbe
-  const MIN_DISTANCE_FROM_NODE = 10; // Distance minimale constante entre le nœud et la courbe
+  const MIN_DISTANCE_FROM_NODE = 5; // Distance minimale constante entre le nœud et la courbe
   
   // Initialiser le tableau des points conservés
   let trimmedPoints = [];
   
-  // Calculer les distances depuis les extrémités de la courbe pour chaque point
+  // Calculer les distances depuis les positions réelles des nœuds pour chaque point
   const sourceDistance = new Array(allPoints.length);
   const targetDistance = new Array(allPoints.length);
   
   for (let i = 0; i < allPoints.length; i++) {
-    // Calculer et stocker la distance depuis le point de départ
-    sourceDistance[i] = allPoints[i].distanceTo(adjustedSourcePos);
+    // Calculer et stocker la distance depuis le nœud source réel
+    sourceDistance[i] = allPoints[i].distanceTo(sourcePos);
     
-    // Calculer et stocker la distance depuis le point d'arrivée
-    targetDistance[i] = allPoints[i].distanceTo(adjustedTargetPos);
+    // Calculer et stocker la distance depuis le nœud cible réel
+    targetDistance[i] = allPoints[i].distanceTo(targetPos);
   }
   
   // Filtrer les points en fonction de la distance physique minimale
   trimmedPoints = allPoints.filter((point, index) => {
-    // Conserver le point si sa distance depuis chaque extrémité est supérieure au minimum
-    return sourceDistance[index] >= MIN_DISTANCE_FROM_NODE && 
-           targetDistance[index] >= MIN_DISTANCE_FROM_NODE;
+    // Calculer la distance relative depuis le bord du nœud source
+    // (en tenant compte de l'offset déjà appliqué)
+    const relativeSourceDistance = sourceDistance[index] - startOffset;
+    
+    // Calculer la distance relative depuis le bord du nœud cible
+    // (en tenant compte de l'offset déjà appliqué)
+    const relativeTargetDistance = targetDistance[index] - endOffset;
+    
+    // Conserver le point si sa distance depuis chaque bord de nœud est supérieure au minimum
+    return relativeSourceDistance >= MIN_DISTANCE_FROM_NODE && 
+           relativeTargetDistance >= MIN_DISTANCE_FROM_NODE;
   });
   
   // Au cas où il ne reste pas assez de points (courbes très courtes)
@@ -389,7 +397,7 @@ const calculateLinkPoints = (
     trimmedPoints = allPoints.slice(startIndex, endIndex);
   }
   
-  console.log(`Distance: ${distance.toFixed(2)}, Total Points: ${numPoints}, Kept Points: ${trimmedPoints.length}`);
+  console.log(`Distance: ${distance.toFixed(2)}, Total Points: ${numPoints}, Kept Points: ${trimmedPoints.length}, Min Distance: ${MIN_DISTANCE_FROM_NODE}`);
 
   // Retourner les points tronqués et la courbe complète
   return {
