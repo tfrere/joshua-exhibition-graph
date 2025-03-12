@@ -37,6 +37,11 @@ function perlinNoise(x, y, z, scale = 1, seed = 0) {
  * @param {boolean} options.useStrictSlugMatching - Si true, utilise strictement les slugs pour les correspondances (défaut: false)
  * @param {Array} options.customNodes - Nœuds personnalisés à utiliser à la place des nœuds standards
  * @param {number} options.voronoiPermissivity - Facteur entre 0 et 1 permettant aux posts de dépasser les frontières des cellules (0 = strict, 1 = permissif) (défaut: 0)
+ * @param {boolean} options.firstPass - Si true, exécute la répartition initiale des posts dans les volumes (défaut: true)
+ * @param {boolean} options.secondPass - Si true, exécute la vérification de la contrainte de la sphère globale (défaut: true)
+ * @param {boolean} options.thirdPass - Si true, applique le bruit de Perlin pour la variation (défaut: true)
+ * @param {boolean} options.fourthPass - Si true, exécute l'uniformisation itérative de la densité (défaut: true)
+ * @param {boolean} options.fifthPass - Si true, applique la perturbation finale pour casser l'aspect cubique (défaut: true)
  * @returns {Array} Posts spatialisés avec coordonnées mises à jour
  */
 export function spatializePostsWithVolumetricDistribution(posts, nodes, options = {}) {
@@ -50,7 +55,12 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     minCharacterDistance = 50,
     useStrictSlugMatching = false,
     customNodes = null,
-    voronoiPermissivity = 0
+    voronoiPermissivity = 0,
+    firstPass = false,   // Répartition initiale des posts dans les volumes
+    secondPass = false,  // Vérification de la contrainte de la sphère globale
+    thirdPass = false,   // Application du bruit de Perlin pour la variation
+    fourthPass = false,  // Uniformisation itérative de la densité
+    fifthPass = false    // Perturbation finale pour casser l'aspect cubique
   } = options;
 
   // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
@@ -216,7 +226,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   if (proportionalVolume) {
     // Calculer le volume pour chaque caractère
     for (const [characterKey, postCount] of Object.entries(postCountByCharacter)) {
-      const volumeRatio = postCount / totalPosts * 10;
+      const volumeRatio = postCount / totalPosts;
       const characterVolume = totalVolume * volumeRatio;
       
       // Rayon effectif pour ce volume (en supposant une sphère)
@@ -306,19 +316,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   // ÉTAPE 4: Pas besoin de stocker séparément les positions calculées puisqu'on utilise les positions d'origine
   console.log("Utilisation des positions originales des nœuds de caractère pour le placement des posts");
   
-  // ÉTAPE 5: Positionnement des posts dans leurs volumes respectifs
-  console.log("Positionnement des posts dans leurs volumes alloués avec logique de Voronoi");
-  
-  // Afficher le facteur de permissivité utilisé
-  if (voronoiPermissivity > 0) {
-    console.log(`Mode permissif activé: les posts peuvent dépasser les frontières Voronoi jusqu'à ${(voronoiPermissivity * 100).toFixed(1)}% du rayon de leur volume`);
-  } else {
-    console.log("Mode strict activé: les posts restent strictement dans leurs cellules de Voronoi");
-  }
-  
-  let postsPositioned = 0;
-  let postsInBlendedArea = 0; // Compteur pour les posts placés dans des zones de chevauchement
-  
+  // Définir les variables et fonctions partagées entre les passes
   // Créer une carte des volumes pour vérification rapide d'appartenance
   const volumesByCenterKey = {};
   for (const [characterKey, centerInfo] of Object.entries(characterCenters)) {
@@ -405,6 +403,24 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     const d = Math.sqrt(point.x*point.x + point.y*point.y + point.z*point.z);
     return d <= globalSphereRadius;
   };
+
+  // Définir les constantes pour les voxels (utilisées dans les passes 4 et 5)
+  const GRID_SIZE = 16;
+  const voxelSize = (globalSphereRadius * 2) / GRID_SIZE;
+  
+  // ÉTAPE 5: Positionnement des posts dans leurs volumes respectifs
+  if (firstPass) {
+    console.log("[PASSE 1: Répartition] Positionnement des posts dans leurs volumes alloués avec logique de Voronoi");
+    
+    // Afficher le facteur de permissivité utilisé
+    if (voronoiPermissivity > 0) {
+      console.log(`[PASSE 1: Répartition] Mode permissif activé: les posts peuvent dépasser les frontières Voronoi jusqu'à ${(voronoiPermissivity * 100).toFixed(1)}% du rayon de leur volume`);
+    } else {
+      console.log("[PASSE 1: Répartition] Mode strict activé: les posts restent strictement dans leurs cellules de Voronoi");
+    }
+    
+    let postsPositioned = 0;
+    let postsInBlendedArea = 0; // Compteur pour les posts placés dans des zones de chevauchement
   
   for (const [characterKey, posts] of Object.entries(postsByCharacter)) {
     const characterNode = characterNodesMap[characterKey];
@@ -412,7 +428,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     const centerInfo = characterCenters[characterKey];
     
     if (!characterNode || !volumeInfo || !centerInfo) {
-      console.warn(`Informations manquantes pour le caractère ${characterKey}, posts ignorés`);
+        console.warn(`[PASSE 1: Répartition] Informations manquantes pour le caractère ${characterKey}, posts ignorés`);
       continue;
     }
     
@@ -425,7 +441,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     const sphereRadius = centerInfo.radius;
     const safeRadius = sphereRadius * 0.95; // 5% de marge de sécurité
     
-    console.log(`Placement des posts pour ${characterKey}: ${posts.length} posts dans un volume de rayon ${safeRadius.toFixed(2)} autour de (${centerX.toFixed(1)}, ${centerY.toFixed(1)}, ${centerZ.toFixed(1)})`);
+      console.log(`[PASSE 1: Répartition] Placement des posts pour ${characterKey}: ${posts.length} posts dans un volume de rayon ${safeRadius.toFixed(2)} autour de (${centerX.toFixed(1)}, ${centerY.toFixed(1)}, ${centerZ.toFixed(1)})`);
     
     // Positionner chaque post à l'intérieur de la sphère de son caractère
     posts.forEach((post) => {
@@ -583,9 +599,13 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   console.log(`Positionnement avec Voronoi terminé: ${postsPositioned} posts positionnés`);
   if (voronoiPermissivity > 0 && postsInBlendedArea > 0) {
     console.log(`${postsInBlendedArea} posts (${((postsInBlendedArea/postsPositioned)*100).toFixed(1)}%) sont placés dans des zones de transition entre cellules`);
+    }
+  } else {
+    console.log("Première passe (positionnement des posts) désactivée");
   }
 
   // ÉTAPE 6: Vérification finale de la contrainte de sphère globale
+  if (secondPass) {
   let postsOutsideGlobalSphere = 0;
   
   spatializedPosts.forEach(post => {
@@ -610,15 +630,18 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   });
   
   if (postsOutsideGlobalSphere > 0) {
-    console.log(`${postsOutsideGlobalSphere} posts étaient en dehors de la sphère globale et ont été contraints`);
+      console.log(`[PASSE 2: Contrainte] ${postsOutsideGlobalSphere} posts étaient en dehors de la sphère globale et ont été contraints`);
   } else {
-    console.log("Tous les posts sont correctement contraints dans la sphère globale de rayon", globalSphereRadius);
+      console.log("[PASSE 2: Contrainte] Tous les posts sont correctement contraints dans la sphère globale de rayon", globalSphereRadius);
+    }
+  } else {
+    console.log("[PASSE 2: Contrainte] Deuxième passe désactivée");
   }
   
   // ÉTAPE 7: Appliquer le bruit de Perlin uniquement si demandé
-  if (perlinScale > 0 && perlinAmplitude > 0) {
-    console.log("Application du bruit de Perlin pour la variation");
-    console.log(`Facteur de permissivité Voronoi: ${voronoiPermissivity}`);
+  if (thirdPass && perlinScale > 0 && perlinAmplitude > 0) {
+    console.log("[PASSE 3: Perlin] Application du bruit de Perlin pour la variation");
+    console.log(`[PASSE 3: Perlin] Facteur de permissivité Voronoi: ${voronoiPermissivity}`);
     
     let postsDisturbed = 0;
     
@@ -695,314 +718,345 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
       postsDisturbed++;
     });
     
-    console.log(`Variation terminée: ${postsDisturbed} posts perturbés avec du bruit de Perlin`);
+    console.log(`[PASSE 3: Perlin] Variation terminée: ${postsDisturbed} posts perturbés avec du bruit de Perlin`);
+  } else {
+    console.log("[PASSE 3: Perlin] Troisième passe désactivée");
   }
 
   // ÉTAPE FINALE: Uniformisation itérative de la densité
-  console.log("Début de l'uniformisation itérative de la densité");
+  if (fourthPass) {
+    console.log("[PASSE 4: Uniformisation] Début de l'uniformisation itérative de la densité");
 
-  const GRID_SIZE = 16;
-  const voxelSize = (globalSphereRadius * 2) / GRID_SIZE;
-  const voxels = new Map();
-  
-  const getVoxelKey = (x, y, z) => {
-    const vx = Math.floor((x + globalSphereRadius) / voxelSize);
-    const vy = Math.floor((y + globalSphereRadius) / voxelSize);
-    const vz = Math.floor((z + globalSphereRadius) / voxelSize);
-    return `${vx},${vy},${vz}`;
-  };
-
-  const isVoxelInSphere = (vx, vy, vz) => {
-    const centerX = (vx + 0.5) * voxelSize - globalSphereRadius;
-    const centerY = (vy + 0.5) * voxelSize - globalSphereRadius;
-    const centerZ = (vz + 0.5) * voxelSize - globalSphereRadius;
-    return Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ) <= globalSphereRadius;
-  };
-
-  let totalVoxelsInSphere = 0;
-  for (let x = 0; x < GRID_SIZE; x++) {
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let z = 0; z < GRID_SIZE; z++) {
-        if (isVoxelInSphere(x, y, z)) {
-          totalVoxelsInSphere++;
-        }
-      }
-    }
-  }
-
-  const targetDensityPerVoxel = Math.ceil(spatializedPosts.length / totalVoxelsInSphere);
-  const MAX_ITERATIONS = 10;
-  const CONVERGENCE_THRESHOLD = 0.1;
-  let iteration = 0;
-  let previousEmptyVoxels = Infinity;
-
-  function redistributePosts() {
-    voxels.clear();
+    // Déplacer la référence à postCountByCharacter pour la rendre accessible à redistributePosts
+    // Créer une copie pour éviter de modifier l'original
+    const redistPostCountByCharacter = {...postCountByCharacter};
+    console.log(`[PASSE 4: Uniformisation] Utilisation des données de ${Object.keys(redistPostCountByCharacter).length} personnages pour la priorisation`);
     
-    spatializedPosts.forEach(post => {
-      if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
-      const voxelKey = getVoxelKey(post.x, post.y, post.z);
-      if (!voxels.has(voxelKey)) {
-        voxels.set(voxelKey, []);
-      }
-      voxels.get(voxelKey).push(post);
-    });
-
-    const emptyVoxels = [];
-    const denseVoxels = [];
+    const voxels = new Map();
     
+    const getVoxelKey = (x, y, z) => {
+      const vx = Math.floor((x + globalSphereRadius) / voxelSize);
+      const vy = Math.floor((y + globalSphereRadius) / voxelSize);
+      const vz = Math.floor((z + globalSphereRadius) / voxelSize);
+      return `${vx},${vy},${vz}`;
+    };
+
+    const isVoxelInSphere = (vx, vy, vz) => {
+      const centerX = (vx + 0.5) * voxelSize - globalSphereRadius;
+      const centerY = (vy + 0.5) * voxelSize - globalSphereRadius;
+      const centerZ = (vz + 0.5) * voxelSize - globalSphereRadius;
+      return Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ) <= globalSphereRadius;
+    };
+
+    let totalVoxelsInSphere = 0;
     for (let x = 0; x < GRID_SIZE; x++) {
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let z = 0; z < GRID_SIZE; z++) {
-          if (!isVoxelInSphere(x, y, z)) continue;
-          
-          const voxelKey = `${x},${y},${z}`;
-          const postsInVoxel = voxels.get(voxelKey) || [];
-          
-          if (postsInVoxel.length === 0) {
-            const centerX = (x + 0.5) * voxelSize - globalSphereRadius;
-            const centerY = (y + 0.5) * voxelSize - globalSphereRadius;
-            const centerZ = (z + 0.5) * voxelSize - globalSphereRadius;
-            
-            const distanceToCenter = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ);
-            if (distanceToCenter <= globalSphereRadius * 0.95) {
-              emptyVoxels.push({
-                key: voxelKey,
-                center: { x: centerX, y: centerY, z: centerZ }
-              });
-            }
-          } else if (postsInVoxel.length > targetDensityPerVoxel * 1.2) {
-            denseVoxels.push({
-              key: voxelKey,
-              posts: postsInVoxel,
-              density: postsInVoxel.length,
-              center: {
-                x: (x + 0.5) * voxelSize - globalSphereRadius,
-                y: (y + 0.5) * voxelSize - globalSphereRadius,
-                z: (z + 0.5) * voxelSize - globalSphereRadius
-              }
-            });
+          if (isVoxelInSphere(x, y, z)) {
+            totalVoxelsInSphere++;
           }
         }
       }
     }
 
-    if (emptyVoxels.length === 0) {
-      return { emptyVoxels: 0, improvement: 0 };
-    }
+    const targetDensityPerVoxel = Math.ceil(spatializedPosts.length / totalVoxelsInSphere);
+    const MAX_ITERATIONS = 1;
+    const CONVERGENCE_THRESHOLD = 0.01;
+    let iteration = 0;
+    let previousEmptyVoxels = Infinity;
 
-    denseVoxels.sort((a, b) => b.density - a.density);
+    function redistributePosts() {
+      voxels.clear();
+      
+      spatializedPosts.forEach(post => {
+        if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
+        const voxelKey = getVoxelKey(post.x, post.y, post.z);
+        if (!voxels.has(voxelKey)) {
+          voxels.set(voxelKey, []);
+        }
+        voxels.get(voxelKey).push(post);
+      });
 
-    emptyVoxels.forEach(emptyVoxel => {
-      const sortedDenseVoxels = denseVoxels
-        .filter(dv => dv.density > targetDensityPerVoxel)
-        .sort((a, b) => {
-          const distA = Math.sqrt(
-            Math.pow(a.center.x - emptyVoxel.center.x, 2) +
-            Math.pow(a.center.y - emptyVoxel.center.y, 2) +
-            Math.pow(a.center.z - emptyVoxel.center.z, 2)
-          );
-          const distB = Math.sqrt(
-            Math.pow(b.center.x - emptyVoxel.center.x, 2) +
-            Math.pow(b.center.y - emptyVoxel.center.y, 2) +
-            Math.pow(b.center.z - emptyVoxel.center.z, 2)
-          );
-          return distA - distB;
-        });
+      const emptyVoxels = [];
+      const denseVoxels = [];
+      
+      for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let z = 0; z < GRID_SIZE; z++) {
+            if (!isVoxelInSphere(x, y, z)) continue;
+            
+            const voxelKey = `${x},${y},${z}`;
+            const postsInVoxel = voxels.get(voxelKey) || [];
+            
+            if (postsInVoxel.length === 0) {
+              const centerX = (x + 0.5) * voxelSize - globalSphereRadius;
+              const centerY = (y + 0.5) * voxelSize - globalSphereRadius;
+              const centerZ = (z + 0.5) * voxelSize - globalSphereRadius;
+              
+              const distanceToCenter = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ);
+              if (distanceToCenter <= globalSphereRadius * 0.95) {
+                emptyVoxels.push({
+                  key: voxelKey,
+                  center: { x: centerX, y: centerY, z: centerZ }
+                });
+              }
+            } else if (postsInVoxel.length > targetDensityPerVoxel * 1.2) {
+              denseVoxels.push({
+                key: voxelKey,
+                posts: postsInVoxel,
+                density: postsInVoxel.length,
+                center: {
+                  x: (x + 0.5) * voxelSize - globalSphereRadius,
+                  y: (y + 0.5) * voxelSize - globalSphereRadius,
+                  z: (z + 0.5) * voxelSize - globalSphereRadius
+                }
+              });
+            }
+          }
+        }
+      }
 
-      let postsToMove = [];
-      const targetCount = Math.ceil(targetDensityPerVoxel * 0.7);
+      if (emptyVoxels.length === 0) {
+        return { emptyVoxels: 0, improvement: 0 };
+      }
 
-      for (const denseVoxel of sortedDenseVoxels) {
-        if (postsToMove.length >= targetCount) break;
-        
-        const availablePosts = denseVoxel.posts;
-        const postsToTake = Math.min(
-          targetCount - postsToMove.length,
-          Math.floor(availablePosts.length - targetDensityPerVoxel)
-        );
+      denseVoxels.sort((a, b) => b.density - a.density);
 
-        if (postsToTake <= 0) continue;
-
-        const selectedPosts = availablePosts
-          .slice(0, postsToTake)
+      emptyVoxels.forEach(emptyVoxel => {
+        const sortedDenseVoxels = denseVoxels
+          .filter(dv => dv.density > targetDensityPerVoxel)
           .sort((a, b) => {
             const distA = Math.sqrt(
-              Math.pow(a.x - emptyVoxel.center.x, 2) +
-              Math.pow(a.y - emptyVoxel.center.y, 2) +
-              Math.pow(a.z - emptyVoxel.center.z, 2)
+              Math.pow(a.center.x - emptyVoxel.center.x, 2) +
+              Math.pow(a.center.y - emptyVoxel.center.y, 2) +
+              Math.pow(a.center.z - emptyVoxel.center.z, 2)
             );
             const distB = Math.sqrt(
-              Math.pow(b.x - emptyVoxel.center.x, 2) +
-              Math.pow(b.y - emptyVoxel.center.y, 2) +
-              Math.pow(b.z - emptyVoxel.center.z, 2)
+              Math.pow(b.center.x - emptyVoxel.center.x, 2) +
+              Math.pow(b.center.y - emptyVoxel.center.y, 2) +
+              Math.pow(b.center.z - emptyVoxel.center.z, 2)
             );
             return distA - distB;
           });
 
-        postsToMove = postsToMove.concat(selectedPosts);
+        let postsToMove = [];
+        const targetCount = Math.ceil(targetDensityPerVoxel * 0.7);
 
-        selectedPosts.forEach(post => {
-          const index = availablePosts.indexOf(post);
-          if (index !== -1) {
-            availablePosts.splice(index, 1);
-          }
-        });
-
-        denseVoxel.density = availablePosts.length;
-      }
-
-      if (postsToMove.length > 0) {
-        postsToMove.forEach((post) => {
-          const effectiveSize = voxelSize * 0.8;
-          const localX = (Math.random() - 0.5) * effectiveSize;
-          const localY = (Math.random() - 0.5) * effectiveSize;
-          const localZ = (Math.random() - 0.5) * effectiveSize;
+        for (const denseVoxel of sortedDenseVoxels) {
+          if (postsToMove.length >= targetCount) break;
           
-          post.x = emptyVoxel.center.x + localX;
-          post.y = emptyVoxel.center.y + localY;
-          post.z = emptyVoxel.center.z + localZ;
-
-          const distanceToOrigin = Math.sqrt(
-            post.x * post.x + post.y * post.y + post.z * post.z
+          const availablePosts = denseVoxel.posts;
+          const postsToTake = Math.min(
+            targetCount - postsToMove.length,
+            Math.floor(availablePosts.length - targetDensityPerVoxel)
           );
-          if (distanceToOrigin > globalSphereRadius) {
-            const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
-            post.x *= scale;
-            post.y *= scale;
-            post.z *= scale;
-          }
-        });
-      }
-    });
 
-    let emptyVoxelsAfter = 0;
+          if (postsToTake <= 0) continue;
+
+          // Modification : Tri des posts en prenant en compte le nombre total de posts par personnage
+          const selectedPosts = availablePosts
+            .slice(0, postsToTake)
+            .sort((a, b) => {
+              // Récupérer l'identifiant du personnage pour chaque post
+              const characterA = a.associatedNodeSlug || a.associatedNodeId;
+              const characterB = b.associatedNodeSlug || b.associatedNodeId;
+              
+              // Récupérer le nombre total de posts pour chaque personnage
+              // Utiliser la copie accessible dans cette portée
+              const countA = redistPostCountByCharacter[characterA] || 0;
+              const countB = redistPostCountByCharacter[characterB] || 0;
+              
+              // Calculer les distances à la cible (voxel vide)
+              const distA = Math.sqrt(
+                Math.pow(a.x - emptyVoxel.center.x, 2) +
+                Math.pow(a.y - emptyVoxel.center.y, 2) +
+                Math.pow(a.z - emptyVoxel.center.z, 2)
+              );
+              const distB = Math.sqrt(
+                Math.pow(b.x - emptyVoxel.center.x, 2) +
+                Math.pow(b.y - emptyVoxel.center.y, 2) +
+                Math.pow(b.z - emptyVoxel.center.z, 2)
+              );
+              
+              // Pondération: 75% basé sur le nombre de posts, 25% sur la distance
+              // Plus le personnage a de posts, plus ses posts sont prioritaires pour être déplacés
+              const priorityA = (countA / totalPosts) * 0.75 - (distA / globalSphereRadius) * 0.25;
+              const priorityB = (countB / totalPosts) * 0.75 - (distB / globalSphereRadius) * 0.25;
+              
+              // Ordre décroissant de priorité
+              return priorityB - priorityA;
+            });
+
+          postsToMove = postsToMove.concat(selectedPosts);
+
+          selectedPosts.forEach(post => {
+            const index = availablePosts.indexOf(post);
+            if (index !== -1) {
+              availablePosts.splice(index, 1);
+            }
+          });
+
+          denseVoxel.density = availablePosts.length;
+        }
+
+        if (postsToMove.length > 0) {
+          postsToMove.forEach((post) => {
+            const effectiveSize = voxelSize * 0.8;
+            const localX = (Math.random() - 0.5) * effectiveSize;
+            const localY = (Math.random() - 0.5) * effectiveSize;
+            const localZ = (Math.random() - 0.5) * effectiveSize;
+            
+            post.x = emptyVoxel.center.x + localX;
+            post.y = emptyVoxel.center.y + localY;
+            post.z = emptyVoxel.center.z + localZ;
+
+            const distanceToOrigin = Math.sqrt(
+              post.x * post.x + post.y * post.y + post.z * post.z
+            );
+            if (distanceToOrigin > globalSphereRadius) {
+              const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
+              post.x *= scale;
+              post.y *= scale;
+              post.z *= scale;
+            }
+          });
+        }
+      });
+
+      let emptyVoxelsAfter = 0;
+      for (let x = 0; x < GRID_SIZE; x++) {
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let z = 0; z < GRID_SIZE; z++) {
+            if (!isVoxelInSphere(x, y, z)) continue;
+            const voxelKey = `${x},${y},${z}`;
+            const postsInVoxel = voxels.get(voxelKey) || [];
+            if (postsInVoxel.length === 0) emptyVoxelsAfter++;
+          }
+        }
+      }
+
+      return {
+        emptyVoxels: emptyVoxelsAfter,
+        improvement: previousEmptyVoxels - emptyVoxelsAfter
+      };
+    }
+
+    while (iteration < MAX_ITERATIONS) {
+      console.log(`\n[PASSE 4: Uniformisation] Itération ${iteration + 1}/${MAX_ITERATIONS}`);
+      
+      const result = redistributePosts();
+      const improvement = result.improvement;
+      const currentEmptyVoxels = result.emptyVoxels;
+
+      console.log(`[PASSE 4: Uniformisation] - Voxels vides: ${currentEmptyVoxels}`);
+      console.log(`[PASSE 4: Uniformisation] - Amélioration: ${improvement}`);
+
+      if (improvement < CONVERGENCE_THRESHOLD || currentEmptyVoxels === 0) {
+        console.log(`[PASSE 4: Uniformisation] Convergence atteinte après ${iteration + 1} itérations`);
+        break;
+      }
+
+      previousEmptyVoxels = currentEmptyVoxels;
+      iteration++;
+    }
+
+    const finalStats = {
+      min: Infinity,
+      max: 0,
+      total: 0,
+      voxels: 0,
+      empty: 0
+    };
+
     for (let x = 0; x < GRID_SIZE; x++) {
       for (let y = 0; y < GRID_SIZE; y++) {
         for (let z = 0; z < GRID_SIZE; z++) {
           if (!isVoxelInSphere(x, y, z)) continue;
-          const voxelKey = `${x},${y},${z}`;
+          
+          const voxelKey = getVoxelKey(
+            (x + 0.5) * voxelSize - globalSphereRadius,
+            (y + 0.5) * voxelSize - globalSphereRadius,
+            (z + 0.5) * voxelSize - globalSphereRadius
+          );
           const postsInVoxel = voxels.get(voxelKey) || [];
-          if (postsInVoxel.length === 0) emptyVoxelsAfter++;
+          
+          if (postsInVoxel.length === 0) {
+            finalStats.empty++;
+          } else {
+            finalStats.min = Math.min(finalStats.min, postsInVoxel.length);
+            finalStats.max = Math.max(finalStats.max, postsInVoxel.length);
+            finalStats.total += postsInVoxel.length;
+            finalStats.voxels++;
+          }
         }
       }
     }
 
-    return {
-      emptyVoxels: emptyVoxelsAfter,
-      improvement: previousEmptyVoxels - emptyVoxelsAfter
-    };
+    console.log({
+      "[PASSE 4: Uniformisation] Voxels vides": finalStats.empty,
+      "[PASSE 4: Uniformisation] Densité minimale": finalStats.min,
+      "[PASSE 4: Uniformisation] Densité maximale": finalStats.max,
+      "[PASSE 4: Uniformisation] Densité moyenne": (finalStats.total / finalStats.voxels).toFixed(2)
+    });
+  } else {
+    console.log("[PASSE 4: Uniformisation] Quatrième passe désactivée");
   }
-
-  while (iteration < MAX_ITERATIONS) {
-    console.log(`\nItération ${iteration + 1}/${MAX_ITERATIONS}`);
-    
-    const result = redistributePosts();
-    const improvement = result.improvement;
-    const currentEmptyVoxels = result.emptyVoxels;
-
-    console.log(`- Voxels vides: ${currentEmptyVoxels}`);
-    console.log(`- Amélioration: ${improvement}`);
-
-    if (improvement < CONVERGENCE_THRESHOLD || currentEmptyVoxels === 0) {
-      console.log(`Convergence atteinte après ${iteration + 1} itérations`);
-      break;
-    }
-
-    previousEmptyVoxels = currentEmptyVoxels;
-    iteration++;
-  }
-
-  const finalStats = {
-    min: Infinity,
-    max: 0,
-    total: 0,
-    voxels: 0,
-    empty: 0
-  };
-
-  for (let x = 0; x < GRID_SIZE; x++) {
-    for (let y = 0; y < GRID_SIZE; y++) {
-      for (let z = 0; z < GRID_SIZE; z++) {
-        if (!isVoxelInSphere(x, y, z)) continue;
-        
-        const voxelKey = getVoxelKey(
-          (x + 0.5) * voxelSize - globalSphereRadius,
-          (y + 0.5) * voxelSize - globalSphereRadius,
-          (z + 0.5) * voxelSize - globalSphereRadius
-        );
-        const postsInVoxel = voxels.get(voxelKey) || [];
-        
-        if (postsInVoxel.length === 0) {
-          finalStats.empty++;
-        } else {
-          finalStats.min = Math.min(finalStats.min, postsInVoxel.length);
-          finalStats.max = Math.max(finalStats.max, postsInVoxel.length);
-          finalStats.total += postsInVoxel.length;
-          finalStats.voxels++;
-        }
-      }
-    }
-  }
-
-  console.log({
-    "Voxels vides": finalStats.empty,
-    "Densité minimale": finalStats.min,
-    "Densité maximale": finalStats.max,
-    "Densité moyenne": (finalStats.total / finalStats.voxels).toFixed(2)
-  });
 
   // ÉTAPE FINALE: Ajout de bruit pour casser l'aspect cubique des voxels
-  console.log("Application d'une perturbation finale pour casser l'aspect cubique");
-  
-  const finalNoiseScale = 0.1; // Échelle plus fine que le bruit précédent
-  const finalNoiseAmplitude = voxelSize * 2.0; // 30% de la taille d'un voxel
-  const finalSeed = Math.floor(Math.random() * 10000); // Seed aléatoire
-  
-  spatializedPosts.forEach(post => {
-    if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
+  if (fifthPass) {
+    console.log("[PASSE 5: Perturbation] Application d'une perturbation finale pour casser l'aspect cubique");
+    
+    const finalNoiseScale = 0.1; // Échelle plus fine que le bruit précédent
+    const finalNoiseAmplitude = voxelSize * 2.0; // Amplitude de perturbation
+    const finalSeed = Math.floor(Math.random() * 10000); // Seed aléatoire
+    
+    spatializedPosts.forEach(post => {
+      if (typeof post.x !== 'number' || typeof post.y !== 'number' || typeof post.z !== 'number') return;
 
-    // Calculer le bruit avec des fréquences différentes pour chaque axe
-    const noiseX = perlinNoise(
-      post.x * finalNoiseScale,
-      post.y * finalNoiseScale * 1.1,
-      post.z * finalNoiseScale * 0.9,
-      1,
-      finalSeed
-    ) * finalNoiseAmplitude;
+      // Calculer le bruit avec des fréquences différentes pour chaque axe
+      const noiseX = perlinNoise(
+        post.x * finalNoiseScale,
+        post.y * finalNoiseScale * 1.1,
+        post.z * finalNoiseScale * 0.9,
+        1,
+        finalSeed
+      ) * finalNoiseAmplitude;
 
-    const noiseY = perlinNoise(
-      post.y * finalNoiseScale * 1.2,
-      post.z * finalNoiseScale * 0.8,
-      post.x * finalNoiseScale * 1.3,
-      1,
-      finalSeed + 1
-    ) * finalNoiseAmplitude;
+      const noiseY = perlinNoise(
+        post.y * finalNoiseScale * 1.2,
+        post.z * finalNoiseScale * 0.8,
+        post.x * finalNoiseScale * 1.3,
+        1,
+        finalSeed + 1
+      ) * finalNoiseAmplitude;
 
-    const noiseZ = perlinNoise(
-      post.z * finalNoiseScale * 0.7,
-      post.x * finalNoiseScale * 1.4,
-      post.y * finalNoiseScale * 1.1,
-      1,
-      finalSeed + 2
-    ) * finalNoiseAmplitude;
+      const noiseZ = perlinNoise(
+        post.z * finalNoiseScale * 0.7,
+        post.x * finalNoiseScale * 1.4,
+        post.y * finalNoiseScale * 1.1,
+        1,
+        finalSeed + 2
+      ) * finalNoiseAmplitude;
 
-    // Appliquer la perturbation
-    post.x += noiseX;
-    post.y += noiseY;
-    post.z += noiseZ;
+      // Appliquer la perturbation
+      post.x += noiseX;
+      post.y += noiseY;
+      post.z += noiseZ;
 
-    // S'assurer que le point reste dans la sphère globale
-    const distanceToOrigin = Math.sqrt(post.x * post.x + post.y * post.y + post.z * post.z);
-    if (distanceToOrigin > globalSphereRadius) {
-      const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
-      post.x *= scale;
-      post.y *= scale;
-      post.z *= scale;
-    }
-  });
+      // S'assurer que le point reste dans la sphère globale
+      const distanceToOrigin = Math.sqrt(post.x * post.x + post.y * post.y + post.z * post.z);
+      if (distanceToOrigin > globalSphereRadius) {
+        const scale = (globalSphereRadius * 0.99) / distanceToOrigin;
+        post.x *= scale;
+        post.y *= scale;
+        post.z *= scale;
+      }
+    });
 
-  console.log("Perturbation finale appliquée pour casser la régularité des voxels");
+    console.log("[PASSE 5: Perturbation] Perturbation finale appliquée pour casser la régularité des voxels");
+  } else {
+    console.log("[PASSE 5: Perturbation] Cinquième passe désactivée");
+  }
 
   return spatializedPosts;
-}
+} 

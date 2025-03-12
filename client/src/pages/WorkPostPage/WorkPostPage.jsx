@@ -671,7 +671,12 @@ const WorkPostPage = () => {
           perlinScale: 0.03, // Échelle du bruit de Perlin pour la variation
           perlinAmplitude: 5, // Amplitude du bruit de Perlin
           minCharacterDistance: 20, // Distance minimale entre caractères
-          useStrictSlugMatching: false, // Permettre la correspondance par ID si nécessaire
+          useStrictSlugMatching: true, // Permettre la correspondance par ID si nécessaire
+          firstPass: true,  // Répartition initiale des posts dans les volumes
+          secondPass: true, // Vérification de la contrainte de la sphère globale
+          thirdPass: false,  // Application du bruit de Perlin pour la variation
+          fourthPass: false, // Uniformisation itérative de la densité
+          fifthPass: false,  // Perturbation finale pour casser l'aspect cubique
         },
       },
       {
@@ -937,6 +942,13 @@ const WorkPostPage = () => {
                 perlinAmplitude: pass.config.perlinAmplitude,
                 minCharacterDistance: pass.config.minCharacterDistance,
                 useStrictSlugMatching: pass.config.useStrictSlugMatching,
+                
+                // Options de contrôle des passes
+                firstPass: pass.config.firstPass,
+                secondPass: pass.config.secondPass,
+                thirdPass: pass.config.thirdPass,
+                fourthPass: pass.config.fourthPass,
+                fifthPass: pass.config.fifthPass
               }
             );
 

@@ -176,7 +176,7 @@ const HomePage = () => {
         {/* Effets de post-processing - seulement si le jeu a démarré */}
         {gameStarted && (
           <EffectComposer>
-            {/* <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} /> */}
+            <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} />
           </EffectComposer>
         )}
       </Canvas>
