@@ -360,17 +360,8 @@ export function Posts({
 
   // Affichage des logs périodiques sur l'état du post actif
   function logActivePostStatus() {
-    if (frameCountRef.current % 60 === 0 && activePostUID) {
-      const activeIndex = data.findIndex(
-        (post) => post && post.postUID === activePostUID
-      );
-      if (activeIndex !== -1) {
-        const isInTransition = activePostUID in transitionProgressRef.current;
-        const transitionProgress = isInTransition
-          ? transitionProgressRef.current[activePostUID]
-          : "N/A";
-      }
-    }
+    // Remplacer la fonction par une version sans logging
+    return null;
   }
 
   // Mise à jour des instances pour chaque post
@@ -741,9 +732,7 @@ export function Posts({
         y = post.coordinates.y;
         z = post.coordinates.z;
       } else {
-        console.warn(
-          `Post ${post.id} a des coordonnées manquantes ou invalides.`
-        );
+        // Coordonnées par défaut si manquantes ou invalides
         x = 0;
         y = 0;
         z = 0;

@@ -30,7 +30,6 @@ const SoundPlayer = ({
   // Function to clean up previous audio instance
   const cleanupAudio = () => {
     if (soundRef.current) {
-      console.log("Cleaning up previous audio instance");
       try {
         // Force HTML5 Audio instances to release
         soundRef.current._sounds.forEach((sound) => {
@@ -65,7 +64,6 @@ const SoundPlayer = ({
     // Remove sprite to allow native loop mechanism to work
     interrupt: false, // Prevent interruptions that could affect looping
     onload: () => {
-      console.log("Audio file loaded successfully!");
       setIsLoading(false);
       // Save reference to sound object for cleanup
       if (sound && !soundRef.current) {
@@ -84,7 +82,6 @@ const SoundPlayer = ({
       }
     },
     onend: () => {
-      console.log("Audio reached end - should loop automatically");
       // If needed, force replay if automatic loop fails
       if (isPlaying && !isMuted && loop) {
         setTimeout(() => {
@@ -98,7 +95,6 @@ const SoundPlayer = ({
   useEffect(() => {
     if (sound) {
       sound.volume(isMuted ? 0 : defaultVolume);
-      console.log("Volume set to:", isMuted ? 0 : defaultVolume);
     }
   }, [sound, isMuted, defaultVolume]);
 
@@ -106,12 +102,10 @@ const SoundPlayer = ({
   useEffect(() => {
     if (hasInteracted && !isPlaying && sound && autoPlay) {
       setIsLoading(true);
-      console.log("User has interacted, trying to play audio...");
       try {
         // Play without specifying sprite ID to use native looping
         play();
         setIsPlaying(true);
-        console.log("Audio playback started!");
       } catch (error) {
         console.error("Error playing audio:", error);
         setIsLoading(false);
@@ -123,7 +117,6 @@ const SoundPlayer = ({
   useEffect(() => {
     return () => {
       if (isPlaying) {
-        console.log("Cleaning up: stopping audio");
         stop();
         cleanupAudio();
       }
@@ -132,7 +125,6 @@ const SoundPlayer = ({
 
   // Handle mute/unmute toggle
   const toggleMute = () => {
-    console.log("Toggle mute:", !isMuted);
     setIsMuted((prev) => !prev);
   };
 
@@ -140,7 +132,6 @@ const SoundPlayer = ({
   useEffect(() => {
     const handleFirstClick = () => {
       if (!hasInteracted) {
-        console.log("First click detected - starting audio");
         setHasInteracted(true);
       }
     };
@@ -153,13 +144,6 @@ const SoundPlayer = ({
       document.removeEventListener("click", handleFirstClick);
     };
   }, [hasInteracted]);
-
-  // Suggestion for file size optimization
-  useEffect(() => {
-    console.log(
-      "Tip: For better performance, consider compressing your audio file to around 10-20MB"
-    );
-  }, []);
 
   return displayControls ? (
     <div

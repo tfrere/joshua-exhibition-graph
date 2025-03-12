@@ -20,14 +20,8 @@ const eventListeners = {
 export const addEventListener = (event, callback) => {
   if (eventListeners[event]) {
     eventListeners[event].push(callback);
-    console.log(
-      `Écouteur ajouté pour l'événement '${event}'. Total: ${eventListeners[event].length}`
-    );
     return true;
   }
-  console.warn(
-    `Tentative d'ajout d'écouteur pour un événement inconnu: ${event}`
-  );
   return false;
 };
 
@@ -37,71 +31,42 @@ export const removeEventListener = (event, callback) => {
     const index = eventListeners[event].indexOf(callback);
     if (index !== -1) {
       eventListeners[event].splice(index, 1);
-      console.log(
-        `Écouteur supprimé pour l'événement '${event}'. Restants: ${eventListeners[event].length}`
-      );
       return true;
     }
   }
-  console.warn(
-    `Tentative de suppression d'un écouteur inexistant pour: ${event}`
-  );
   return false;
 };
 
 // Déclencher un événement
 const triggerEvent = (event, data) => {
   if (eventListeners[event]) {
-    console.log(
-      `Déclenchement de l'événement '${event}' avec les données:`,
-      data
-    );
     eventListeners[event].forEach((callback) => callback(data));
-  } else {
-    console.warn(`Tentative de déclenchement d'un événement inconnu: ${event}`);
   }
 };
 
 // Fonction pour envoyer un signal de réinitialisation
 export const sendResetSignal = () => {
-  console.log("Tentative d'envoi du signal resetView via socket");
-  console.log(
-    "État du socket:",
-    socket ? (socket.connected ? "connecté" : "déconnecté") : "non initialisé"
-  );
-
   if (socket && socket.connected) {
-    console.log("Envoi du signal de reset via socket");
     try {
       socket.emit("resetView", { timestamp: Date.now() });
-      console.log("Signal de reset envoyé avec succès");
     } catch (error) {
-      console.error("Erreur lors de l'envoi du signal de reset:", error);
+      // Silencieux en cas d'erreur
     }
-  } else {
-    console.error(
-      "Socket non connecté, impossible d'envoyer le signal de reset"
-    );
   }
 };
 
 // Initialiser la connexion socket
 export const initSocketSync = () => {
-  console.log(
-    "Initialisation de la connexion socket au serveur:",
-    SOCKET_SERVER_URL
-  );
-
   if (!socket) {
     try {
       socket = io(SOCKET_SERVER_URL);
 
       socket.on("connect", () => {
-        console.log("Socket connecté avec succès. ID:", socket.id);
+        // Socket connecté
       });
 
       socket.on("connect_error", (error) => {
-        console.error("Erreur de connexion socket:", error);
+        // Silencieux en cas d'erreur
       });
 
       // Écouter les mises à jour de post actif depuis d'autres clients
@@ -111,20 +76,14 @@ export const initSocketSync = () => {
           !activePostRef.current ||
           activePostRef.current.postUID !== post.postUID
         ) {
-          console.log("Post actif reçu via socket:", post);
           activePostRef.current = post;
           // Notifier tous les écouteurs du changement
           triggerEvent("activePostChanged", post);
         }
       });
     } catch (error) {
-      console.error("Erreur lors de l'initialisation de la socket:", error);
+      // Silencieux en cas d'erreur
     }
-  } else {
-    console.log(
-      "Socket déjà initialisé. État:",
-      socket.connected ? "connecté" : "déconnecté"
-    );
   }
 
   return socket;
@@ -134,7 +93,6 @@ export const initSocketSync = () => {
 export const updateActivePost = (post) => {
   // Vérifier que le post contient les données minimales nécessaires
   if (!post || !post.postUID) {
-    console.error("Tentative de mise à jour avec un post invalide:", post);
     return;
   }
 
@@ -143,8 +101,6 @@ export const updateActivePost = (post) => {
     !activePostRef.current ||
     activePostRef.current.postUID !== post.postUID
   ) {
-    console.log("Envoi du post actif via socket:", post);
-
     activePostRef.current = post;
 
     // Notifier tous les écouteurs du changement
@@ -152,12 +108,6 @@ export const updateActivePost = (post) => {
 
     // Si le socket est initialisé, envoyer la mise à jour
     if (socket) {
-      if (!socket.connected) {
-        console.warn(
-          "Socket non connecté lors de la tentative d'envoi du post actif"
-        );
-      }
-
       // N'envoyer que les informations essentielles pour réduire la taille des données
       const postData = {
         id: post.id,
@@ -186,20 +136,10 @@ export const updateActivePost = (post) => {
 
       try {
         socket.emit("updateActivePost", postData);
-        console.log("Post actif envoyé avec succès via socket");
       } catch (error) {
-        console.error(
-          "Erreur lors de l'envoi du post actif via socket:",
-          error
-        );
+        // Silencieux en cas d'erreur
       }
-    } else {
-      console.error(
-        "Socket non initialisée lors de la tentative d'envoi du post actif"
-      );
     }
-  } else {
-    console.log("Post déjà actif, pas d'envoi:", post.postUID);
   }
 };
 
@@ -218,53 +158,17 @@ const useNearestPostDetection = (posts) => {
 
   // Initialiser la connexion socket
   useEffect(() => {
-    console.log(
-      "useNearestPostDetection - Initialisation de la connexion socket"
-    );
     initSocketSync();
   }, []);
 
   // Log initial pour vérifier les données reçues
   useEffect(() => {
-    console.log("useNearestPostDetection - Posts reçus:", posts);
-    if (posts && posts.length > 0) {
-      console.log("Premier post:", posts[0]);
-      // Vérifier si les posts ont des coordonnées
-      const postsWithCoordinates = posts.filter(
-        (post) =>
-          (post.x !== undefined &&
-            post.y !== undefined &&
-            post.z !== undefined) ||
-          (post.coordinates && post.coordinates.x !== undefined)
-      );
-      console.log(
-        `Posts avec coordonnées: ${postsWithCoordinates.length}/${posts.length}`
-      );
-
-      // Vérifier si les posts ont un postUID
-      const postsWithUID = posts.filter((post) => post.postUID !== undefined);
-      console.log(`Posts avec postUID: ${postsWithUID.length}/${posts.length}`);
-
-      // Si certains posts n'ont pas de postUID, ajouter un avertissement
-      if (postsWithUID.length < posts.length) {
-        console.warn(
-          "Certains posts n'ont pas de postUID, ce qui empêchera la détection correcte."
-        );
-        const postsWithoutUID = posts.filter(
-          (post) => post.postUID === undefined
-        );
-        console.log("Exemple de post sans postUID:", postsWithoutUID[0]);
-      }
-    }
+    // Fonctionnalité conservée sans les logs
   }, [posts]);
 
   // Fonction de détection du post le plus proche exécutée à chaque frame
   useFrame(() => {
     if (!posts || posts.length === 0) {
-      // Si pas de posts, on log une fois toutes les 100 frames
-      if (frameCountRef.current % 100 === 0) {
-        console.log("useNearestPostDetection - Aucun post disponible");
-      }
       frameCountRef.current += 1;
       return;
     }
@@ -316,18 +220,6 @@ const useNearestPostDetection = (posts) => {
           : 0
       );
 
-      // Log pour debugging (une fois toutes les 100 frames)
-      if (frameCountRef.current % 100 === 0 && post === posts[0]) {
-        console.log("Position du premier post:", postPosition);
-        console.log("Position cible:", targetPosition);
-        console.log("Propriétés de position du premier post:", {
-          directX: post.x,
-          directY: post.y,
-          directZ: post.z,
-          coordinates: post.coordinates,
-        });
-      }
-
       // Calculer la distance entre le point cible et le post
       const distance = targetPosition.distanceTo(postPosition);
 
@@ -338,19 +230,12 @@ const useNearestPostDetection = (posts) => {
       }
     });
 
-    // Log pour debugging (une fois toutes les 100 frames)
-    if (frameCountRef.current % 100 === 0) {
-      console.log("Post le plus proche trouvé:", nearestPost);
-      console.log("Distance minimale:", minDistance);
-    }
-
     // Si le post le plus proche a changé, le logger et mettre à jour la référence partagée
     if (
       nearestPost &&
       (!prevNearestPostRef.current ||
         prevNearestPostRef.current.postUID !== nearestPost.postUID)
     ) {
-      console.log("Post actif le plus proche:", nearestPost);
       prevNearestPostRef.current = nearestPost;
 
       // Mettre à jour la référence partagée et envoyer via socket

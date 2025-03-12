@@ -91,7 +91,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   const lastInteractionTime = useRef(Date.now());
   const autoRotateTimerId = useRef(null);
   const AUTO_ROTATE_DELAY = 10000; // 10 seconds before auto rotation activation
-  const AUTO_ORBIT_DELAY = 10000; // 10 seconds before orbit mode
+  const AUTO_ORBIT_DELAY = 5000; // 10 seconds before orbit mode
   const AUTO_ROTATE_SPEED = 0.025; // Auto rotation speed
   const [orbitModeActive, setOrbitModeActive] = useState(false);
   const orbitTimerId = useRef(null);
@@ -155,34 +155,57 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
   // Mise à jour de l'état global quand le mode orbite change
   useEffect(() => {
+    // Mémoriser l'état précédent
+    const prevOrbitMode = window.__orbitModeActive;
+
     window.__orbitModeActive = orbitModeActive;
+
+    // Afficher les changements d'état
+    console.log(
+      `🔄 TRANSITION: Mode orbite ${orbitModeActive ? "ACTIVÉ" : "DÉSACTIVÉ"}`
+    );
 
     // Si l'orbite est activée, enregistrer le temps de démarrage pour l'accélération
     if (orbitModeActive) {
       orbitStartTime.current = Date.now();
-      console.log("Starting orbit acceleration curve");
+      console.log(
+        `🌐 MODE: Orbit activé, position: [${camera.position.x.toFixed(
+          2
+        )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)}]`
+      );
     }
 
     // Si on vient de désactiver le mode orbite, réinitialiser le FlightController
     // pour éviter que la rotation continue avec l'inertie
     if (!orbitModeActive && flightController.current) {
-      console.log(
-        "Orbit mode disabled, resetting flight controller rotation velocity"
-      );
       flightController.current.reset();
       // Réinitialiser le timer d'accélération
       orbitStartTime.current = null;
+      console.log(
+        `🏃‍♂️ MODE: Vol libre repris, position: [${camera.position.x.toFixed(
+          2
+        )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)}]`
+      );
+
+      // Si on passe effectivement du mode orbite au mode normal
+      // (et non pas lors de l'initialisation où prevOrbitMode est undefined)
+      if (prevOrbitMode === true) {
+        console.log(
+          `📊 COMPTAGE: Redémarrage du compteur de posts après sortie du mode orbite`
+        );
+        // Redémarrer le compteur de posts
+        sendStartCountingSignal();
+      }
     }
 
     // Forcer une vérification supplémentaire après un court délai
     // pour s'assurer que l'état global est bien synchronisé
     setTimeout(() => {
       if (window.__orbitModeActive !== orbitModeActive) {
-        console.log("Fixing orbit mode state synchronization");
         window.__orbitModeActive = orbitModeActive;
       }
     }, 100);
-  }, [orbitModeActive]);
+  }, [orbitModeActive, camera]);
 
   // Configurer le gestionnaire d'entrées
   useEffect(() => {
@@ -222,6 +245,11 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
   // Function to detect user activity
   const detectUserActivity = () => {
+    const previousState = {
+      autoRotate: autoRotateEnabled,
+      orbit: orbitModeActive,
+    };
+
     lastInteractionTime.current = Date.now();
     orbitAttempted.current = false; // Réinitialiser également cet état
 
@@ -241,6 +269,22 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       if (flightController.current) {
         flightController.current.reset();
       }
+
+      // Redémarrer le compteur de posts quand le mode orbite est désactivé par detectUserActivity
+      console.log(
+        `📊 COMPTAGE: Redémarrage du compteur de posts après désactivation du mode orbite`
+      );
+      sendStartCountingSignal();
+    }
+
+    // Log les changements d'état
+    if (
+      previousState.autoRotate !== autoRotateEnabled ||
+      previousState.orbit !== orbitModeActive
+    ) {
+      console.log(
+        `🔄 TRANSITION: Activité utilisateur détectée - Ancien état: [AutoRotate: ${previousState.autoRotate}, Orbit: ${previousState.orbit}], Nouvel état: [AutoRotate: ${autoRotateEnabled}, Orbit: ${orbitModeActive}]`
+      );
     }
 
     // Cancel existing timers
@@ -261,8 +305,10 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       autoRotateTimerId.current = setTimeout(() => {
         // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
         if (!transitioning.current.active && !orbitModeActive) {
+          console.log(
+            `🔄 TRANSITION: Activation de la rotation automatique après inactivité`
+          );
           setAutoRotateEnabled(true);
-        } else {
         }
       }, AUTO_ROTATE_DELAY);
 
@@ -271,24 +317,22 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         // Vérifier à nouveau qu'on n'est pas en transition ou en orbite avant d'activer
         if (!transitioning.current.active && !orbitModeActive) {
           orbitAttempted.current = true;
+          console.log(
+            `📅 PLANIFICATION: Activation du mode orbite après inactivité prolongée`
+          );
 
           // Envoyer le signal de reset via socket
-          console.log("Mode orbit activé, envoi du signal reset");
           sendResetSignal();
 
           // Déclencher également un événement personnalisé pour la communication intra-page
           // Cela contourne les problèmes potentiels avec le socket
           try {
-            console.log("Diffusion d'un événement DOM resetVisitedPosts");
             const resetEvent = new CustomEvent("resetVisitedPosts", {
               detail: { timestamp: Date.now() },
             });
             window.dispatchEvent(resetEvent);
           } catch (error) {
-            console.error(
-              "Erreur lors de la diffusion de l'événement de réinitialisation:",
-              error
-            );
+            // Silencieux en cas d'erreur
           }
 
           // Retour à la position par défaut PUIS activation du mode orbite
@@ -381,7 +425,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         inputs.action2;
 
       if (hasAnyInput) {
-        console.log("🔄 Sortie du mode ORBIT détectée (inputs utilisateur)");
+        console.log(
+          `👆 INTERACTION: Désactivation du mode orbite par interaction utilisateur`
+        );
         setOrbitModeActive(false);
 
         // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
@@ -389,9 +435,9 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
           flightController.current.reset();
         }
 
-        // Lorsqu'on quitte le mode orbit, envoyer explicitement un signal de démarrage du comptage
+        // Redémarrer le compteur de posts quand l'utilisateur sort manuellement du mode orbite
         console.log(
-          "🔄 Envoi du signal startCounting lors de la sortie d'orbit"
+          `📊 COMPTAGE: Redémarrage du compteur de posts après interaction utilisateur`
         );
         sendStartCountingSignal();
 
@@ -501,6 +547,12 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
           flightController.current.reset();
         }
 
+        console.log(
+          `📊 MODE: Transition complétée, position finale: [${camera.position.x.toFixed(
+            2
+          )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(2)}]`
+        );
+
         // Reset input handler for allowing new transitions
         const inputManager = getInputManager();
         if (inputManager.inputs.nextPosition) {
@@ -517,8 +569,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
       // En mode orbite, on applique une rotation lente autour de la sphère
       // Log moins fréquent pour éviter de saturer la console
       if (Math.random() < 0.01) {
-        // Log environ 1% du temps pour vérifier que l'orbite est active
-        console.log("Orbit mode active - applying orbital movement");
+        // Log occasionnel pour montrer la progression de l'accélération
       }
 
       // S'assurer que le mode orbite est correctement reflété dans l'état global
@@ -543,9 +594,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
           if (Math.random() < 0.05) {
             // Log occasionnel pour montrer la progression de l'accélération
-            console.log(
-              `Orbit acceleration: ${(accelerationFactor * 100).toFixed(0)}%`
-            );
           }
         } else {
           // Après la période d'accélération, vitesse constante maximale
@@ -609,20 +657,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
       // S'assurer que la caméra pointe toujours vers le centre
       camera.lookAt(0, 0, 0);
-
-      // Log debug info occasionally (every ~5 seconds)
-      if (
-        Math.floor(Date.now() / 5000) % 1 === 0 &&
-        Math.floor(Date.now()) % 5000 < 100
-      ) {
-        console.log(
-          `Audio - Volume: ${currentAccelerationVolume.current.toFixed(
-            2
-          )}, Pitch: ${currentAccelerationPitch.current.toFixed(
-            2
-          )}, AccelFactor: ${accelerationFactor.toFixed(2)}`
-        );
-      }
     }
     // On est en mode vol, mais pas en transition ni en mode orbite
     else if (flightController.current && !transitioning.current.active) {
@@ -721,21 +755,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
               });
             }
           } catch (error) {
-            console.error("Erreur lors de l'ajustement du pitch:", error);
-          }
-
-          // Log debug info occasionally (every ~5 seconds)
-          if (
-            Math.floor(Date.now() / 5000) % 1 === 0 &&
-            Math.floor(Date.now()) % 5000 < 100
-          ) {
-            console.log(
-              `Audio - Volume: ${currentAccelerationVolume.current.toFixed(
-                2
-              )}, Pitch: ${currentAccelerationPitch.current.toFixed(
-                2
-              )}, AccelFactor: ${accelerationFactor.toFixed(2)}`
-            );
+            // Silencieux en cas d'erreur
           }
 
           // Stop sound if almost stopped
@@ -764,22 +784,29 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
     // Ensure camera is available
     if (!camera) {
-      console.error("Camera not available for animation");
       return;
     }
 
     // Si on était en mode orbite, désactiver temporairement pendant la transition
     const wasOrbiting = orbitModeActive;
     if (wasOrbiting) {
-      console.log("Temporarily disabling orbit mode during transition");
       setOrbitModeActive(false);
     }
 
-    // Marker l'état de transition
+    // Log la position actuelle et la position cible
     console.log(
-      `Starting camera transition to position ${index}, activateOrbitAfter:`,
-      activateOrbitAfter
+      `🔄 TRANSITION: Début, de position [${camera.position.x.toFixed(
+        2
+      )}, ${camera.position.y.toFixed(2)}, ${camera.position.z.toFixed(
+        2
+      )}] vers position ${index} [${targetPos.position.x.toFixed(
+        2
+      )}, ${targetPos.position.y.toFixed(2)}, ${targetPos.position.z.toFixed(
+        2
+      )}]`
     );
+
+    // Marker l'état de transition
     setIsTransitioning(true);
     window.__cameraAnimating = true;
 
@@ -805,48 +832,41 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     setIsTransitioning(true);
     window.__cameraAnimating = true;
 
-    // En cas de transition vers la position par défaut, afficher un message dans la console
-    if (index === 0) {
-      console.log("Transition vers la vue globale à 600 unités de distance");
+    // Si on doit activer l'orbite après la transition, programmer un délai
+    if (activateOrbitAfter) {
+      // Programmer l'activation de l'orbite une fois la transition terminée
+      const orbiteActivationDelay = trans.duration * 1000 + 100;
 
-      // Si on doit activer l'orbite après la transition, programmer un délai
-      if (activateOrbitAfter) {
-        // Programmer l'activation de l'orbite une fois la transition terminée
-        const orbiteActivationDelay = trans.duration * 1000 + 100;
-        console.log(
-          `Programming orbit activation in ${orbiteActivationDelay}ms after transition`
-        );
+      console.log(
+        `📅 PLANIFICATION: Mode orbite programmé après transition vers position ${index}`
+      );
 
-        setTimeout(() => {
-          if (!transitioning.current.active) {
-            console.log("Orbit activation - transition completed");
+      setTimeout(() => {
+        if (!transitioning.current.active) {
+          console.log(
+            `🌐 TRANSITION: Activation du mode orbite après transition`
+          );
+          setOrbitModeActive(true);
+          // Force update global state immediately
+          window.__orbitModeActive = true;
+        } else {
+          // Si toujours en transition, réessayer dans un moment
+          setTimeout(() => {
+            console.log(
+              `🌐 TRANSITION: Seconde tentative d'activation du mode orbite`
+            );
             setOrbitModeActive(true);
             // Force update global state immediately
             window.__orbitModeActive = true;
-          } else {
-            // Si toujours en transition, réessayer dans un moment
-            console.log(
-              "Still transitioning, retrying orbit activation shortly"
-            );
-            setTimeout(() => {
-              console.log("Second attempt at orbit activation");
-              setOrbitModeActive(true);
-              // Force update global state immediately
-              window.__orbitModeActive = true;
-            }, 500);
-          }
-        }, orbiteActivationDelay);
-      }
+          }, 500);
+        }
+      }, orbiteActivationDelay);
     }
 
     // Ne pas réinitialiser les timers d'inactivité pendant une transition automatique vers l'orbite
     if (!activateOrbitAfter) {
       // Reset auto rotation timer
       detectUserActivity();
-    } else {
-      console.log(
-        "Not resetting activity timers as we're transitioning to orbit mode"
-      );
     }
   };
 
@@ -854,7 +874,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   useEffect(() => {
     if (camera && !flightController.current) {
       flightController.current = new FlightController(camera, config);
-      console.log("Flight controller initialized with camera", camera);
 
       // Exposer la fonction animateToCameraPosition au niveau global
       window.__animateToCameraPosition = animateToCameraPosition;
@@ -905,76 +924,106 @@ export { GamepadIndicator };
 
 // Fonction pour envoyer un signal de démarrage du comptage des posts
 export const sendStartCountingSignal = () => {
-  console.log("==== Envoi du signal startCounting ====");
-  console.log("État du socket global:", window.socket);
+  console.log(
+    `🔔 COMPTAGE: Envoi du signal de comptage (timestamp: ${Date.now()})`
+  );
 
-  // Utiliser un événement DOM pour la communication intra-page
+  // Méthode 1: Utiliser un événement DOM pour la communication intra-page
+  // Cette méthode est la plus fiable dans le navigateur
   try {
     const startCountingEvent = new CustomEvent("startCounting", {
       detail: { timestamp: Date.now() },
     });
     window.dispatchEvent(startCountingEvent);
-    console.log("✅ Événement DOM startCounting diffusé avec succès");
+    console.log(`✅ COMPTAGE: Événement DOM dispatché avec succès`);
   } catch (error) {
-    console.error(
-      "❌ Erreur lors de la diffusion de l'événement startCounting:",
+    console.log(
+      `❌ COMPTAGE: Erreur lors du dispatch de l'événement DOM:`,
       error
     );
   }
 
-  // Méthode 1: utiliser window.socket
-  if (window.socket && typeof window.socket.emit === "function") {
+  // Méthode 2: utiliser window.socket si disponible
+  if (window.socket) {
     try {
-      window.socket.emit("startCounting", {
-        timestamp: Date.now(),
-        source: "window_socket",
-      });
-      console.log("✅ Signal startCounting envoyé via window.socket.emit");
-      console.log("Socket ID:", window.socket.id);
+      if (typeof window.socket.emit === "function") {
+        window.socket.emit("startCounting", {
+          timestamp: Date.now(),
+          source: "window_socket",
+        });
+        console.log(`✅ COMPTAGE: Signal envoyé via window.socket`);
+      } else {
+        console.log(
+          `⚠️ COMPTAGE: window.socket existe mais n'a pas de méthode emit()`
+        );
+      }
     } catch (error) {
-      console.error(
-        "❌ Erreur lors de l'envoi du signal startCounting via window.socket:",
+      console.log(
+        `❌ COMPTAGE: Erreur lors de l'envoi via window.socket:`,
         error
       );
     }
   } else {
-    console.warn("⚠️ window.socket non disponible ou mal configuré");
+    console.log(`⚠️ COMPTAGE: window.socket n'est pas disponible`);
   }
 
-  // Méthode 2: essayer d'importer et initialiser un socket directement ici
-  try {
-    const {
-      initSocketSync,
-    } = require("../Posts/hooks/useNearestPostDetection");
-    const directSocket = initSocketSync();
-    if (directSocket && typeof directSocket.emit === "function") {
-      directSocket.emit("startCounting", {
-        timestamp: Date.now(),
-        source: "direct_socket",
-      });
-      console.log("✅ Signal startCounting envoyé via directSocket.emit");
-      console.log("DirectSocket ID:", directSocket.id);
-    } else {
-      console.warn("⚠️ directSocket non disponible ou mal configuré");
+  // Méthode 3: Essayer d'accéder au socket via window.io si disponible
+  if (window.io) {
+    try {
+      const socket = window.io.connect();
+      if (socket && typeof socket.emit === "function") {
+        socket.emit("startCounting", {
+          timestamp: Date.now(),
+          source: "io_connect",
+        });
+        console.log(`✅ COMPTAGE: Signal envoyé via window.io.connect()`);
+      }
+    } catch (error) {
+      console.log(
+        `❌ COMPTAGE: Erreur lors de l'utilisation de window.io:`,
+        error
+      );
     }
-  } catch (error) {
-    console.error(
-      "❌ Erreur lors de l'initialisation du socket direct:",
-      error
-    );
   }
 
-  // Pour test manuel: exposer une fonction globale pour envoyer le signal
+  // Exposer une fonction globale pour les tests manuels
   window.__sendStartCountingSignal = () => {
-    console.log("Tentative manuelle d'envoi du signal startCounting");
-    if (window.socket && typeof window.socket.emit === "function") {
-      window.socket.emit("startCounting", {
-        timestamp: Date.now(),
-        source: "manual_trigger",
+    console.log(
+      `🧪 TEST MANUEL: Envoi du signal de comptage (timestamp: ${Date.now()})`
+    );
+
+    // Réutiliser l'événement DOM (méthode la plus fiable)
+    try {
+      const testEvent = new CustomEvent("startCounting", {
+        detail: { timestamp: Date.now(), source: "manual_test" },
       });
-      console.log("✅ Signal startCounting envoyé manuellement");
+      window.dispatchEvent(testEvent);
+      console.log(`✅ TEST MANUEL: Événement DOM dispatché avec succès`);
+    } catch (error) {
+      console.log(
+        `❌ TEST MANUEL: Erreur lors du dispatch de l'événement DOM:`,
+        error
+      );
+    }
+
+    // Tenter d'utiliser le socket s'il est disponible
+    if (window.socket && typeof window.socket.emit === "function") {
+      try {
+        window.socket.emit("startCounting", {
+          timestamp: Date.now(),
+          source: "manual_trigger",
+        });
+        console.log(`✅ TEST MANUEL: Signal envoyé via socket`);
+      } catch (error) {
+        console.log(
+          `❌ TEST MANUEL: Erreur lors de l'envoi via socket:`,
+          error
+        );
+      }
     } else {
-      console.error("❌ Socket non disponible pour envoi manuel");
+      console.log(
+        `⚠️ TEST MANUEL: window.socket n'est pas disponible pour le test manuel`
+      );
     }
   };
 };

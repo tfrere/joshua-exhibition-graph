@@ -1,45 +1,19 @@
 import React from "react";
-import TextScramble from "../../../components/TextScramble";
+import TextScramble from "../../components/TextScramble";
+import "../../components/TextScramble.css";
 
-/**
- * Composant pour afficher le profil d'un personnage et son post actif
- * @param {Object} props - Propriétés du composant
- * @returns {JSX.Element} - Élément JSX
- */
-const CharacterProfile = ({
+function ProfileDisplay({
   activeCharacterData,
   activePost,
   characterImageExists,
-  navigationMode,
-  isCountingEnabled,
   visitedPosts,
   totalPosts,
-  visitedPercentage,
-}) => {
-  if (!activeCharacterData) {
-    return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
-          background: "#000000",
-          color: "#FFFFFF",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <h2>Aucun personnage actif</h2>
-        <p>
-          Veuillez sélectionner un personnage dans la vue principale pour
-          afficher ses informations.
-        </p>
-      </div>
-    );
-  }
+  navigationMode,
+  isCountingEnabled,
+}) {
+  // Calculate visited percentage
+  const visitedPercentage =
+    totalPosts > 0 ? ((visitedPosts.length / totalPosts) * 100).toFixed(2) : 0;
 
   return (
     <div
@@ -370,6 +344,6 @@ const CharacterProfile = ({
         )}
     </div>
   );
-};
+}
 
-export default CharacterProfile;
+export default ProfileDisplay;
