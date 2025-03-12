@@ -126,10 +126,14 @@ const useSVGLoader = (node) => {
         return;
       }
 
+      console.log(node.name.toLowerCase());
+
       // Déterminer le nom du fichier SVG en fonction du type de nœud
       let svgFileName;
       if (node.type === "central") {
         svgFileName = "joshua-goldberg";
+      } else if (node.name.toLowerCase().includes("fbi")) {
+        svgFileName = "fbi";
       } else if (node.type === "character" && node.isJoshua === false) {
         svgFileName = "journalist";
       } else if (node.type === "character" && node.isJoshua === true) {
