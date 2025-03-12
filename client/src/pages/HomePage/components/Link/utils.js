@@ -66,7 +66,7 @@ export const calculateLinkPoints = (
   );
 
   // Distance fixe depuis les nœuds en unités réelles
-  const FIXED_DISTANCE_FROM_NODE = 8.0; // Distance fixe en unités (à ajuster selon les besoins)
+  const FIXED_DISTANCE_FROM_NODE = 12.0; // Distance fixe en unités (à ajuster selon les besoins)
 
   // Initialiser les variables pour stocker les résultats
   let startT = 0, endT = 1;
