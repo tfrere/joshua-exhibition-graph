@@ -674,9 +674,9 @@ const WorkPostPage = () => {
           useStrictSlugMatching: true, // Permettre la correspondance par ID si nécessaire
           firstPass: true,  // Répartition initiale des posts dans les volumes
           secondPass: true, // Vérification de la contrainte de la sphère globale
-          thirdPass: false,  // Application du bruit de Perlin pour la variation
-          fourthPass: false, // Uniformisation itérative de la densité
-          fifthPass: false,  // Perturbation finale pour casser l'aspect cubique
+          thirdPass: true,  // Application du bruit de Perlin pour la variation
+          fourthPass: true, // Uniformisation itérative de la densité
+          fifthPass: true,  // Perturbation finale pour casser l'aspect cubique
         },
       },
       {

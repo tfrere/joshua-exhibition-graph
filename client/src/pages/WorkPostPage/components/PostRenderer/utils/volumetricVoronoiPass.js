@@ -56,11 +56,11 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     useStrictSlugMatching = false,
     customNodes = null,
     voronoiPermissivity = 0,
-    firstPass = false,   // Répartition initiale des posts dans les volumes
-    secondPass = false,  // Vérification de la contrainte de la sphère globale
-    thirdPass = false,   // Application du bruit de Perlin pour la variation
-    fourthPass = false,  // Uniformisation itérative de la densité
-    fifthPass = false    // Perturbation finale pour casser l'aspect cubique
+    firstPass = true,   // Répartition initiale des posts dans les volumes
+    secondPass = true,  // Vérification de la contrainte de la sphère globale
+    thirdPass = true,   // Application du bruit de Perlin pour la variation
+    fourthPass = true,  // Uniformisation itérative de la densité
+    fifthPass = true    // Perturbation finale pour casser l'aspect cubique
   } = options;
 
   // Utiliser les nœuds personnalisés s'ils sont fournis, sinon utiliser les nœuds standards
@@ -226,7 +226,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   if (proportionalVolume) {
     // Calculer le volume pour chaque caractère
     for (const [characterKey, postCount] of Object.entries(postCountByCharacter)) {
-      const volumeRatio = postCount / totalPosts;
+      const volumeRatio = postCount / totalPosts * 3;
       const characterVolume = totalVolume * volumeRatio;
       
       // Rayon effectif pour ce volume (en supposant une sphère)
@@ -727,11 +727,6 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
   if (fourthPass) {
     console.log("[PASSE 4: Uniformisation] Début de l'uniformisation itérative de la densité");
 
-    // Déplacer la référence à postCountByCharacter pour la rendre accessible à redistributePosts
-    // Créer une copie pour éviter de modifier l'original
-    const redistPostCountByCharacter = {...postCountByCharacter};
-    console.log(`[PASSE 4: Uniformisation] Utilisation des données de ${Object.keys(redistPostCountByCharacter).length} personnages pour la priorisation`);
-    
     const voxels = new Map();
     
     const getVoxelKey = (x, y, z) => {
@@ -760,8 +755,8 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
     }
 
     const targetDensityPerVoxel = Math.ceil(spatializedPosts.length / totalVoxelsInSphere);
-    const MAX_ITERATIONS = 1;
-    const CONVERGENCE_THRESHOLD = 0.01;
+    const MAX_ITERATIONS = 10;
+    const CONVERGENCE_THRESHOLD = 0.1;
     let iteration = 0;
     let previousEmptyVoxels = Infinity;
 
@@ -853,20 +848,9 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
 
           if (postsToTake <= 0) continue;
 
-          // Modification : Tri des posts en prenant en compte le nombre total de posts par personnage
           const selectedPosts = availablePosts
             .slice(0, postsToTake)
             .sort((a, b) => {
-              // Récupérer l'identifiant du personnage pour chaque post
-              const characterA = a.associatedNodeSlug || a.associatedNodeId;
-              const characterB = b.associatedNodeSlug || b.associatedNodeId;
-              
-              // Récupérer le nombre total de posts pour chaque personnage
-              // Utiliser la copie accessible dans cette portée
-              const countA = redistPostCountByCharacter[characterA] || 0;
-              const countB = redistPostCountByCharacter[characterB] || 0;
-              
-              // Calculer les distances à la cible (voxel vide)
               const distA = Math.sqrt(
                 Math.pow(a.x - emptyVoxel.center.x, 2) +
                 Math.pow(a.y - emptyVoxel.center.y, 2) +
@@ -877,14 +861,7 @@ export function spatializePostsWithVolumetricDistribution(posts, nodes, options 
                 Math.pow(b.y - emptyVoxel.center.y, 2) +
                 Math.pow(b.z - emptyVoxel.center.z, 2)
               );
-              
-              // Pondération: 75% basé sur le nombre de posts, 25% sur la distance
-              // Plus le personnage a de posts, plus ses posts sont prioritaires pour être déplacés
-              const priorityA = (countA / totalPosts) * 0.75 - (distA / globalSphereRadius) * 0.25;
-              const priorityB = (countB / totalPosts) * 0.75 - (distB / globalSphereRadius) * 0.25;
-              
-              // Ordre décroissant de priorité
-              return priorityB - priorityA;
+              return distA - distB;
             });
 
           postsToMove = postsToMove.concat(selectedPosts);
