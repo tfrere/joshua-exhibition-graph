@@ -111,6 +111,41 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("activePostUpdated", post);
   });
 
+  // Gérer le signal de réinitialisation de la vue
+  socket.on("resetView", (data: any) => {
+    console.log(`Signal de réinitialisation de la vue reçu:`, data);
+    // Relayer l'événement à tous les autres clients
+    socket.broadcast.emit("resetView", data);
+  });
+
+  // Gérer le signal de démarrage du comptage
+  socket.on("startCounting", (data: any) => {
+    console.log(`Signal de démarrage du comptage reçu:`, data);
+    // Relayer l'événement à tous les autres clients
+    io.emit("startCounting", data);
+    // Envoyer un accusé de réception au client émetteur
+    socket.emit("startCountingAck", { received: true, timestamp: Date.now() });
+  });
+
+  // Gérer le signal de démarrage du comptage
+  socket.on("forceNormalMode", (data: any) => {
+    console.log(`Signal de forçage du mode normal reçu:`, data);
+    // Relayer l'événement à tous les clients, y compris l'émetteur
+    io.emit("forceNormalMode", data);
+    // Envoyer un accusé de réception
+    socket.emit("forceNormalModeAck", {
+      received: true,
+      timestamp: Date.now(),
+    });
+  });
+
+  // Gestionnaire d'événement pour les tests de connexion
+  socket.on("test", (data: any) => {
+    console.log(`Test de connexion socket reçu:`, data);
+    // Envoyer un accusé de réception au client émetteur
+    socket.emit("testAck", { received: true, timestamp: Date.now() });
+  });
+
   socket.on("disconnect", () => {
     console.log("Client déconnecté, ID:", socket.id);
   });

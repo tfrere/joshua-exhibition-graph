@@ -91,7 +91,7 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   const lastInteractionTime = useRef(Date.now());
   const autoRotateTimerId = useRef(null);
   const AUTO_ROTATE_DELAY = 10000; // 10 seconds before auto rotation activation
-  const AUTO_ORBIT_DELAY = 60000; // 10 seconds before orbit mode
+  const AUTO_ORBIT_DELAY = 10000; // 10 seconds before orbit mode
   const AUTO_ROTATE_SPEED = 0.025; // Auto rotation speed
   const [orbitModeActive, setOrbitModeActive] = useState(false);
   const orbitTimerId = useRef(null);
@@ -273,7 +273,23 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
           orbitAttempted.current = true;
 
           // Envoyer le signal de reset via socket
+          console.log("Mode orbit activé, envoi du signal reset");
           sendResetSignal();
+
+          // Déclencher également un événement personnalisé pour la communication intra-page
+          // Cela contourne les problèmes potentiels avec le socket
+          try {
+            console.log("Diffusion d'un événement DOM resetVisitedPosts");
+            const resetEvent = new CustomEvent("resetVisitedPosts", {
+              detail: { timestamp: Date.now() },
+            });
+            window.dispatchEvent(resetEvent);
+          } catch (error) {
+            console.error(
+              "Erreur lors de la diffusion de l'événement de réinitialisation:",
+              error
+            );
+          }
 
           // Retour à la position par défaut PUIS activation du mode orbite
           animateToCameraPosition(0, true); // Le second paramètre indique qu'il faut activer l'orbite après
@@ -365,12 +381,19 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
         inputs.action2;
 
       if (hasAnyInput) {
+        console.log("🔄 Sortie du mode ORBIT détectée (inputs utilisateur)");
         setOrbitModeActive(false);
 
         // Réinitialiser le FlightController pour éviter l'effet d'inertie de rotation
         if (flightController.current) {
           flightController.current.reset();
         }
+
+        // Lorsqu'on quitte le mode orbit, envoyer explicitement un signal de démarrage du comptage
+        console.log(
+          "🔄 Envoi du signal startCounting lors de la sortie d'orbit"
+        );
+        sendStartCountingSignal();
 
         detectUserActivity();
       }
@@ -879,5 +902,81 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
 
 // Export GamepadIndicator component for use in WorkPage
 export { GamepadIndicator };
+
+// Fonction pour envoyer un signal de démarrage du comptage des posts
+export const sendStartCountingSignal = () => {
+  console.log("==== Envoi du signal startCounting ====");
+  console.log("État du socket global:", window.socket);
+
+  // Utiliser un événement DOM pour la communication intra-page
+  try {
+    const startCountingEvent = new CustomEvent("startCounting", {
+      detail: { timestamp: Date.now() },
+    });
+    window.dispatchEvent(startCountingEvent);
+    console.log("✅ Événement DOM startCounting diffusé avec succès");
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de la diffusion de l'événement startCounting:",
+      error
+    );
+  }
+
+  // Méthode 1: utiliser window.socket
+  if (window.socket && typeof window.socket.emit === "function") {
+    try {
+      window.socket.emit("startCounting", {
+        timestamp: Date.now(),
+        source: "window_socket",
+      });
+      console.log("✅ Signal startCounting envoyé via window.socket.emit");
+      console.log("Socket ID:", window.socket.id);
+    } catch (error) {
+      console.error(
+        "❌ Erreur lors de l'envoi du signal startCounting via window.socket:",
+        error
+      );
+    }
+  } else {
+    console.warn("⚠️ window.socket non disponible ou mal configuré");
+  }
+
+  // Méthode 2: essayer d'importer et initialiser un socket directement ici
+  try {
+    const {
+      initSocketSync,
+    } = require("../Posts/hooks/useNearestPostDetection");
+    const directSocket = initSocketSync();
+    if (directSocket && typeof directSocket.emit === "function") {
+      directSocket.emit("startCounting", {
+        timestamp: Date.now(),
+        source: "direct_socket",
+      });
+      console.log("✅ Signal startCounting envoyé via directSocket.emit");
+      console.log("DirectSocket ID:", directSocket.id);
+    } else {
+      console.warn("⚠️ directSocket non disponible ou mal configuré");
+    }
+  } catch (error) {
+    console.error(
+      "❌ Erreur lors de l'initialisation du socket direct:",
+      error
+    );
+  }
+
+  // Pour test manuel: exposer une fonction globale pour envoyer le signal
+  window.__sendStartCountingSignal = () => {
+    console.log("Tentative manuelle d'envoi du signal startCounting");
+    if (window.socket && typeof window.socket.emit === "function") {
+      window.socket.emit("startCounting", {
+        timestamp: Date.now(),
+        source: "manual_trigger",
+      });
+      console.log("✅ Signal startCounting envoyé manuellement");
+    } else {
+      console.error("❌ Socket non disponible pour envoi manuel");
+    }
+  };
+};
 
 export default AdvancedCameraController;

@@ -64,10 +64,16 @@ const triggerEvent = (event, data) => {
 
 // Fonction pour envoyer un signal de réinitialisation
 export const sendResetSignal = () => {
+  console.log("Tentative d'envoi du signal resetView via socket");
+  console.log(
+    "État du socket:",
+    socket ? (socket.connected ? "connecté" : "déconnecté") : "non initialisé"
+  );
+
   if (socket && socket.connected) {
     console.log("Envoi du signal de reset via socket");
     try {
-      socket.emit("resetView");
+      socket.emit("resetView", { timestamp: Date.now() });
       console.log("Signal de reset envoyé avec succès");
     } catch (error) {
       console.error("Erreur lors de l'envoi du signal de reset:", error);
@@ -138,14 +144,7 @@ export const updateActivePost = (post) => {
     activePostRef.current.postUID !== post.postUID
   ) {
     console.log("Envoi du post actif via socket:", post);
-    
-    // Activer la vibration de la manette lors du changement de post
-    const inputManager = getInputManager();
-    if (inputManager) {
-      // Vibration courte mais forte pour signaler le changement de focus
-      inputManager.vibrateGamepad(20, 0.0, 0.1);
-    }
-    
+
     activePostRef.current = post;
 
     // Notifier tous les écouteurs du changement

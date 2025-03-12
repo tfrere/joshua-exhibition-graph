@@ -1,6 +1,7 @@
 import { useSpring, animated } from "react-spring";
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import { sendStartCountingSignal } from "./AdvancedCameraController";
 
 const IntroScreen = ({ onStart, onStartAudio }) => {
   const [fadeOut, setFadeOut] = useState(false);
@@ -42,6 +43,18 @@ const IntroScreen = ({ onStart, onStartAudio }) => {
 
     // Déclencher immédiatement l'audio
     onStartAudio();
+
+    // Envoyer le signal pour démarrer le comptage des posts
+    console.log("🚀 IntroScreen: Clic détecté, envoi du signal startCounting");
+    try {
+      sendStartCountingSignal();
+      console.log("✅ IntroScreen: Signal startCounting envoyé avec succès");
+    } catch (error) {
+      console.error(
+        "❌ IntroScreen: Erreur lors de l'envoi du signal startCounting:",
+        error
+      );
+    }
 
     // Déclencher l'animation de fade out
     setFadeOut(true);
@@ -99,7 +112,7 @@ const IntroScreen = ({ onStart, onStartAudio }) => {
             lineHeight: "1.5",
           }}
         >
-          A journey inside Joshua’s Thought Loop
+          A journey inside Joshua's Thought Loop
         </p>
 
         {dataReady ? (
