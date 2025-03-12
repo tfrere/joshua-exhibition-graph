@@ -19,8 +19,6 @@ export const calculateBezierTangent = (p0, p1, p2, t) => {
 export const calculateLinkPoints = (
   sourceNode,
   targetNode,
-  startOffset,
-  endOffset,
   arcHeight = 0.5 // Paramètre d'intensité de la courbe (défaut : 0.5)
 ) => {
   // Calculate source and target positions
@@ -32,22 +30,13 @@ export const calculateLinkPoints = (
     .subVectors(targetPos, sourcePos)
     .normalize();
 
-  // Apply offsets to start and end points
-  const adjustedSourcePos = new THREE.Vector3()
-    .copy(sourcePos)
-    .add(directVector.clone().multiplyScalar(startOffset));
-
-  const adjustedTargetPos = new THREE.Vector3()
-    .copy(targetPos)
-    .sub(directVector.clone().multiplyScalar(endOffset));
-
   // Calculer la distance entre les deux points
-  const distance = adjustedSourcePos.distanceTo(adjustedTargetPos);
+  const distance = sourcePos.distanceTo(targetPos);
 
   // Créer le point de contrôle pour la courbe de Bézier quadratique
   // Calculer le point médian entre les deux points
   const midPoint = new THREE.Vector3()
-    .addVectors(adjustedSourcePos, adjustedTargetPos)
+    .addVectors(sourcePos, targetPos)
     .multiplyScalar(0.5);
 
   // Créer un vecteur perpendiculaire au vecteur direct
@@ -67,27 +56,103 @@ export const calculateLinkPoints = (
   // L'intensité de la courbe est proportionnelle à la distance entre les nœuds
   const controlPoint = new THREE.Vector3()
     .copy(midPoint)
-    .add(perpendicularVector.multiplyScalar(distance * arcHeight));
-
-  const translationVector = perpendicularVector
-    .clone()
-    .divideScalar((distance * arcHeight) / Math.PI / 2);
-
-  // On applique cette translation aux trois points clés
-  adjustedSourcePos.add(translationVector);
-  controlPoint.add(translationVector);
-  adjustedTargetPos.add(translationVector);
+    .add(perpendicularVector.multiplyScalar(distance / 50 * arcHeight));
 
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
-    adjustedSourcePos,
+    sourcePos,
     controlPoint,
-    adjustedTargetPos
+    targetPos
   );
 
-  // Générer plus de points pour une courbe plus lisse
+  // Distance fixe depuis les nœuds en unités réelles
+  const FIXED_DISTANCE_FROM_NODE = 8.0; // Distance fixe en unités (à ajuster selon les besoins)
+
+  // Initialiser les variables pour stocker les résultats
+  let startT = 0, endT = 1;
+
+  // Calculer le nombre de points en fonction de la distance
+  const MIN_POINTS = 64; // Minimum de points pour les courtes distances
+  const MAX_POINTS = 256; // Maximum de points pour les longues distances
+  const POINTS_PER_UNIT = 10; // Facteur de points par unité de distance
+  
+  // Calculer le nombre de points basé sur la distance
+  let numPoints = Math.round(distance * POINTS_PER_UNIT);
+  
+  // Appliquer les limites min/max
+  numPoints = Math.max(MIN_POINTS, Math.min(numPoints, MAX_POINTS));
+  
+  // S'assurer que c'est un nombre pair
+  if (numPoints % 2 !== 0) numPoints++;
+
+  // Cas spécial: si FIXED_DISTANCE_FROM_NODE est 0, utiliser les points exacts des nœuds
+  if (FIXED_DISTANCE_FROM_NODE === 0) {
+    return {
+      points: [sourcePos, ...curve.getPoints(numPoints - 2), targetPos],
+      curve: curve,
+    };
+  }
+
+  // ---- Nouvelle approche pour garantir une distance constante ----
+  // Générer un grand nombre de points pour l'approximation
+  const allPoints = curve.getPoints(numPoints * 2);
+  
+  // Trouver le premier point qui est à FIXED_DISTANCE_FROM_NODE du nœud source
+  // et le dernier point qui est à FIXED_DISTANCE_FROM_NODE du nœud cible
+  let startIndex = 0;
+  let endIndex = allPoints.length - 1;
+  
+  // Trouver le point de départ (à distance constante du nœud source)
+  for (let i = 0; i < allPoints.length; i++) {
+    const distanceFromSource = allPoints[i].distanceTo(sourcePos);
+    if (distanceFromSource >= FIXED_DISTANCE_FROM_NODE) {
+      startIndex = i;
+      
+      // Calculer le paramètre t approximatif pour ce point
+      startT = i / (allPoints.length - 1);
+      break;
+    }
+  }
+  
+  // Trouver le point d'arrivée (à distance constante du nœud cible)
+  for (let i = allPoints.length - 1; i >= 0; i--) {
+    const distanceFromTarget = allPoints[i].distanceTo(targetPos);
+    if (distanceFromTarget >= FIXED_DISTANCE_FROM_NODE) {
+      endIndex = i;
+      
+      // Calculer le paramètre t approximatif pour ce point
+      endT = i / (allPoints.length - 1);
+      break;
+    }
+  }
+  
+  // S'assurer que les points trouvés sont valides
+  const validRange = startIndex < endIndex;
+  
+  // Générer les points de la courbe entre startPoint et endPoint
+  let trimmedPoints = [];
+  
+  if (validRange) {
+    // Utiliser les paramètres t trouvés pour générer un ensemble de points bien distribués
+    const steps = numPoints;
+    const tStep = (endT - startT) / (steps - 1);
+    
+    for (let i = 0; i < steps; i++) {
+      const t = startT + i * tStep;
+      trimmedPoints.push(curve.getPoint(t));
+    }
+  } else {
+    // Fallback au cas où la courbe est trop courte pour les distances demandées
+    console.warn("Courbe trop courte pour les distances demandées - utilisation de 70% de la courbe");
+    trimmedPoints = allPoints.slice(
+      Math.floor(allPoints.length * 0.15),
+      Math.ceil(allPoints.length * 0.85)
+    );
+  }
+  
+  // Retourner les points tronqués et la courbe complète
   return {
-    points: curve.getPoints(20),
+    points: trimmedPoints,
     curve: curve, // Retourner également la courbe pour calculer la tangente
   };
 };
