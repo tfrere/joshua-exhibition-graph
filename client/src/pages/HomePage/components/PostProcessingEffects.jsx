@@ -35,10 +35,10 @@ const defaultValues = {
   
   // Depth of Field
   hasDepthOfField: false,
-  focusDistance: 10,
-  focusRange: 30,
-  focalLength: 1.8,
-  bokehScale: 5,
+  focusDistance: 0,
+  focalLength: 0.048,
+  bokehScale: 2,
+  opacity: 1,
   
   // Vignette
   hasVignette: false,
@@ -142,9 +142,9 @@ const PostProcessingEffects = () => {
         setDofControls({
           hasDepthOfField: defaultValues.hasDepthOfField,
           focusDistance: defaultValues.focusDistance,
-          focusRange: defaultValues.focusRange,
           focalLength: defaultValues.focalLength,
-          bokehScale: defaultValues.bokehScale
+          bokehScale: defaultValues.bokehScale,
+          opacity: defaultValues.opacity
         });
         
         setVignetteControls({
@@ -234,6 +234,44 @@ const PostProcessingEffects = () => {
     })
   }), { collapsed: false });
   
+  // Configuration des contrôles Leva pour Depth of Field
+  const [dofControls, setDofControls] = useControls("Post-Processing", () => ({
+    "Depth of Field": folder({
+      hasDepthOfField: {
+        value: defaultValues.hasDepthOfField,
+        label: "Activer"
+      },
+      focusDistance: {
+        value: defaultValues.focusDistance,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        label: "Distance de focus",
+      },
+      focalLength: {
+        value: defaultValues.focalLength,
+        min: 0,
+        max: 1,
+        step: 0.001,
+        label: "Longueur focale",
+      },
+      bokehScale: {
+        value: defaultValues.bokehScale,
+        min: 0,
+        max: 5,
+        step: 0.001,
+        label: "Échelle du bokeh",
+      },
+      opacity: {
+        value: defaultValues.opacity,
+        min: 0,
+        max: 1,
+        step: 0.01,
+        label: "Opacité",
+      }
+    })
+  }), { collapsed: true });
+  
   // Configuration des contrôles Leva pour Bloom
   const [bloomControls, setBloomControls] = useControls("Post-Processing", () => ({
     "Bloom": folder({
@@ -289,44 +327,6 @@ const PostProcessingEffects = () => {
         max: 2,
         step: 0.01,
         label: "Exposition"
-      }
-    })
-  }), { collapsed: true });
-  
-  // Configuration des contrôles Leva pour Depth of Field
-  const [dofControls, setDofControls] = useControls("Post-Processing", () => ({
-    "Depth of Field": folder({
-      hasDepthOfField: {
-        value: defaultValues.hasDepthOfField,
-        label: "Activer"
-      },
-      focusDistance: {
-        value: defaultValues.focusDistance,
-        min: 0,
-        max: 50,
-        step: 0.1,
-        label: "Distance de focus",
-      },
-      focusRange: {
-        value: defaultValues.focusRange,
-        min: 0,
-        max: 100,
-        step: 1,
-        label: "Plage de focus",
-      },
-      focalLength: {
-        value: defaultValues.focalLength,
-        min: 0.1,
-        max: 5,
-        step: 0.1,
-        label: "Longueur focale",
-      },
-      bokehScale: {
-        value: defaultValues.bokehScale,
-        min: 0,
-        max: 20,
-        step: 0.1,
-        label: "Échelle du bokeh",
       }
     })
   }), { collapsed: true });
@@ -769,9 +769,9 @@ const PostProcessingEffects = () => {
       {dofControls.hasDepthOfField && (
         <DepthOfField
           focusDistance={dofControls.focusDistance}
-          focusRange={dofControls.focusRange}
           focalLength={dofControls.focalLength}
           bokehScale={dofControls.bokehScale}
+          opacity={dofControls.opacity}
         />
       )}
       
