@@ -321,14 +321,14 @@ const calculateLinkPoints = (
     .copy(midPoint)
     .add(perpendicularVector.multiplyScalar(distance * arcHeight));
 
-  const translationVector = perpendicularVector
-    .clone()
-    .divideScalar((distance * arcHeight) / Math.PI / 2);
+  // const translationVector = perpendicularVector
+  //   .clone()
+  //   .divideScalar((distance * arcHeight) / Math.PI / 2);
 
-  // On applique cette translation aux trois points clés
-  adjustedSourcePos.add(translationVector);
-  controlPoint.add(translationVector);
-  adjustedTargetPos.add(translationVector);
+  // // On applique cette translation aux trois points clés
+  // adjustedSourcePos.add(translationVector);
+  // controlPoint.add(translationVector);
+  // adjustedTargetPos.add(translationVector);
 
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
@@ -337,9 +337,63 @@ const calculateLinkPoints = (
     adjustedTargetPos
   );
 
-  // Générer plus de points pour une courbe plus lisse
+  // Calculer le nombre de points en fonction de la distance
+  // Formule: nombre de points proportionnel à la distance, avec des limites min et max
+  const MIN_POINTS = 20; // Minimum de points pour les courtes distances
+  const MAX_POINTS = 200; // Maximum de points pour les longues distances
+  const POINTS_PER_UNIT = 2; // Facteur de points par unité de distance
+  
+  // Calculer le nombre de points basé sur la distance
+  let numPoints = Math.round(distance * POINTS_PER_UNIT);
+  
+  // Appliquer les limites min/max
+  numPoints = Math.max(MIN_POINTS, Math.min(numPoints, MAX_POINTS));
+  
+  // S'assurer que c'est un nombre pair pour faciliter le slicing uniforme
+  if (numPoints % 2 !== 0) numPoints++;
+  
+  // Générer les points de la courbe avec un nombre adapté à la distance
+  const allPoints = curve.getPoints(numPoints);
+  
+  // Nouvelle approche: conserver une distance physique constante du nœud
+  // quelle que soit la longueur de la courbe
+  const MIN_DISTANCE_FROM_NODE = 10; // Distance minimale constante entre le nœud et la courbe
+  
+  // Initialiser le tableau des points conservés
+  let trimmedPoints = [];
+  
+  // Calculer les distances depuis les extrémités de la courbe pour chaque point
+  const sourceDistance = new Array(allPoints.length);
+  const targetDistance = new Array(allPoints.length);
+  
+  for (let i = 0; i < allPoints.length; i++) {
+    // Calculer et stocker la distance depuis le point de départ
+    sourceDistance[i] = allPoints[i].distanceTo(adjustedSourcePos);
+    
+    // Calculer et stocker la distance depuis le point d'arrivée
+    targetDistance[i] = allPoints[i].distanceTo(adjustedTargetPos);
+  }
+  
+  // Filtrer les points en fonction de la distance physique minimale
+  trimmedPoints = allPoints.filter((point, index) => {
+    // Conserver le point si sa distance depuis chaque extrémité est supérieure au minimum
+    return sourceDistance[index] >= MIN_DISTANCE_FROM_NODE && 
+           targetDistance[index] >= MIN_DISTANCE_FROM_NODE;
+  });
+  
+  // Au cas où il ne reste pas assez de points (courbes très courtes)
+  if (trimmedPoints.length < 3) {
+    // Fallback: prendre 70% des points au milieu
+    const startIndex = Math.floor(allPoints.length * 0.15);
+    const endIndex = Math.ceil(allPoints.length * 0.85);
+    trimmedPoints = allPoints.slice(startIndex, endIndex);
+  }
+  
+  console.log(`Distance: ${distance.toFixed(2)}, Total Points: ${numPoints}, Kept Points: ${trimmedPoints.length}`);
+
+  // Retourner les points tronqués et la courbe complète
   return {
-    points: curve.getPoints(20),
+    points: trimmedPoints,
     curve: curve, // Retourner également la courbe pour calculer la tangente
   };
 };
@@ -352,8 +406,8 @@ const Link = ({
   depth = 0,
   dashSize = 3,
   gapSize = 3,
-  startOffset = 10,
-  endOffset = 10,
+  startOffset = 0,
+  endOffset = 0,
   arcHeight = 0.3, // Valeur par défaut plus élevée pour des arcs plus visibles
   linkWidth = 1.5,
 }) => {
