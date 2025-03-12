@@ -17,20 +17,15 @@ import {
 } from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
+import IntroScreen from "./components/IntroScreen.jsx";
 
 const HomePage = () => {
   const [graphData, setGraphData] = useState(null);
   const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [debugMode, setDebugMode] = useState(false);
-  const [isRotated, setIsRotated] = useState(false);
-
-  // Configuration pour la rotation de la scène
-  const sceneRotation = useMemo(() => {
-    return isRotated
-      ? new THREE.Euler(0, Math.PI / 2, 0)
-      : new THREE.Euler(0, 0, 0);
-  }, [isRotated]);
+  const [gameStarted, setGameStarted] = useState(false);
+  const [audioStarted, setAudioStarted] = useState(false);
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -73,11 +68,17 @@ const HomePage = () => {
     loadJsonData();
   }, []);
 
-  // Fonction pour basculer la rotation
-  const toggleRotation = useCallback(() => {
-    setIsRotated((prev) => !prev);
-    console.log("Rotation basculée:", !isRotated);
-  }, [isRotated]);
+  // Fonction pour démarrer l'audio immédiatement
+  const startAudio = useCallback(() => {
+    setAudioStarted(true);
+    console.log("Audio démarré");
+  }, []);
+
+  // Fonction pour démarrer le jeu
+  const startGame = useCallback(() => {
+    setGameStarted(true);
+    console.log("Jeu démarré");
+  }, []);
 
   // Gestion du mode debug et de la rotation avec les touches
   useEffect(() => {
@@ -85,150 +86,99 @@ const HomePage = () => {
       if (event.key === "p" || event.key === "P") {
         setDebugMode((prevMode) => !prevMode);
         console.log("Mode debug:", !debugMode);
-      } else if (event.key === "r" || event.key === "R") {
-        // Touche R pour basculer la rotation
-        toggleRotation();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-
-    // Nettoyage de l'écouteur d'événement
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [debugMode, toggleRotation]);
+  }, [debugMode]);
 
   return (
     <div className="canvas-container">
-      {/* Bouton de rotation */}
-      <button
-        style={{
-          position: "absolute",
-          top: "20px",
-          left: "20px",
-          zIndex: 1000,
-          padding: "10px",
-          background: "#333",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-        onClick={toggleRotation}
-      >
-        {isRotated ? "Rotation 0°" : "Rotation 90°"}
-      </button>
+      {/* Écran d'introduction - composant externalisé */}
+      {!gameStarted && (
+        <IntroScreen
+          onStart={() => setGameStarted(true)}
+          onStartAudio={startAudio}
+        />
+      )}
 
-      {/* Composant de son d'ambiance */}
-      <SoundPlayer
-        soundPath="/sounds/ambiant.mp3"
-        defaultVolume={0.1}
-        loop={true}
-        autoPlay={true}
-        displayControls={true}
-        controlPosition={{ top: "20px", right: "20px" }}
-        tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
-      />
-      <SoundPlayer
-        soundPath="/sounds/interview.mp3"
-        defaultVolume={0.5}
-        loop={true}
-        autoPlay={true}
-        displayControls={true}
-        controlPosition={{ top: "20px", right: "20px" }}
-        tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
-      />
+      {/* Composants de son - maintenant contrôlés par audioStarted */}
+      {audioStarted && (
+        <>
+          <SoundPlayer
+            soundPath="/sounds/ambiant.mp3"
+            defaultVolume={0.1}
+            loop={true}
+            autoPlay={true}
+            displayControls={false}
+            controlPosition={{ top: "20px", right: "20px" }}
+            tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
+          />
+          <SoundPlayer
+            soundPath="/sounds/interview.mp3"
+            defaultVolume={0.5}
+            loop={true}
+            autoPlay={true}
+            displayControls={false}
+            controlPosition={{ top: "20px", right: "80px" }}
+            tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
+          />
+        </>
+      )}
 
-      {isLoading && (
+      {isLoading && gameStarted && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
         </div>
       )}
 
-      {/* Interface utilisateur en dehors du Canvas - conditionnée par le mode debug */}
-      {debugMode && <NavigationUI />}
+      {/* Interface utilisateur en dehors du Canvas - conditionnée par le mode debug et le démarrage du jeu */}
+      {debugMode && gameStarted && <NavigationUI />}
 
-      {/* Indicateur de connexion de manette - conditionné par le mode debug */}
-      {debugMode && <GamepadIndicator />}
+      {/* Indicateur de connexion de manette - conditionné par le mode debug et le démarrage du jeu */}
+      {debugMode && gameStarted && <GamepadIndicator />}
 
+      {/* Canvas - toujours rendu mais masqué par l'écran d'intro si le jeu n'a pas démarré */}
       <Canvas
         shadows
         // gl={{ toneMapping: THREE.NoToneMapping }}
         camera={{ position: [0, 0, 600], fov: 50, near: 0.1, far: 1000000 }}
       >
         {/* Affichage des stats (FPS) conditionné par le mode debug */}
-        {debugMode && <Stats />}
+        {debugMode && gameStarted && <Stats />}
         <color attach="background" args={["#000000"]} />
 
-        <AdvancedCameraController />
-
-        {/* Afficher les références de grille */}
-        {/* <GridReferences
-          rotationInterval={360}
-          maxRotation={180}
-          circleRadii={[50, 100, 150, 200, 250]}
-          opacity={0.3}
-        /> */}
+        {gameStarted && <AdvancedCameraController />}
 
         {/* Éclairage */}
         <ambientLight intensity={3} color="white" />
 
-        {/* Groupe englobant avec rotation basée sur l'état */}
-        <group rotation={sceneRotation}>
-          {/* Lumière ponctuelle centrale optimisée */}
-          <pointLight
-            position={[0, 0, 0]}
-            intensity={18}
-            distance={300}
-            decay={0.1}
-            color="white"
-            castShadow
-            shadow-mapSize-width={128}
-            shadow-mapSize-height={128}
-          />
+        {/* Lumière ponctuelle centrale optimisée */}
+        <pointLight
+          position={[0, 0, 0]}
+          intensity={18}
+          distance={300}
+          decay={0.1}
+          color="white"
+          castShadow
+          shadow-mapSize-width={128}
+          shadow-mapSize-height={128}
+        />
 
-          {/* <pointLight
-            position={[0, 0, 100]}
-            intensity={20}
-            distance={100}
-            decay={0.1}
-            color="orange"
-          /> */}
+        {/* Afficher le graphe si les données sont disponibles et valides et si le jeu a démarré */}
+        {graphData && graphData.nodes && graphData.links && (
+          <Graph data={graphData} postsData={postsData} />
+        )}
 
-          {/* Afficher le graphe si les données sont disponibles et valides */}
-          {graphData && graphData.nodes && graphData.links && (
-            <Graph data={graphData} postsData={postsData} />
-          )}
+        {/* Afficher les posts si activés et disponibles et si le jeu a démarré */}
+        {postsData && <Posts data={postsData} />}
 
-          {/* Afficher les posts si activés et disponibles */}
-          {postsData && <Posts data={postsData} />}
-        </group>
-
-        {/* Effets de post-processing */}
-        {/* <PostProcessingEffects /> */}
-        <EffectComposer>
-          {/* <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} /> */}
-          {/* <DepthOfField
-            // blendFunction?: import("postprocessing").BlendFunction | undefined;
-            // worldFocusDistance?: number | undefined;
-            // worldFocusRange?: number | undefined;
-            // focusDistance?: number | undefined;
-            // focalLength?: number | undefined;
-            // focusRange?: number | undefined;
-            // bokehScale?: number | undefined;
-            // resolutionScale?: number | undefined;
-            // resolutionX?: number | undefined;
-            // resolutionY?: number | undefined;
-            // width?: number | undefined;
-            // height?: number | undefined;
-
-            // worldFocusDistance={100}
-            // focusDistance={100}
-            focalLength={0.3}
-            bokehScale={3}
-          /> */}
-        </EffectComposer>
+        {/* Effets de post-processing - seulement si le jeu a démarré */}
+        {gameStarted && (
+          <EffectComposer>
+            {/* <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} /> */}
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   );
