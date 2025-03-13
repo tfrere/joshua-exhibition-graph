@@ -1,7 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { Stats } from "@react-three/drei";
 import { useRef, useEffect, useState, useCallback } from "react";
-import { useControls, folder, button } from "leva";
 import { ForceGraphUI } from "./components/ForceGraph/ForceGraph.jsx";
 import ForceGraph from "./components/ForceGraph/ForceGraph.jsx";
 import CustomForceGraph from "./components/CustomForceGraph.jsx";
@@ -12,6 +11,7 @@ import AdvancedCameraController, {
 } from "../HomePage/components/AdvancedCameraController.jsx";
 import { OrbitControls } from "@react-three/drei";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import GridReferences from "../MovablePage/components/GridReferences.jsx";
 
 // Fonction utilitaire pour télécharger un fichier JSON
 const downloadJSON = (content, fileName) => {
@@ -38,6 +38,10 @@ const WorkPage = () => {
   } = useData();
   const forceGraphRef = useRef(null);
   const positionsUpdatedOnceRef = useRef(false);
+
+  // Remplacer Leva par des états React simples
+  const [debug, setDebug] = useState(true);
+  const [backgroundColor, setBackgroundColor] = useState("#000000");
 
   // Utiliser useRef au lieu de useState pour éviter les re-rendus
   const graphInstanceRef = useRef(null);
@@ -96,6 +100,42 @@ const WorkPage = () => {
     console.log("- graphData:", graphData);
     console.log("- postsData:", postsData);
     console.log("- graphInstance:", graphInstanceRef.current);
+
+    // Fonction pour nettoyer les données avant export
+    const cleanForExport = (obj) => {
+      if (!obj || typeof obj !== "object") return obj;
+
+      // Créer une copie sans référence
+      const cleanObj = Array.isArray(obj) ? [...obj] : { ...obj };
+
+      // Supprimer les clés non désirées
+      if (!Array.isArray(cleanObj)) {
+        delete cleanObj.__threeObj;
+        delete cleanObj.__indexArrayBuffer;
+        delete cleanObj.__colorArrayBuffer;
+        delete cleanObj.__lineHighlightArrayBuffer;
+
+        // Supprimer toutes les clés commençant par __ (objets internes)
+        Object.keys(cleanObj).forEach((key) => {
+          if (key.startsWith("__")) {
+            delete cleanObj[key];
+          }
+        });
+      }
+
+      // Nettoyer récursivement les sous-objets
+      if (Array.isArray(cleanObj)) {
+        return cleanObj.map((item) => cleanForExport(item));
+      } else {
+        // Nettoyer chaque propriété de l'objet qui est aussi un objet
+        Object.keys(cleanObj).forEach((key) => {
+          if (cleanObj[key] && typeof cleanObj[key] === "object") {
+            cleanObj[key] = cleanForExport(cleanObj[key]);
+          }
+        });
+        return cleanObj;
+      }
+    };
 
     // Vérifier si les données sont disponibles
     const hasGraphData =
@@ -225,13 +265,13 @@ const WorkPage = () => {
         links: links || [],
       };
 
+      // Nettoyer les données avant l'export (supprimer __threeObj et autres propriétés internes)
+      const cleanedData = cleanForExport(spatializedNodesAndLinks);
+
       console.log(
-        `COMMENTEE POUR LINSTANT : Export des nœuds: ${nodesWithPositions.length}, liens: ${links.length}`
+        `Export des nœuds: ${cleanedData.nodes.length}, liens: ${cleanedData.links.length}`
       );
-      downloadJSON(
-        spatializedNodesAndLinks,
-        "spatialized_nodes_and_links.data.json"
-      );
+      downloadJSON(cleanedData, "spatialized_nodes_and_links.data.json");
 
       // // Création de l'export des posts
       // // ------------------------------------------------
@@ -262,23 +302,14 @@ const WorkPage = () => {
 
       // 7. Afficher un message de confirmation
       alert(`Exportation terminée!
-- Noeuds: ${nodesWithPositions.length}
-- Liens: ${links.length} 
+- Noeuds: ${cleanedData.nodes.length}
+- Liens: ${cleanedData.links.length} 
 - Posts: ${spatializedPosts.length}`);
     } catch (error) {
       console.error("Erreur pendant l'exportation:", error);
       alert(`Erreur pendant l'exportation: ${error.message}`);
     }
   };
-
-  // Configurer tous les contrôles avec Leva en dehors de la fonction de render
-  const levaControls = useControls({
-    debug: true,
-    backgroundColor: "#000000",
-    // Export supprimé des contrôles Leva
-  });
-
-  const { debug, backgroundColor, cameraConfig } = levaControls;
 
   // Mettre à jour automatiquement les positions des posts après le chargement des données
   useEffect(() => {
@@ -338,7 +369,7 @@ const WorkPage = () => {
         onClick={exportSpatializedData}
         style={{
           position: "absolute",
-          top: "20px",
+          bottom: "20px",
           right: "20px",
           padding: "10px 15px",
           backgroundColor: "#4CAF50",
@@ -362,6 +393,12 @@ const WorkPage = () => {
         <ambientLight intensity={1.2} />
 
         <ForceGraph ref={getGraphRef} />
+        <GridReferences
+          rotationInterval={20}
+          maxRotation={180}
+          circleRadii={[50, 100, 150, 200, 250]}
+          opacity={0.3}
+        />
       </Canvas>
     </div>
   );

@@ -16,7 +16,7 @@ const NodeLabel = ({ node, nodePosition, meshRef, baseSize, isActive }) => {
     objectPosition: nodePosition,
     threshold: 50,
     referenceOffset: 20,
-    vibrateOnProximity: true, // Activer la vibration pour tous les nœuds
+    vibrateOnProximity: false, // Activer la vibration pour tous les nœuds
     vibrationOptions: {
       duration: 100,
       // Des intensités différentes en fonction du type de nœud

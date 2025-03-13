@@ -5,32 +5,74 @@ import {
   addEventListener,
   removeEventListener,
 } from "../HomePage/components/Posts/hooks/useNearestPostDetection";
+import { activeNodeRef } from "../HomePage/components/Node/hooks/useNodeProximitySync";
 import TextScramble from "../../components/TextScramble";
 import "../../components/TextScramble.css";
 import ProfileDisplay from "./ProfileDisplay";
+import SocketDebugger from "./SocketDebugger";
+import usePostCounting from "./hooks/usePostCounting";
+
+// Fonction utilitaire pour vérifier si un nœud est valide
+function isValidNode(node) {
+  return node && (node.name || node.label || node.id || node.type);
+}
 
 function PostPage() {
+  // Utiliser le composant SocketDebugger pour le débogage
+  // return <SocketDebugger />;
+
   const [postsData, setPostsData] = useState(null);
   const [databaseData, setDatabaseData] = useState(null);
   const [activeCharacterData, setActiveCharacterData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activePost, setactivePost] = useState(null);
+  const [activePost, setActivePost] = useState(null);
   const [characterImageExists, setCharacterImageExists] = useState(false);
-  const [visitedPosts, setVisitedPosts] = useState([]);
-  const [totalPosts, setTotalPosts] = useState(0);
-  const [isCountingEnabled, setIsCountingEnabled] = useState(false);
-  const [navigationMode, setNavigationMode] = useState(() => {
-    const isOrbiting = window.__orbitModeActive === true;
-    const isTransitioning = window.__cameraAnimating === true;
-    if (isOrbiting) return "orbit";
-    if (isTransitioning) return "transitioning";
-    return "normal";
-  });
+  const [activeNode, setActiveNode] = useState(null);
   const loaderRef = useRef(null);
   const dataLoadedRef = useRef(false);
   const pendingPostChangeRef = useRef(null);
   const changeTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const lastActivePostRef = useRef(null);
+
+  // Utiliser notre hook de comptage de posts
+  const {
+    visitedPosts,
+    totalPosts,
+    isCountingEnabled,
+    navigationMode,
+    visitedPercentage,
+    updateVisitedPosts,
+    resetVisitedPosts,
+    toggleCounting,
+  } = usePostCounting({ postsData });
+
+  // Calculer les valeurs dérivées en dehors du useMemo
+  const isValidActiveNode = isValidNode(activeNode);
+  const isNodeCharacter = activeNode && activeNode.type === "character";
+  // Vérifier si nous avons un post actif ou un dernier post à afficher
+  const hasActiveContent =
+    activePost || activeCharacterData || lastActivePostRef.current;
+
+  // Logging des valeurs dérivées
+  useEffect(() => {
+    console.log("[PostPage Render] isValidActiveNode:", isValidActiveNode);
+    console.log("[PostPage Render] isNodeCharacter:", isNodeCharacter);
+    console.log("[PostPage Render] hasActiveContent:", hasActiveContent);
+    console.log(
+      "[PostPage Render] Properties in activeNode:",
+      activeNode
+        ? {
+            id: activeNode.id,
+            name: activeNode.name,
+            label: activeNode.label,
+            type: activeNode.type,
+            description: activeNode.description,
+            isJoshua: activeNode.isJoshua,
+          }
+        : "No activeNode"
+    );
+  }, [isValidActiveNode, isNodeCharacter, hasActiveContent, activeNode]);
 
   // Fonction pour nettoyer toutes les ressources en cours
   const cleanupResources = useCallback(() => {
@@ -76,7 +118,6 @@ function PostPage() {
 
         setPostsData(postsData);
         setDatabaseData(databaseData);
-        setTotalPosts(postsData.length);
         dataLoadedRef.current = true;
 
         // Si un post est déjà actif, charger ses données immédiatement
@@ -91,14 +132,14 @@ function PostPage() {
           }
 
           if (post.postUID !== undefined && postsData[post.postUID]) {
-            setactivePost(postsData[post.postUID]);
+            setActivePost(postsData[post.postUID]);
 
             // Add to visited posts if not already visited
             if (post.postUID !== undefined) {
               updateVisitedPosts(post.postUID);
             }
           } else {
-            setactivePost(post);
+            setActivePost(post);
           }
         }
 
@@ -116,175 +157,11 @@ function PostPage() {
     // Exposer le socket globalement pour que d'autres composants puissent l'utiliser
     window.socket = socket;
 
-    // Pour déboguer: activer automatiquement le comptage après 5 secondes
-    setTimeout(() => {
-      setIsCountingEnabled(true);
-      // Essayons aussi d'émettre un événement startCounting pour voir si ça fonctionne
-      try {
-        if (window.socket && typeof window.socket.emit === "function") {
-          window.socket.emit("startCounting", {
-            timestamp: Date.now(),
-            source: "auto_timer",
-          });
-        }
-      } catch (error) {
-        // Silencieux en cas d'erreur
-      }
-    }, 5000);
-
-    // Au démarrage, on ne compte pas les posts
-    setVisitedPosts([]);
-    setIsCountingEnabled(false);
-
-    // Écouter le signal de réinitialisation via socket
-    if (socket) {
-      socket.on("connect", () => {
-        // Socket connecté
-      });
-
-      socket.on("resetView", () => {
-        // Forcer la réinitialisation avec un nouveau tableau vide pour garantir la mise à jour
-        setVisitedPosts([]);
-        // Forcer la vérification du mode de navigation
-        if (typeof window.__checkNavigationMode === "function") {
-          window.__checkNavigationMode();
-        }
-        // Désactiver le comptage en mode orbit
-        setIsCountingEnabled(false);
-      });
-
-      // Nouveau signal pour démarrer le comptage (après avoir cliqué sur start ou quitté l'orbit)
-      socket.on("startCounting", (data) => {
-        setIsCountingEnabled(true);
-      });
-    }
-
-    // Écouter également l'événement DOM comme mécanisme de secours
-    const handleResetEvent = (event) => {
-      setVisitedPosts([]);
-      // Forcer la vérification du mode de navigation
-      if (typeof window.__checkNavigationMode === "function") {
-        window.__checkNavigationMode();
-      }
-      // Forcer aussi le passage en mode orbit et désactiver le comptage
-      setNavigationMode("orbit");
-      setIsCountingEnabled(false);
-    };
-
-    // Écouter l'événement DOM pour démarrer le comptage
-    const handleStartCountingEvent = (event) => {
-      setIsCountingEnabled(true);
-    };
-
-    // Ajouter les écouteurs d'événements DOM
-    window.addEventListener("resetVisitedPosts", handleResetEvent);
-    window.addEventListener("startCounting", handleStartCountingEvent);
-
-    // Exposer des fonctions pour tests manuels depuis la console
-    window.__startCountingManual = () => {
-      setIsCountingEnabled(true);
-    };
-
-    window.__testSocketEmit = () => {
-      if (socket && typeof socket.emit === "function") {
-        try {
-          socket.emit("test", { timestamp: Date.now() });
-          return true;
-        } catch (error) {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    };
-
     // Nettoyage des ressources à la destruction du composant
     return () => {
       cleanupResources();
-      // Supprimer l'écouteur d'événement resetView
-      if (socket) {
-        socket.off("resetView");
-      }
-      // Supprimer l'écouteur d'événement DOM
-      window.removeEventListener("resetVisitedPosts", handleResetEvent);
-      window.removeEventListener("startCounting", handleStartCountingEvent);
     };
-  }, [cleanupResources]);
-
-  // Vérifier périodiquement le mode de navigation
-  useEffect(() => {
-    const checkNavigationMode = () => {
-      // Vérifier les valeurs directement depuis les variables globales
-      const isOrbiting = window.__orbitModeActive === true;
-      const isTransitioning = window.__cameraAnimating === true;
-
-      let newMode = "normal";
-      if (isOrbiting) {
-        newMode = "orbit";
-      } else if (isTransitioning) {
-        newMode = "transitioning";
-      }
-
-      // Si nous passons en mode orbit, réinitialiser automatiquement le compteur et désactiver le comptage
-      if (newMode === "orbit" && navigationMode !== "orbit") {
-        setVisitedPosts([]);
-        setIsCountingEnabled(false);
-      }
-
-      // Si nous passons du mode orbit au mode normal, réactiver le comptage
-      if (navigationMode === "orbit" && newMode === "normal") {
-        setIsCountingEnabled(true);
-
-        // Émettre un événement custom pour signaler la reprise du comptage
-        try {
-          const startCountingEvent = new CustomEvent("startCounting");
-          window.dispatchEvent(startCountingEvent);
-        } catch (error) {
-          // Silencieux en cas d'erreur
-        }
-      }
-
-      // Mettre à jour le mode uniquement s'il a changé
-      if (newMode !== navigationMode) {
-        setNavigationMode(newMode);
-      }
-    };
-
-    // Vérifier immédiatement puis à intervalles réguliers (plus fréquemment)
-    checkNavigationMode();
-    const intervalId = setInterval(checkNavigationMode, 200); // Plus rapide pour une meilleure réactivité
-
-    // Exposer la fonction pour permettre des tests manuels
-    window.__checkNavigationMode = checkNavigationMode;
-    window.__resetVisitedPosts = () => {
-      setVisitedPosts([]);
-    };
-    window.__startCounting = () => {
-      setIsCountingEnabled(true);
-    };
-
-    return () => clearInterval(intervalId);
-  }, [navigationMode]);
-
-  // Function to update visited posts
-  const updateVisitedPosts = useCallback(
-    (postUID) => {
-      if (postUID === undefined) {
-        return;
-      }
-
-      // Ne compter les posts visités que si nous sommes en mode normal ET que le comptage est activé
-      if (navigationMode === "normal" && isCountingEnabled) {
-        setVisitedPosts((prevVisited) => {
-          if (!prevVisited.includes(postUID)) {
-            return [...prevVisited, postUID];
-          }
-          return prevVisited;
-        });
-      }
-    },
-    [navigationMode, isCountingEnabled]
-  );
+  }, [cleanupResources, updateVisitedPosts]);
 
   // Fonction mémorisée pour trouver un personnage par son slug
   const findCharacter = useCallback(
@@ -340,8 +217,24 @@ function PostPage() {
 
   // Écouter les changements du post actif
   useEffect(() => {
-    const handleActivePostChange = (post) => {
-      if (!post) return;
+    const handleActivePostChange = (data) => {
+      // data contient déjà { post, previousPost }
+      const post = data.post;
+
+      // Si le post est null, réinitialiser les états mais garder activeNode si présent
+      if (!post) {
+        setActivePost(null);
+        // Ne pas réinitialiser activeCharacterData si on a un nœud actif
+        if (!activeNode) {
+          setActiveCharacterData(null);
+          setCharacterImageExists(false);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // Stocker le post actif dans la référence
+      lastActivePostRef.current = post;
 
       // Si nous sommes en mode orbit, ignorer les mises à jour de posts
       if (navigationMode === "orbit") {
@@ -375,14 +268,13 @@ function PostPage() {
         if (postsData && pendingPost.postUID !== undefined) {
           const fullPost = findCurrentPost(pendingPost.postUID);
           if (fullPost) {
-            setactivePost(fullPost);
-            // Add to visited posts
-            updateVisitedPosts(pendingPost.postUID);
+            setActivePost(fullPost);
+            // Note: updateVisitedPosts est maintenant géré par notre hook usePostCounting
           } else {
-            setactivePost(pendingPost);
+            setActivePost(pendingPost);
           }
         } else {
-          setactivePost(pendingPost);
+          setActivePost(pendingPost);
         }
 
         setIsLoading(false);
@@ -412,7 +304,194 @@ function PostPage() {
     cleanupResources,
     updateVisitedPosts,
     navigationMode,
+    activeNode,
   ]);
+
+  // Écouter les changements du nœud actif et vérifier régulièrement l'état de window.activeNodeRef
+  useEffect(() => {
+    // Fonction pour gérer le changement de nœud actif via l'événement
+    const handleActiveNodeChanged = (event) => {
+      console.log("[PostPage] Active node changed event received:", event);
+      console.log("[PostPage] Event detail type:", typeof event.detail);
+      console.log("[PostPage] Event detail:", event.detail);
+
+      // Mettre à jour directement l'état avec les données de l'événement
+      if (event.detail) {
+        // S'assurer que le nœud a les propriétés nécessaires
+        const node = event.detail;
+        console.log("[PostPage] Processing node from event:", node);
+
+        // Journal des propriétés pour le débogage
+        console.log("[PostPage] Node properties from event:", {
+          id: node.id,
+          name: node.name,
+          label: node.label,
+          type: node.type,
+          isJoshua: node.isJoshua,
+          description: node.description,
+        });
+
+        // Utiliser la fonction utilitaire isValidNode
+        if (isValidNode(node)) {
+          console.log("[PostPage] Node is valid, setting as activeNode");
+          // Faire une copie profonde de l'objet nœud
+          const nodeClone = JSON.parse(JSON.stringify(node));
+          setActiveNode(nodeClone);
+        } else {
+          console.log("[PostPage] Node is invalid, properties missing");
+        }
+      } else if (event.detail === null) {
+        // Si le détail est explicitement null, désactiver le nœud
+        console.log(
+          "[PostPage] Explicitly null node received, clearing activeNode"
+        );
+
+        // Restaurer le dernier post actif si disponible AVANT de désactiver le nœud
+        if (lastActivePostRef.current) {
+          console.log(
+            "[PostPage] Restoring last active post immediately from ref check:",
+            lastActivePostRef.current
+          );
+
+          const pendingPost = lastActivePostRef.current;
+
+          // Appliquer immédiatement sans setTimeout
+          if (databaseData && pendingPost.slug) {
+            const character = findCharacter(pendingPost.slug);
+            if (character) {
+              setActiveCharacterData(character);
+              checkImageExists(pendingPost.slug);
+            }
+          }
+
+          if (postsData && pendingPost.postUID !== undefined) {
+            const fullPost = findCurrentPost(pendingPost.postUID);
+            if (fullPost) {
+              setActivePost(fullPost);
+            } else {
+              setActivePost(pendingPost);
+            }
+          } else {
+            setActivePost(pendingPost);
+          }
+
+          // Désactiver le nœud seulement après avoir restauré le post
+          setActiveNode(null);
+        } else {
+          // Si pas de dernier post actif, simplement désactiver le nœud
+          setActiveNode(null);
+        }
+      }
+    };
+
+    // Fonction pour vérifier directement window.activeNodeRef
+    const checkActiveNodeRef = () => {
+      // Vérifier d'abord si la fenêtre et la référence existent
+      if (typeof window === "undefined") return;
+
+      // Vérifier si activeNodeRef existe et contient un nœud
+      if (window.activeNodeRef && window.activeNodeRef.current) {
+        const nodeRef = window.activeNodeRef.current;
+        console.log("[PostPage] Found node in window.activeNodeRef:", nodeRef);
+
+        // Journal des propriétés pour le débogage
+        console.log("[PostPage] Node properties from ref:", {
+          id: nodeRef.id,
+          name: nodeRef.name,
+          label: nodeRef.label,
+          type: nodeRef.type,
+          isJoshua: nodeRef.isJoshua,
+          description: nodeRef.description,
+        });
+
+        // Utiliser la fonction utilitaire isValidNode
+        if (isValidNode(nodeRef)) {
+          // Vérifier si le nœud est différent de l'état actuel
+          const noActiveNodeOrDifferentId =
+            !activeNode || activeNode.id !== nodeRef.id;
+
+          if (noActiveNodeOrDifferentId) {
+            console.log(
+              "[PostPage] Setting activeNode from window.activeNodeRef"
+            );
+            // Faire une copie profonde de l'objet nœud
+            const nodeClone = JSON.parse(JSON.stringify(nodeRef));
+            setActiveNode(nodeClone);
+          }
+        } else {
+          console.log(
+            "[PostPage] Node from activeNodeRef is invalid, properties missing"
+          );
+        }
+      } else if (activeNode) {
+        // Si window.activeNodeRef.current est null mais que activeNode n'est pas null
+        console.log(
+          "[PostPage] No node in window.activeNodeRef but activeNode exists. Clearing activeNode."
+        );
+
+        // Restaurer le dernier post actif si disponible AVANT de désactiver le nœud
+        if (lastActivePostRef.current) {
+          console.log(
+            "[PostPage] Restoring last active post immediately from ref check:",
+            lastActivePostRef.current
+          );
+
+          const pendingPost = lastActivePostRef.current;
+
+          // Appliquer immédiatement sans setTimeout
+          if (databaseData && pendingPost.slug) {
+            const character = findCharacter(pendingPost.slug);
+            if (character) {
+              setActiveCharacterData(character);
+              checkImageExists(pendingPost.slug);
+            }
+          }
+
+          if (postsData && pendingPost.postUID !== undefined) {
+            const fullPost = findCurrentPost(pendingPost.postUID);
+            if (fullPost) {
+              setActivePost(fullPost);
+            } else {
+              setActivePost(pendingPost);
+            }
+          } else {
+            setActivePost(pendingPost);
+          }
+
+          // Désactiver le nœud seulement après avoir restauré le post
+          setActiveNode(null);
+        } else {
+          // Si pas de dernier post actif, simplement désactiver le nœud
+          setActiveNode(null);
+        }
+      } else {
+        console.log(
+          "[PostPage] No node in window.activeNodeRef and no activeNode exists."
+        );
+      }
+    };
+
+    // Vérifier immédiatement si un nœud est déjà actif
+    console.log("[PostPage] Initial check for activeNodeRef");
+    checkActiveNodeRef();
+
+    // Ajouter l'écouteur d'événement pour les changements dynamiques
+    console.log("[PostPage] Adding event listener for activeNodeChanged");
+    window.addEventListener("activeNodeChanged", handleActiveNodeChanged);
+
+    // Vérifier régulièrement l'état de window.activeNodeRef, mais moins fréquemment
+    const intervalId = setInterval(() => {
+      console.log("[PostPage] Interval check for activeNodeRef");
+      checkActiveNodeRef();
+    }, 2000); // Vérifier toutes les 2 secondes pour réduire la fréquence
+
+    // Nettoyer les écouteurs et l'intervalle à la déconnexion
+    return () => {
+      console.log("[PostPage] Removing event listener and interval");
+      window.removeEventListener("activeNodeChanged", handleActiveNodeChanged);
+      clearInterval(intervalId);
+    };
+  }, [activeNode]); // Dépendance à activeNode pour comparer avec window.activeNodeRef.current
 
   // Nettoyage global lors du démontage du composant
   useEffect(() => {
@@ -423,8 +502,65 @@ function PostPage() {
 
   // Mémoriser le contenu pour éviter des re-renders inutiles
   const pageContent = useMemo(() => {
+    console.log("[PostPage Render] activeCharacterData:", activeCharacterData);
+    console.log("[PostPage Render] activeNode:", activeNode);
+    console.log("[PostPage Render] activePost:", activePost);
+    console.log(
+      "[PostPage Render] lastActivePostRef:",
+      lastActivePostRef.current
+    );
+
+    // Calculer le post avec le plus d'impact pour l'élément actuel
+    let mostImpactfulPost = null;
+    if (isValidActiveNode && databaseData) {
+      const isNodeCharacter = activeNode && activeNode.type === "character";
+
+      if (isNodeCharacter && activeNode.id) {
+        // Chercher la correspondance par slug (id du nœud)
+        const matchedCharacter = databaseData.find(
+          (char) => char.slug === activeNode.id
+        );
+        if (matchedCharacter && matchedCharacter.mostImpactPost) {
+          mostImpactfulPost = matchedCharacter.mostImpactPost;
+          console.log(
+            "[PostPage] Found most impactful post for character:",
+            mostImpactfulPost
+          );
+        }
+      } else if (!isNodeCharacter) {
+        // Pour les nœuds non-character, essayer de trouver un caractère associé dans la base de données
+        console.log(
+          "[PostPage] Looking for associated character for node:",
+          activeNode.id
+        );
+
+        // Essayer de trouver un caractère associé au nœud
+        const relatedCharacter = databaseData.find((char) => {
+          // Chercher une correspondance par identifiant ou par nom
+          return (
+            (activeNode.id && char.slug === activeNode.id) ||
+            (activeNode.name && char.displayName === activeNode.name) ||
+            (activeNode.label && char.displayName === activeNode.label)
+          );
+        });
+
+        if (relatedCharacter && relatedCharacter.mostImpactPost) {
+          mostImpactfulPost = relatedCharacter.mostImpactPost;
+          console.log(
+            "[PostPage] Found related character:",
+            relatedCharacter.slug
+          );
+          console.log(
+            "[PostPage] Found most impactful post for node:",
+            mostImpactfulPost
+          );
+        }
+      }
+    }
+
     // Afficher un message de chargement
     if (isLoading) {
+      console.log("[PostPage Render] Showing loading state");
       return (
         <div
           style={{
@@ -442,8 +578,14 @@ function PostPage() {
       );
     }
 
-    // Afficher un message s'il n'y a pas de personnage actif
-    if (!activeCharacterData) {
+    // Vérifier si nous avons un nœud actif valide
+    if (isValidActiveNode) {
+      console.log("[PostPage Render] We have a valid active node:", activeNode);
+    }
+
+    // Afficher un message s'il n'y a pas de personnage actif ET pas de nœud actif valide ET pas de dernier post actif
+    if (!hasActiveContent && !isLoading) {
+      console.log("[PostPage Render] Showing no active element message");
       return (
         <div
           style={{
@@ -459,22 +601,21 @@ function PostPage() {
             textAlign: "center",
           }}
         >
-          <h2>Aucun personnage actif</h2>
+          <h2>Aucun élément actif</h2>
           <p>
-            Veuillez sélectionner un personnage dans la vue principale pour
-            afficher ses informations.
+            Veuillez sélectionner un personnage ou un nœud dans la vue
+            principale pour afficher ses informations.
           </p>
         </div>
       );
     }
 
-    // Calculate visited percentage
-    const visitedPercentage =
-      totalPosts > 0
-        ? ((visitedPosts.length / totalPosts) * 100).toFixed(2)
-        : 0;
+    console.log(
+      "[PostPage Render] Showing ProfileDisplay with activeNode:",
+      activeNode
+    );
 
-    // Utiliser le composant ProfileDisplay pour afficher les informations du personnage
+    // Utiliser le composant ProfileDisplay pour afficher les informations
     return (
       <ProfileDisplay
         activeCharacterData={activeCharacterData}
@@ -484,6 +625,9 @@ function PostPage() {
         totalPosts={totalPosts}
         navigationMode={navigationMode}
         isCountingEnabled={isCountingEnabled}
+        activeNode={activeNode}
+        databaseData={databaseData}
+        mostImpactfulPost={mostImpactfulPost}
       />
     );
   }, [
@@ -495,6 +639,10 @@ function PostPage() {
     totalPosts,
     navigationMode,
     isCountingEnabled,
+    activeNode,
+    databaseData,
+    lastActivePostRef.current,
+    isValidActiveNode,
   ]);
 
   return pageContent;

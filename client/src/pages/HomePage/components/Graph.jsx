@@ -124,6 +124,8 @@ const Graph = ({ data, postsData }) => {
             // Vous pouvez personnaliser l'intensité de l'arc pour les liens ArcLink
             // Gestion de l'arcHeight laissée dans le composant Link
             // arcHeight={link.arcHeight || 0.3}
+            arcHeight={0.5}
+            opacity={0.1}
             depth={depth}
           />
         );

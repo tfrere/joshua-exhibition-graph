@@ -82,7 +82,7 @@ const Link = ({
       />
 
       {/* Text label in the middle of the link */}
-      <LinkText
+      {/* <LinkText
         points={points}
         linkColor={linkColor}
         relationType={link.type || "relation"}
@@ -90,7 +90,7 @@ const Link = ({
         textSize={textSize}
         textOpacity={textOpacity}
         textBackgroundColor={textBackgroundColor}
-      />
+      /> */}
     </group>
   );
 };

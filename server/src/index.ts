@@ -38,15 +38,36 @@ interface SharedState {
 // Interface pour le nœud actif
 interface ActiveNode {
   id: string;
-  slug: string;
+  slug?: string;
   name?: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  type?: string;
+  label?: string;
+}
+
+// Interface pour le message de nœud actif
+interface ActiveNodeMessage {
+  node: ActiveNode | null;
+  eventType: "activation" | "deactivation";
+  previousNodeId?: string | null;
+  timestamp?: number;
+}
+
+// Interface pour le post actif
+interface ActivePost {
+  id: string;
+  postUID: number;
+  slug: string;
+  impact?: number;
   x?: number;
   y?: number;
   z?: number;
 }
 
-// Interface pour le post actif
-interface ActivePost {
+// Interface pour le message de post actif
+interface ActivePostMessage {
   id: string;
   postUID: number;
   slug: string;
@@ -71,9 +92,13 @@ io.on("connection", (socket) => {
 
   socket.emit("initialState", currentState);
 
-  // Si un nœud actif existe déjà, l'envoyer au nouveau client
+  // Si un nœud actif existe déjà, l'envoyer au nouveau client au nouveau format
   if (currentState.activeNode) {
-    socket.emit("activeNodeUpdated", currentState.activeNode);
+    socket.emit("activeNodeUpdated", {
+      node: currentState.activeNode,
+      eventType: "activation",
+      timestamp: Date.now(),
+    });
   }
 
   // Si un post actif existe déjà, l'envoyer au nouveau client
@@ -94,20 +119,65 @@ io.on("connection", (socket) => {
   });
 
   // Gérer les mises à jour du nœud actif
-  socket.on("updateActiveNode", (node: ActiveNode) => {
+  socket.on("updateActiveNode", (message: ActiveNodeMessage | null) => {
+    // Si message est null (format précédent), le convertir en format actuel
+    if (message === null) {
+      message = {
+        node: null,
+        eventType: "deactivation",
+      };
+    }
+    // Si message est un objet simple (format précédent), le convertir en format actuel
+    else if (
+      message &&
+      !message.node &&
+      !message.eventType &&
+      "id" in message
+    ) {
+      message = {
+        node: message as unknown as ActiveNode,
+        eventType: "activation",
+      };
+    }
+
+    // Extraire les informations pour le log
+    const nodeInfo = message.node
+      ? `${message.node.name || message.node.label || "sans nom"} (ID: ${
+          message.node.id
+        })`
+      : "aucun";
+
     console.log(
-      `Nœud actif mis à jour: ${node.name || node.slug} (ID: ${node.id})`
+      `Nœud actif - ${
+        message.eventType === "activation" ? "ACTIVATION" : "DÉSACTIVATION"
+      }: ${nodeInfo}`
     );
-    currentState.activeNode = node;
-    socket.broadcast.emit("activeNodeUpdated", node);
+
+    // Mettre à jour l'état actuel et diffuser le message
+    if (message.eventType === "activation" && message.node) {
+      currentState.activeNode = message.node;
+    } else {
+      currentState.activeNode = undefined;
+    }
+
+    // Diffuser le message à tous les autres clients
+    socket.broadcast.emit("activeNodeUpdated", message);
   });
 
   // Gérer les mises à jour du post actif
-  socket.on("updateActivePost", (post: ActivePost) => {
+  socket.on("updateActivePost", (post: ActivePostMessage | null) => {
+    // Si le message est null, c'est une désactivation de post
+    if (post === null) {
+      console.log("Post actif désactivé");
+      currentState.activePost = undefined;
+      socket.broadcast.emit("activePostUpdated", null);
+      return;
+    }
+
     console.log(
       `Post actif mis à jour: ${post.id} (UID: ${post.postUID}, Slug: ${post.slug})`
     );
-    currentState.activePost = post;
+    currentState.activePost = post as ActivePost;
     socket.broadcast.emit("activePostUpdated", post);
   });
 

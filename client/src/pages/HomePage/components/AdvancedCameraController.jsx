@@ -14,6 +14,8 @@ import { getInputManager, useInputs } from "../utils/inputManager";
 import { sendResetSignal } from "./Posts/hooks/useNearestPostDetection";
 import { GamepadIndicator, sendStartCountingSignal } from "./CameraIndicators";
 
+const DEBUG = false;
+
 /**
  * Contrôleur de caméra avancé en mode vol libre uniquement
  */
@@ -34,23 +36,26 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     endTarget: new Vector3(),
   });
 
-  // Leva controls for camera settings
-  const { fov } = useControls("Camera", {
-    fov: {
-      value: 50,
-      min: 10,
-      max: 120,
-      step: 1,
-    },
-  });
-
-  // Apply FOV to camera when it changes
-  useEffect(() => {
-    if (camera) {
-      camera.fov = fov;
-      camera.updateProjectionMatrix();
-    }
-  }, [camera, fov]);
+  if (DEBUG === true) {
+    // Leva controls for camera settings
+    const { fov } = useControls("Camera", {
+      fov: {
+        value: 50,
+        min: 10,
+        max: 120,
+        step: 1,
+      },
+    });
+    // Apply FOV to camera when it changes
+    useEffect(() => {
+      if (camera) {
+        camera.fov = fov;
+        camera.updateProjectionMatrix();
+      }
+    }, [camera, fov]);
+  } else {
+    const fov = 50;
+  }
 
   // Variables for automatic rotation
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(false);

@@ -404,11 +404,6 @@ const MovablePage = () => {
             opacity={gridOpacity}
           />
         )}
-
-        {/* Afficher les posts si les données sont disponibles */}
-        {showPosts && Array.isArray(postsData) && postsData.length > 0 && (
-          <Posts data={postsData} />
-        )}
       </Canvas>
     </div>
   );

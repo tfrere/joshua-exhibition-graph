@@ -5,6 +5,11 @@ import * as THREE from "three";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
 import { useSpring, animated, config } from "@react-spring/three";
 import NodeLabel from "./components/NodeLabel";
+import useNodeProximitySync, {
+  addEventListener,
+  removeEventListener,
+} from "./hooks/useNodeProximitySync";
+import PulseEffect from "../Posts/effects/PulseEffect";
 
 // Composant pour afficher une sphère si aucune image SVG n'est disponible
 const NodeSphere = ({ size, color, isSelected }) => {
@@ -142,33 +147,52 @@ const useSVGLoader = (node) => {
         svgFileName = node.name;
       }
 
+      // Fonction pour charger et traiter un SVG
+      const loadSvg = async (svgPath) => {
+        try {
+          const response = await fetch(svgPath);
+          if (response.ok) {
+            const loader = new SVGLoader();
+            const svgText = await response.text();
+
+            try {
+              const data = loader.parse(svgText);
+
+              // Verify that we have valid paths in the SVG data
+              if (data.paths && data.paths.length > 0) {
+                setUseImage(true);
+                setSvgData(data);
+                setSvgBounds(calculateSVGBounds(data.paths));
+                return true; // SVG chargé avec succès
+              }
+            } catch (parseError) {
+              console.log("Erreur de parsing SVG:", parseError);
+            }
+          }
+        } catch (error) {
+          console.log("Erreur de chargement SVG:", error);
+        }
+        return false; // Échec du chargement
+      };
+
       try {
-        // Chemin du SVG à charger
+        // Chemin du SVG principal à charger
         const svgPath = `/img/${svgFileName}.svg`;
 
-        // Try to fetch the SVG
-        const response = await fetch(svgPath);
-        if (response.ok) {
-          // Load the SVG only if response is successful
-          const loader = new SVGLoader();
-          const svgText = await response.text();
+        // Essayer de charger le SVG principal
+        const mainSvgLoaded = await loadSvg(svgPath);
 
-          try {
-            const data = loader.parse(svgText);
+        // Si le chargement a échoué et que c'est une plateforme, essayer default.svg
+        if (!mainSvgLoaded && node.type === "platform") {
+          const defaultSvgPath = "/img/default.svg";
+          const defaultSvgLoaded = await loadSvg(defaultSvgPath);
 
-            // Verify that we have valid paths in the SVG data
-            if (data.paths && data.paths.length > 0) {
-              setUseImage(true);
-              setSvgData(data);
-              setSvgBounds(calculateSVGBounds(data.paths));
-            } else {
-              setUseImage(false);
-            }
-          } catch (parseError) {
+          // Si même le SVG par défaut échoue, revenir à la sphère
+          if (!defaultSvgLoaded) {
             setUseImage(false);
           }
-        } else {
-          console.log();
+        } else if (!mainSvgLoaded) {
+          // Pour les non-plateformes, si le SVG principal échoue, revenir à la sphère
           setUseImage(false);
         }
       } catch (error) {
@@ -187,6 +211,9 @@ const Node = ({ node, onClick, isSelected }) => {
   const meshRef = useRef();
   const [isActive, setIsActive] = useState(false);
   const { camera } = useThree();
+
+  // État pour les effets d'activation
+  const [activationEffect, setActivationEffect] = useState(null);
 
   // Animation spring pour la position
   const { position } = useSpring({
@@ -209,14 +236,75 @@ const Node = ({ node, onClick, isSelected }) => {
 
   // Adapter la taille si le nœud est actif
   const baseSize = node.size || 0.5;
-  const nodeScale = isActive ? 1.75 : 1.0;
+  const nodeScale = isActive ? 1.1 : 1.0;
   const nodeSize = baseSize * nodeScale;
 
   const svgScale = nodeSize * 0.02;
 
+  // Utiliser notre hook pour détecter la proximité et synchroniser via socket
+  const isInProximity = useNodeProximitySync({
+    node: node,
+    meshRef: meshRef,
+    position: [node.x, node.y, node.z],
+    threshold: 25, // Distance de proximité (ajuster selon les besoins)
+  });
+
+  // S'abonner aux événements de changement de nœud actif
+  useEffect(() => {
+    const handleNodeChanged = (data) => {
+      const { node: activeNode, eventType } = data;
+
+      // Si ce nœud est activé, créer un effet de pulse
+      if (
+        activeNode &&
+        activeNode.id === node.id &&
+        eventType === "activation"
+      ) {
+        setActivationEffect({
+          id: `node-activation-${Date.now()}`,
+          position: [node.x, node.y, node.z],
+          timestamp: Date.now(),
+        });
+      }
+    };
+
+    // Ajouter l'écouteur d'événements
+    addEventListener("activeNodeChanged", handleNodeChanged);
+
+    return () => {
+      // Nettoyage à la destruction du composant
+      removeEventListener("activeNodeChanged", handleNodeChanged);
+    };
+  }, [node.id, node.x, node.y, node.z]);
+
+  // Supprimer l'effet d'activation après un certain temps
+  useEffect(() => {
+    if (activationEffect) {
+      const timeout = setTimeout(() => {
+        setActivationEffect(null);
+      }, 2000); // Durée totale en ms (ajuster selon les besoins)
+
+      return () => clearTimeout(timeout);
+    }
+  }, [activationEffect]);
+
+  // Mettre à jour l'état actif basé sur la proximité
+  useEffect(() => {
+    setIsActive(isInProximity);
+  }, [isInProximity]);
+
   // Gestionnaires d'événements pour les interactions
   const handleClick = (e) => {
     e.stopPropagation();
+
+    // N'activer que les nœuds de type "character"
+    if (node && node.type !== "character") {
+      console.log(
+        `Node ${node.id} (${node.name}) is not a character node, ignoring click.`
+      );
+      return;
+    }
+
     onClick && onClick(node);
   };
 
@@ -224,35 +312,57 @@ const Node = ({ node, onClick, isSelected }) => {
   const nodePosition = new THREE.Vector3(node.x, node.y, node.z);
 
   return (
-    <animated.mesh
-      ref={meshRef}
-      position={position}
-      onClick={handleClick}
-      scale={[nodeScale, nodeScale, nodeScale]}
-    >
-      {!useImage ? (
-        // Afficher une sphère si pas d'image SVG
-        <NodeSphere size={baseSize} color={nodeColor} isSelected={isSelected} />
-      ) : (
-        // Afficher l'image SVG si disponible
-        <NodeSVG
-          svgData={svgData}
-          svgBounds={svgBounds}
-          scale={svgScale / nodeScale} // Ajuster l'échelle pour compenser le scale du mesh parent
-          isSelected={isSelected}
-          isPlatform={isPlatform}
+    <>
+      <animated.mesh
+        ref={meshRef}
+        position={position}
+        onClick={handleClick}
+        scale={[nodeScale, nodeScale, nodeScale]}
+      >
+        {!useImage ? (
+          // Afficher une sphère si pas d'image SVG
+          <NodeSphere
+            size={baseSize}
+            color={nodeColor}
+            isSelected={isSelected}
+          />
+        ) : (
+          // Afficher l'image SVG si disponible
+          <NodeSVG
+            svgData={svgData}
+            svgBounds={svgBounds}
+            scale={svgScale / nodeScale} // Ajuster l'échelle pour compenser le scale du mesh parent
+            isSelected={isSelected}
+            isPlatform={isPlatform}
+          />
+        )}
+
+        {/* Utiliser le composant NodeLabel externalisé avec la logique d'affichage conditionnelle */}
+        <NodeLabel
+          node={node}
+          nodePosition={nodePosition}
+          meshRef={meshRef}
+          baseSize={baseSize}
+          isActive={isActive}
+        />
+      </animated.mesh>
+
+      {/* Effet d'activation - plus grand que celui des posts */}
+      {activationEffect && (
+        <PulseEffect
+          key={activationEffect.id}
+          position={activationEffect.position}
+          sound={2}
+          duration={1.5} // Durée plus longue
+          opacityStart={0.8} // Plus visible
+          rings={3} // Plus d'anneaux
+          maxScale={9.0} // Échelle bien plus grande que les posts
+          minThickness={0.05}
+          maxThickness={0.1} // Plus épais
+          onComplete={() => console.log("Animation nœud terminée")}
         />
       )}
-
-      {/* Utiliser le composant NodeLabel externalisé avec la logique d'affichage conditionnelle */}
-      <NodeLabel
-        node={node}
-        nodePosition={nodePosition}
-        meshRef={meshRef}
-        baseSize={baseSize}
-        isActive={isActive}
-      />
-    </animated.mesh>
+    </>
   );
 };
 

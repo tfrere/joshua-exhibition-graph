@@ -15,6 +15,7 @@ import {
   updateLinkPosition,
 } from "./utils/nodeUtils";
 import { Html } from "@react-three/drei";
+import * as d3 from "d3";
 
 // Contexte pour l'affichage d'informations UI (simplifié)
 export const ForceGraphContext = createContext(null);
@@ -52,6 +53,42 @@ export const ForceGraphUI = ({ graphRef }) => {
   const { graphData, postsData } = useData();
   const [showExportButton, setShowExportButton] = useState(false);
 
+  // Fonction pour nettoyer les données avant export
+  const cleanForExport = (obj) => {
+    if (!obj || typeof obj !== "object") return obj;
+
+    // Créer une copie sans référence
+    const cleanObj = Array.isArray(obj) ? [...obj] : { ...obj };
+
+    // Supprimer les clés non désirées
+    if (!Array.isArray(cleanObj)) {
+      delete cleanObj.__threeObj;
+      delete cleanObj.__indexArrayBuffer;
+      delete cleanObj.__colorArrayBuffer;
+      delete cleanObj.__lineHighlightArrayBuffer;
+
+      // Supprimer toutes les clés commençant par __ (objets internes)
+      Object.keys(cleanObj).forEach((key) => {
+        if (key.startsWith("__")) {
+          delete cleanObj[key];
+        }
+      });
+    }
+
+    // Nettoyer récursivement les sous-objets
+    if (Array.isArray(cleanObj)) {
+      return cleanObj.map((item) => cleanForExport(item));
+    } else {
+      // Nettoyer chaque propriété de l'objet qui est aussi un objet
+      Object.keys(cleanObj).forEach((key) => {
+        if (cleanObj[key] && typeof cleanObj[key] === "object") {
+          cleanObj[key] = cleanForExport(cleanObj[key]);
+        }
+      });
+      return cleanObj;
+    }
+  };
+
   // Fonction pour exporter les données spatiales
   const handleExportData = () => {
     // 1. Exporter les noeuds et liens spatialisés avec positions les plus récentes
@@ -70,15 +107,15 @@ export const ForceGraphUI = ({ graphRef }) => {
         })),
       };
 
+      // Nettoyer les données avant l'export
+      const cleanedData = cleanForExport(spatializedNodesAndLinks);
+
       console.log(
         "Exportation de spatialized_nodes_and_links.json avec",
-        spatializedNodes.length,
+        cleanedData.nodes.length,
         "noeuds"
       );
-      exportJsonFile(
-        spatializedNodesAndLinks,
-        "spatialized_nodes_and_links.json"
-      );
+      exportJsonFile(cleanedData, "spatialized_nodes_and_links.json");
     } else if (graphData && graphData.nodes && graphData.links) {
       // Fallback si la référence n'est pas disponible
       const spatializedNodesAndLinks = {
@@ -119,13 +156,13 @@ export const ForceGraphUI = ({ graphRef }) => {
         })),
       };
 
+      // Nettoyer les données avant l'export
+      const cleanedData = cleanForExport(spatializedNodesAndLinks);
+
       console.log(
         "Exportation de spatialized_nodes_and_links.json avec méthode de secours"
       );
-      exportJsonFile(
-        spatializedNodesAndLinks,
-        "spatialized_nodes_and_links.json"
-      );
+      exportJsonFile(cleanedData, "spatialized_nodes_and_links.json");
     }
 
     // 2. Exporter les posts spatialisés
@@ -142,12 +179,15 @@ export const ForceGraphUI = ({ graphRef }) => {
         color: post.color,
       }));
 
+      // Nettoyer les données avant l'export
+      const cleanedPosts = cleanForExport(spatializedPosts);
+
       console.log(
         "Exportation de spatialized_posts.json avec",
-        spatializedPosts.length,
+        cleanedPosts.length,
         "posts"
       );
-      exportJsonFile(spatializedPosts, "spatialized_posts.json");
+      exportJsonFile(cleanedPosts, "spatialized_posts.json");
     }
 
     // Afficher un message de confirmation
@@ -294,41 +334,18 @@ const ForceGraphComponent = forwardRef((props, ref) => {
             console.log("Utilisation des nodeObjects internes");
             const nodeObjects = graphInstance.__nodeObjects;
 
+            // Utiliser directement les nœuds du graphData qui sont déjà fusionnés
+            // et ajouter les positions du graphInstance
             return graphData.nodes.map((node) => {
               const nodeObj = nodeObjects[node.id];
 
+              // Si le nœud a un objet associé avec position dans le graphe, l'utiliser
               if (nodeObj && nodeObj.position) {
                 return {
-                  id: node.id,
-                  group: node.group,
-                  name: node.name,
+                  ...node, // Conserver toutes les propriétés du nœud fusionné
                   x: nodeObj.position.x,
                   y: nodeObj.position.y,
                   z: nodeObj.position.z,
-                  value: node.value,
-                  type: node.type,
-                  isJoshua: node.isJoshua,
-                  // Propriétés du personnage
-                  slug: node.slug,
-                  biography: node.biography,
-                  mostViralContent: node.mostViralContent,
-                  displayName: node.displayName,
-                  aliases: node.aliases,
-                  fictionOrImpersonation: node.fictionOrImpersonation,
-                  platform: node.platform,
-                  thematic: node.thematic,
-                  career: node.career,
-                  genre: node.genre,
-                  polarisation: node.polarisation,
-                  cercle: node.cercle,
-                  politicalSphere: node.politicalSphere,
-                  sources: node.sources,
-                  totalPosts: node.totalPosts,
-                  hasEnoughPostsToUseInFrequencyPosts:
-                    node.hasEnoughPostsToUseInFrequencyPosts,
-                  hasEnoughTextToMakeWordcloud:
-                    node.hasEnoughTextToMakeWordcloud,
-                  topWords: node.topWords,
                 };
               }
 
@@ -343,71 +360,20 @@ const ForceGraphComponent = forwardRef((props, ref) => {
                 );
                 if (d3Node) {
                   return {
-                    id: node.id,
-                    group: node.group,
-                    name: node.name,
-                    x: d3Node.x || 0,
-                    y: d3Node.y || 0,
-                    z: d3Node.z || 0,
-                    value: node.value,
-                    type: node.type,
-                    isJoshua: node.isJoshua,
-                    // Propriétés du personnage
-                    slug: node.slug,
-                    biography: node.biography,
-                    mostViralContent: node.mostViralContent,
-                    displayName: node.displayName,
-                    aliases: node.aliases,
-                    fictionOrImpersonation: node.fictionOrImpersonation,
-                    platform: node.platform,
-                    thematic: node.thematic,
-                    career: node.career,
-                    genre: node.genre,
-                    polarisation: node.polarisation,
-                    cercle: node.cercle,
-                    politicalSphere: node.politicalSphere,
-                    sources: node.sources,
-                    totalPosts: node.totalPosts,
-                    hasEnoughPostsToUseInFrequencyPosts:
-                      node.hasEnoughPostsToUseInFrequencyPosts,
-                    hasEnoughTextToMakeWordcloud:
-                      node.hasEnoughTextToMakeWordcloud,
-                    topWords: node.topWords,
+                    ...node, // Conserver toutes les propriétés du nœud fusionné
+                    x: d3Node.x || node.x || 0,
+                    y: d3Node.y || node.y || 0,
+                    z: d3Node.z || node.z || 0,
                   };
                 }
               }
 
-              // Dernier recours: utiliser les données brutes du contexte
+              // Dernier recours: utiliser les données disponibles dans le nœud
               return {
-                id: node.id,
-                group: node.group,
-                name: node.name,
+                ...node,
                 x: node.x || node.coordinates?.x || 0,
                 y: node.y || node.coordinates?.y || 0,
                 z: node.z || node.coordinates?.z || 0,
-                value: node.value,
-                type: node.type,
-                isJoshua: node.isJoshua,
-                // Propriétés du personnage
-                slug: node.slug,
-                biography: node.biography,
-                mostViralContent: node.mostViralContent,
-                displayName: node.displayName,
-                aliases: node.aliases,
-                fictionOrImpersonation: node.fictionOrImpersonation,
-                platform: node.platform,
-                thematic: node.thematic,
-                career: node.career,
-                genre: node.genre,
-                polarisation: node.polarisation,
-                cercle: node.cercle,
-                politicalSphere: node.politicalSphere,
-                sources: node.sources,
-                totalPosts: node.totalPosts,
-                hasEnoughPostsToUseInFrequencyPosts:
-                  node.hasEnoughPostsToUseInFrequencyPosts,
-                hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
-                topWords: node.topWords,
               };
             });
           }
@@ -416,35 +382,10 @@ const ForceGraphComponent = forwardRef((props, ref) => {
           console.log("Utilisation des coordonnées existantes dans graphData");
           return graphData.nodes.map((node) => {
             return {
-              id: node.id,
-              group: node.group,
-              name: node.name,
+              ...node, // Utiliser directement les nœuds fusionnés
               x: node.x || node.coordinates?.x || 0,
               y: node.y || node.coordinates?.y || 0,
               z: node.z || node.coordinates?.z || 0,
-              value: node.value,
-              type: node.type,
-              isJoshua: node.isJoshua,
-              // Propriétés du personnage
-              slug: node.slug,
-              biography: node.biography,
-              mostViralContent: node.mostViralContent,
-              displayName: node.displayName,
-              aliases: node.aliases,
-              fictionOrImpersonation: node.fictionOrImpersonation,
-              platform: node.platform,
-              thematic: node.thematic,
-              career: node.career,
-              genre: node.genre,
-              polarisation: node.polarisation,
-              cercle: node.cercle,
-              politicalSphere: node.politicalSphere,
-              sources: node.sources,
-              totalPosts: node.totalPosts,
-              hasEnoughPostsToUseInFrequencyPosts:
-                node.hasEnoughPostsToUseInFrequencyPosts,
-              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
-              topWords: node.topWords,
             };
           });
         } catch (error) {
@@ -456,35 +397,10 @@ const ForceGraphComponent = forwardRef((props, ref) => {
           // Dernier recours: utiliser les données du contexte directement
           return graphData.nodes.map((node) => {
             return {
-              id: node.id,
-              group: node.group,
-              name: node.name,
+              ...node, // Utiliser directement les nœuds fusionnés
               x: node.x || node.coordinates?.x || 0,
               y: node.y || node.coordinates?.y || 0,
               z: node.z || node.coordinates?.z || 0,
-              value: node.value,
-              type: node.type,
-              isJoshua: node.isJoshua,
-              // Propriétés du personnage
-              slug: node.slug,
-              biography: node.biography,
-              mostViralContent: node.mostViralContent,
-              displayName: node.displayName,
-              aliases: node.aliases,
-              fictionOrImpersonation: node.fictionOrImpersonation,
-              platform: node.platform,
-              thematic: node.thematic,
-              career: node.career,
-              genre: node.genre,
-              polarisation: node.polarisation,
-              cercle: node.cercle,
-              politicalSphere: node.politicalSphere,
-              sources: node.sources,
-              totalPosts: node.totalPosts,
-              hasEnoughPostsToUseInFrequencyPosts:
-                node.hasEnoughPostsToUseInFrequencyPosts,
-              hasEnoughTextToMakeWordcloud: node.hasEnoughTextToMakeWordcloud,
-              topWords: node.topWords,
             };
           });
         }
@@ -578,6 +494,20 @@ const ForceGraphComponent = forwardRef((props, ref) => {
         cooldownTicks={3000}
         cooldownTime={3000}
         backgroundColor="#000000"
+        // Paramètres de force pour un graphe plus aéré
+        d3AlphaDecay={0.01} // Valeur réduite pour ralentir la stabilisation (défaut: 0.0228)
+        d3VelocityDecay={0.7} // Valeur réduite pour moins de friction (défaut: 0.4)
+        d3AlphaMin={0.001} // Valeur légèrement augmentée pour une meilleure convergence (défaut: 0)
+        // Force de répulsion entre les nœuds augmentée
+        d3Force={(engine) => {
+          engine
+            .force("charge")
+            .strength(-150) // Force de répulsion augmentée (valeur négative plus élevée)
+            .distanceMax(400); // Distance maximale d'effet de la répulsion
+
+          // Ajouter une force de collision pour éviter que les nœuds se chevauchent trop
+          engine.force("collision", d3.forceCollide().radius(25));
+        }}
         nodeThreeObject={(node) => createNodeObject(node)}
         linkThreeObject={(link) => {
           // Créer une position temporaire pour les liens, sera mise à jour à chaque frame

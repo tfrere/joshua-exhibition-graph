@@ -672,11 +672,11 @@ const WorkPostPage = () => {
           perlinAmplitude: 5, // Amplitude du bruit de Perlin
           minCharacterDistance: 20, // Distance minimale entre caractères
           useStrictSlugMatching: true, // Permettre la correspondance par ID si nécessaire
-          firstPass: true,  // Répartition initiale des posts dans les volumes
+          firstPass: true, // Répartition initiale des posts dans les volumes
           secondPass: true, // Vérification de la contrainte de la sphère globale
-          thirdPass: true,  // Application du bruit de Perlin pour la variation
+          thirdPass: true, // Application du bruit de Perlin pour la variation
           fourthPass: true, // Uniformisation itérative de la densité
-          fifthPass: true,  // Perturbation finale pour casser l'aspect cubique
+          fifthPass: true, // Perturbation finale pour casser l'aspect cubique
         },
       },
       {
@@ -942,13 +942,13 @@ const WorkPostPage = () => {
                 perlinAmplitude: pass.config.perlinAmplitude,
                 minCharacterDistance: pass.config.minCharacterDistance,
                 useStrictSlugMatching: pass.config.useStrictSlugMatching,
-                
+
                 // Options de contrôle des passes
                 firstPass: pass.config.firstPass,
                 secondPass: pass.config.secondPass,
                 thirdPass: pass.config.thirdPass,
                 fourthPass: pass.config.fourthPass,
-                fifthPass: pass.config.fifthPass
+                fifthPass: pass.config.fifthPass,
               }
             );
 
@@ -1108,7 +1108,7 @@ const WorkPostPage = () => {
         onClick={exportSpatializedData}
         style={{
           position: "absolute",
-          top: "20px",
+          bottom: "20px",
           right: "20px",
           padding: "10px 15px",
           backgroundColor: "#4CAF50",

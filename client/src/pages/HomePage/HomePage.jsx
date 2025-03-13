@@ -8,7 +8,11 @@ import AdvancedCameraController, {
   GamepadIndicator,
 } from "./components/AdvancedCameraController";
 import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import {
+  EffectComposer,
+  Bloom,
+  ToneMapping,
+} from "@react-three/postprocessing";
 import * as THREE from "three";
 import "./HomePage.css";
 import IntroScreen from "./components/IntroScreen.jsx";
@@ -185,7 +189,8 @@ const HomePage = () => {
         {/* Effets de post-processing - seulement si le jeu a démarré */}
         {gameStarted && (
           <EffectComposer>
-            <Bloom intensity={0.2} threshold={0.1} radius={0.5} amount={0.1} />
+            <Bloom intensity={0.25} threshold={0.18} radius={0.48} />
+            <ToneMapping exposure={1.0} mode={THREE.ACESFilmicToneMapping} />
           </EffectComposer>
         )}
       </Canvas>

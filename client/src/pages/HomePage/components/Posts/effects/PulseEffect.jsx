@@ -12,13 +12,11 @@ const DEFAULT_MAX_SCALE = 3.0;
 const DEFAULT_MIN_THICKNESS = 1; // Starting thickness (thin)
 const DEFAULT_MAX_THICKNESS = 0.01; // Ending thickness (thicker)
 
-// Array of available touch sound files
-const TOUCH_SOUNDS = [
-  "/sounds/touch-a.mp3",
-  // "/sounds/touch-b.mp3",
-  // "/sounds/touch-c.mp3",
-  // "/sounds/touch-d.mp3",
-];
+// Sound files
+const SOUND_FILES = {
+  1: "/sounds/touch-a.mp3",
+  2: "/sounds/touch-2.mp3",
+};
 
 /**
  * Component that creates a minimalist white pulsing effect
@@ -31,6 +29,7 @@ const TOUCH_SOUNDS = [
  * @param {number} [props.maxScale=3.0] - Maximum scale the effect will grow to
  * @param {number} [props.minThickness=0.01] - Starting thickness of the ring
  * @param {number} [props.maxThickness=0.15] - Maximum thickness the ring will grow to
+ * @param {number} [props.sound=1] - Sound option (1 or 2)
  * @param {Function} [props.onComplete] - Callback when animation completes
  */
 export function PulseEffect({
@@ -41,16 +40,17 @@ export function PulseEffect({
   maxScale = DEFAULT_MAX_SCALE,
   minThickness = DEFAULT_MIN_THICKNESS,
   maxThickness = DEFAULT_MAX_THICKNESS,
+  sound = 1,
   onComplete,
 }) {
   // State to track animation completion
   const [isComplete, setIsComplete] = useState(false);
 
-  // State to store the randomly selected sound
+  // State to store the sound URL
   const [soundUrl, setSoundUrl] = useState("");
 
   // Ref for audio
-  const sound = useRef();
+  const audioRef = useRef();
 
   // Ref for the group containing all effects
   const groupRef = useRef();
@@ -75,25 +75,24 @@ export function PulseEffect({
     setIsComplete(false);
     timeRef.current = 0;
 
-    // Select a random sound from the array
-    const randomSoundIndex = Math.floor(Math.random() * TOUCH_SOUNDS.length);
-    const selectedSound = TOUCH_SOUNDS[randomSoundIndex];
+    // Get the sound based on the sound prop
+    const selectedSound = SOUND_FILES[sound] || SOUND_FILES[1]; // Default to first sound if invalid option
     setSoundUrl(selectedSound);
 
     // Play sound (with a small delay to ensure the URL is set)
     setTimeout(() => {
-      if (sound.current) {
-        sound.current.play();
+      if (audioRef.current) {
+        audioRef.current.play();
       }
     }, 10);
 
     // Return cleanup function
     return () => {
-      if (sound.current) {
-        sound.current.stop();
+      if (audioRef.current) {
+        audioRef.current.stop();
       }
     };
-  }, [position]);
+  }, [position, sound]);
 
   // Animation update
   useFrame((_, delta) => {
@@ -162,7 +161,7 @@ export function PulseEffect({
     <group position={[position[0], position[1], position[2]]} ref={groupRef}>
       {soundUrl && (
         <PositionalAudio
-          ref={sound}
+          ref={audioRef}
           url={soundUrl}
           distance={25}
           intensity={1.0}

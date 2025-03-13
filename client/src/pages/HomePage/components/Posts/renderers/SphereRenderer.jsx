@@ -50,9 +50,9 @@ export function SphereRenderer({
         opacity={1}
         color="white"
         side={THREE.DoubleSide}
-        toneMapped={false}
-        depthWrite={true}
-        depthTest={true}
+        // toneMapped={false}
+        // depthWrite={true}
+        // depthTest={true}
       />
     </instancedMesh>
   );

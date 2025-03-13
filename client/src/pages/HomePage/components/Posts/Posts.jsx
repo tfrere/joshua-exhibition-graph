@@ -4,6 +4,8 @@ import * as THREE from "three";
 import useNearestPostDetection, {
   activePostRef,
   initSocketSync,
+  addEventListener,
+  removeEventListener,
 } from "./hooks/useNearestPostDetection";
 import PostActivationEffect from "./effects/PostActivationEffect";
 import PulseEffect from "./effects/PulseEffect";
@@ -104,7 +106,7 @@ import {
  */
 export function Posts({
   data,
-  renderer = "billboard",
+  renderer = "sphere",
   proximityThreshold = PROXIMITY_THRESHOLD,
   minDistance = MIN_DISTANCE,
   animationAmplitude = ANIMATION_AMPLITUDE,
@@ -126,14 +128,12 @@ export function Posts({
   const meshRef = useRef();
   const { camera } = useThree();
 
-  // Utilisation du hook personnalisé pour la détection du post le plus proche
-  // Ce hook remplace la logique d'activation manuelle des posts basée sur la caméra
-  const { targetPositionRef } = useNearestPostDetection(data);
-
   // État pour le post actif
   const [activePostUID, setActivePostUID] = useState(null);
   const prevActivePostUIDRef = useRef(null);
   const prevActivePostRef = useRef(null);
+  // Nouvel état pour suivre si la détection est en pause
+  const [isDetectionPaused, setIsDetectionPaused] = useState(false);
 
   // Nouvel état pour suivre les effets d'activation actifs
   const [activationEffects, setActivationEffects] = useState([]);
@@ -157,6 +157,10 @@ export function Posts({
   const postExplosionTimeRef = useRef(0); // Temps écoulé depuis la fin de l'explosion
   const frameCountRef = useRef(0); // Compteur de frames pour les logs
   const matrixRef = useRef([]); // Référence aux matrices de transformation des instances
+
+  // Utilisation du hook personnalisé pour la détection du post le plus proche
+  const { targetPositionRef, isDetectionPaused: getDetectionPausedState } =
+    useNearestPostDetection(data);
 
   // ----------------------------------------------------------------------------------
   // Initialisation
@@ -202,11 +206,60 @@ export function Posts({
     }
   }, [data]);
 
+  // Écouter les changements dans l'état de détection (pause/reprise)
+  useEffect(() => {
+    // Fonction de callback pour la pause
+    const handleDetectionPaused = () => {
+      setIsDetectionPaused(true);
+
+      // Désactiver tous les posts pendant la pause
+      // (réinitialiser le post actif)
+      if (activePostUID) {
+        prevActivePostUIDRef.current = activePostUID;
+        setActivePostUID(null);
+      }
+    };
+
+    // Fonction de callback pour la reprise
+    const handleDetectionResumed = () => {
+      setIsDetectionPaused(false);
+    };
+
+    // Fonction de callback pour le changement de post actif
+    const handleActivePostChanged = (data) => {
+      const post = data?.post;
+      const newPostUID = post ? post.postUID : null;
+
+      if (newPostUID !== activePostUID) {
+        prevActivePostUIDRef.current = activePostUID;
+        setActivePostUID(newPostUID);
+      }
+    };
+
+    // S'abonner aux événements
+    addEventListener("detectionPaused", handleDetectionPaused);
+    addEventListener("detectionResumed", handleDetectionResumed);
+    addEventListener("activePostChanged", handleActivePostChanged);
+
+    // Vérifier l'état initial
+    setIsDetectionPaused(getDetectionPausedState());
+
+    // Nettoyer les abonnements à la destruction
+    return () => {
+      removeEventListener("detectionPaused", handleDetectionPaused);
+      removeEventListener("detectionResumed", handleDetectionResumed);
+      removeEventListener("activePostChanged", handleActivePostChanged);
+    };
+  }, [activePostUID, getDetectionPausedState]);
+
   // ----------------------------------------------------------------------------------
   // Gestion du post actif
   // ----------------------------------------------------------------------------------
   // Surveiller les changements de activePostRef pour mettre à jour le post actif
   useFrame(() => {
+    // Skip si la détection est en pause
+    if (isDetectionPaused) return;
+
     const newPostUID = activePostRef.current
       ? activePostRef.current.postUID
       : null;
@@ -416,10 +469,14 @@ export function Posts({
       // Appliquer les animations selon l'état
       if (explosionCompleteRef.current) {
         // Animation d'oscillation après l'explosion
-        const oscResult = applyOscillationAnimation(i, baseX, baseY, baseZ);
-        finalX = oscResult.finalX;
-        finalY = oscResult.finalY;
-        finalZ = oscResult.finalZ;
+        // const oscResult = applyOscillationAnimation(i, baseX, baseY, baseZ);
+        // finalX = oscResult.finalX;
+        // finalY = oscResult.finalY;
+        // finalZ = oscResult.finalZ;
+
+        finalX = baseX;
+        finalY = baseY;
+        finalZ = baseZ;
       } else if (explosionProgressRef.current > 0) {
         // Animation d'explosion initiale
         const expResult = applyExplosionAnimation(
