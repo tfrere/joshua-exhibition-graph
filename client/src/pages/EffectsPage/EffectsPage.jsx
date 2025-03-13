@@ -81,7 +81,6 @@ const EffectsPage = () => {
 
         <AdvancedCameraController />
 
-
         {/* Éclairage */}
         <ambientLight intensity={3} color="white" />
 

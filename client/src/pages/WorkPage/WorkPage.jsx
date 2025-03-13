@@ -359,49 +359,9 @@ const WorkPage = () => {
         {debug && <Stats />}
         <color attach="background" args={[backgroundColor]} />
         <OrbitControls enablePan={true} enableZoom={true} makeDefault={true} />
-        {/* Éclairage amélioré */}
         <ambientLight intensity={1.2} />
-        {/* Contrôleur de caméra avancé avec modes orbite et vol */}
-        {/* <AdvancedCameraController config={cameraConfig} /> */}
-        {/* <CustomForceGraph
-          ref={forceGraphRef}
-          nodeSize={5}
-          linkWidth={0.5}
-          chargeStrength={1}
-          centerStrength={1}
-          linkStrength={0.7}
-          linkDistance={10}
-          zStrength={1}
-          simulationSpeed={1}
-          collisionStrength={5}
-          cooldownTime={10000}
-          onGraphStabilized={() => {
-            console.log(
-              "Le graphe est stabilisé, mise à jour des positions des posts..."
-            );
-            // Mise à jour automatique des positions lorsque le graphe est stabilisé
-            if (!positionsUpdatedOnceRef.current) {
-              const currentNodes = forceGraphRef.current.getNodesPositions();
-              updatePostsPositions({
-                ...DEFAULT_POSTS_SPATIAL_CONFIG,
-                customNodes: currentNodes,
-              });
-              positionsUpdatedOnceRef.current = true;
-            }
-          }}
-        /> */}
+
         <ForceGraph ref={getGraphRef} />
-        {/* <PostsRenderer /> */}
-        <EffectComposer>
-          <Bloom
-            intensity={0.5}
-            luminanceThreshold={0.5}
-            luminanceSmoothing={0.5}
-          />
-          {/* <Pixelation
-            granularity={3} // pixel granularity
-          /> */}
-        </EffectComposer>
       </Canvas>
     </div>
   );

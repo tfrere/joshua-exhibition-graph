@@ -104,7 +104,7 @@ import {
  */
 export function Posts({
   data,
-  renderer = "sphere",
+  renderer = "billboard",
   proximityThreshold = PROXIMITY_THRESHOLD,
   minDistance = MIN_DISTANCE,
   animationAmplitude = ANIMATION_AMPLITUDE,

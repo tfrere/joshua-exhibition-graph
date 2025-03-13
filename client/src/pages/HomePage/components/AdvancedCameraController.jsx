@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
 import { Vector3 } from "three";
 import useSound from "use-sound";
+import { useControls } from "leva";
 import {
   CAMERA_POSITIONS,
   CAMERA_MODES,
@@ -11,60 +12,7 @@ import {
 } from "../utils/advancedCameraControls";
 import { getInputManager, useInputs } from "../utils/inputManager";
 import { sendResetSignal } from "./Posts/hooks/useNearestPostDetection";
-
-/**
- * Indicateur de connexion de manette
- */
-const GamepadIndicator = () => {
-  const [isConnected, setIsConnected] = useState(false);
-
-  useEffect(() => {
-    const inputManager = getInputManager();
-
-    const checkGamepadStatus = () => {
-      setIsConnected(inputManager.isGamepadConnected());
-    };
-
-    // Vérifier immédiatement l'état
-    checkGamepadStatus();
-
-    // Vérifier périodiquement l'état de la manette
-    const intervalId = setInterval(checkGamepadStatus, 1000);
-
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Style pour le conteneur
-  const containerStyle = {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    padding: "10px",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    borderRadius: "5px",
-    display: "flex",
-    alignItems: "center",
-    zIndex: 1000,
-  };
-
-  // Style pour l'indicateur
-  const indicatorStyle = {
-    width: "10px",
-    height: "10px",
-    borderRadius: "50%",
-    backgroundColor: isConnected ? "#00ff00" : "#ff0000",
-    marginRight: "10px",
-  };
-
-  return (
-    <div style={containerStyle}>
-      <div style={indicatorStyle}></div>
-      <span style={{ color: "white", fontSize: "14px" }}>
-        {isConnected ? "Manette connectée" : "Manette déconnectée"}
-      </span>
-    </div>
-  );
-};
+import { GamepadIndicator, sendStartCountingSignal } from "./CameraIndicators";
 
 /**
  * Contrôleur de caméra avancé en mode vol libre uniquement
@@ -85,6 +33,24 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
     endPosition: new Vector3(),
     endTarget: new Vector3(),
   });
+
+  // Leva controls for camera settings
+  const { fov } = useControls("Camera", {
+    fov: {
+      value: 50,
+      min: 10,
+      max: 120,
+      step: 1,
+    },
+  });
+
+  // Apply FOV to camera when it changes
+  useEffect(() => {
+    if (camera) {
+      camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
+  }, [camera, fov]);
 
   // Variables for automatic rotation
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(false);
@@ -919,113 +885,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   return null;
 }
 
-// Export GamepadIndicator component for use in WorkPage
-export { GamepadIndicator };
-
-// Fonction pour envoyer un signal de démarrage du comptage des posts
-export const sendStartCountingSignal = () => {
-  console.log(
-    `🔔 COMPTAGE: Envoi du signal de comptage (timestamp: ${Date.now()})`
-  );
-
-  // Méthode 1: Utiliser un événement DOM pour la communication intra-page
-  // Cette méthode est la plus fiable dans le navigateur
-  try {
-    const startCountingEvent = new CustomEvent("startCounting", {
-      detail: { timestamp: Date.now() },
-    });
-    window.dispatchEvent(startCountingEvent);
-    console.log(`✅ COMPTAGE: Événement DOM dispatché avec succès`);
-  } catch (error) {
-    console.log(
-      `❌ COMPTAGE: Erreur lors du dispatch de l'événement DOM:`,
-      error
-    );
-  }
-
-  // Méthode 2: utiliser window.socket si disponible
-  if (window.socket) {
-    try {
-      if (typeof window.socket.emit === "function") {
-        window.socket.emit("startCounting", {
-          timestamp: Date.now(),
-          source: "window_socket",
-        });
-        console.log(`✅ COMPTAGE: Signal envoyé via window.socket`);
-      } else {
-        console.log(
-          `⚠️ COMPTAGE: window.socket existe mais n'a pas de méthode emit()`
-        );
-      }
-    } catch (error) {
-      console.log(
-        `❌ COMPTAGE: Erreur lors de l'envoi via window.socket:`,
-        error
-      );
-    }
-  } else {
-    console.log(`⚠️ COMPTAGE: window.socket n'est pas disponible`);
-  }
-
-  // Méthode 3: Essayer d'accéder au socket via window.io si disponible
-  if (window.io) {
-    try {
-      const socket = window.io.connect();
-      if (socket && typeof socket.emit === "function") {
-        socket.emit("startCounting", {
-          timestamp: Date.now(),
-          source: "io_connect",
-        });
-        console.log(`✅ COMPTAGE: Signal envoyé via window.io.connect()`);
-      }
-    } catch (error) {
-      console.log(
-        `❌ COMPTAGE: Erreur lors de l'utilisation de window.io:`,
-        error
-      );
-    }
-  }
-
-  // Exposer une fonction globale pour les tests manuels
-  window.__sendStartCountingSignal = () => {
-    console.log(
-      `🧪 TEST MANUEL: Envoi du signal de comptage (timestamp: ${Date.now()})`
-    );
-
-    // Réutiliser l'événement DOM (méthode la plus fiable)
-    try {
-      const testEvent = new CustomEvent("startCounting", {
-        detail: { timestamp: Date.now(), source: "manual_test" },
-      });
-      window.dispatchEvent(testEvent);
-      console.log(`✅ TEST MANUEL: Événement DOM dispatché avec succès`);
-    } catch (error) {
-      console.log(
-        `❌ TEST MANUEL: Erreur lors du dispatch de l'événement DOM:`,
-        error
-      );
-    }
-
-    // Tenter d'utiliser le socket s'il est disponible
-    if (window.socket && typeof window.socket.emit === "function") {
-      try {
-        window.socket.emit("startCounting", {
-          timestamp: Date.now(),
-          source: "manual_trigger",
-        });
-        console.log(`✅ TEST MANUEL: Signal envoyé via socket`);
-      } catch (error) {
-        console.log(
-          `❌ TEST MANUEL: Erreur lors de l'envoi via socket:`,
-          error
-        );
-      }
-    } else {
-      console.log(
-        `⚠️ TEST MANUEL: window.socket n'est pas disponible pour le test manuel`
-      );
-    }
-  };
-};
-
+// Export le composant principal et re-export de GamepadIndicator
+export { GamepadIndicator, sendStartCountingSignal };
 export default AdvancedCameraController;
