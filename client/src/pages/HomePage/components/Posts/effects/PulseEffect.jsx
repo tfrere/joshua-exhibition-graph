@@ -164,7 +164,7 @@ export function PulseEffect({
           ref={audioRef}
           url={soundUrl}
           distance={25}
-          intensity={1.0}
+          intensity={.8}
           loop={false}
         />
       )}

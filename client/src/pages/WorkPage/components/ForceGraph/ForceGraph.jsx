@@ -495,18 +495,20 @@ const ForceGraphComponent = forwardRef((props, ref) => {
         cooldownTime={3000}
         backgroundColor="#000000"
         // Paramètres de force pour un graphe plus aéré
-        d3AlphaDecay={0.01} // Valeur réduite pour ralentir la stabilisation (défaut: 0.0228)
-        d3VelocityDecay={0.7} // Valeur réduite pour moins de friction (défaut: 0.4)
-        d3AlphaMin={0.001} // Valeur légèrement augmentée pour une meilleure convergence (défaut: 0)
+        d3AlphaDecay={0.1} // Valeur réduite pour ralentir la stabilisation (défaut: 0.0228)
+        d3VelocityDecay={0.1} // Valeur réduite pour moins de friction (défaut: 0.4)
+        d3AlphaMin={0.01} // Valeur légèrement augmentée pour une meilleure convergence (défaut: 0)
         // Force de répulsion entre les nœuds augmentée
+        forceEngine="ngraph"
+        dagMode="lr"
         d3Force={(engine) => {
           engine
             .force("charge")
-            .strength(-150) // Force de répulsion augmentée (valeur négative plus élevée)
-            .distanceMax(400); // Distance maximale d'effet de la répulsion
+            .strength(10) // Force de répulsion augmentée (valeur négative plus élevée)
+            .distanceMax(100); // Distance maximale d'effet de la répulsion
 
           // Ajouter une force de collision pour éviter que les nœuds se chevauchent trop
-          engine.force("collision", d3.forceCollide().radius(25));
+          engine.force("collision", d3.forceCollide().radius(1));
         }}
         nodeThreeObject={(node) => createNodeObject(node)}
         linkThreeObject={(link) => {

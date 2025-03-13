@@ -223,6 +223,13 @@ const Node = ({ node, onClick, isSelected }) => {
     delay: 300, // Léger délai pour un effet cascade
   });
 
+  // Animation spring pour la mise à l'échelle
+  const { scale } = useSpring({
+    from: { scale: 1.0 },
+    to: { scale: isActive ? 1.1 : 1.0 },
+    config: { mass: 1, tension: 170, friction: 26 }, // Configuration pour une transition fluide
+  });
+
   // Charger le SVG si disponible
   const { useImage, svgData, svgBounds } = useSVGLoader(node);
 
@@ -236,9 +243,12 @@ const Node = ({ node, onClick, isSelected }) => {
 
   // Adapter la taille si le nœud est actif
   const baseSize = node.size || 0.5;
-  const nodeScale = isActive ? 1.1 : 1.0;
-  const nodeSize = baseSize * nodeScale;
+  // Même si nous utilisons une animation pour le scale,
+  // nous gardons une référence à la valeur d'échelle actuelle pour d'autres calculs
+  const currentScale = isActive ? 1.1 : 1.0;
+  const nodeSize = baseSize;
 
+  // Ajuster l'échelle SVG pour qu'elle reste proportionnelle même avec l'animation
   const svgScale = nodeSize * 0.02;
 
   // Utiliser notre hook pour détecter la proximité et synchroniser via socket
@@ -317,7 +327,7 @@ const Node = ({ node, onClick, isSelected }) => {
         ref={meshRef}
         position={position}
         onClick={handleClick}
-        scale={[nodeScale, nodeScale, nodeScale]}
+        scale={scale.to((s) => [s, s, s])}
       >
         {!useImage ? (
           // Afficher une sphère si pas d'image SVG
@@ -331,7 +341,7 @@ const Node = ({ node, onClick, isSelected }) => {
           <NodeSVG
             svgData={svgData}
             svgBounds={svgBounds}
-            scale={svgScale / nodeScale} // Ajuster l'échelle pour compenser le scale du mesh parent
+            scale={svgScale}
             isSelected={isSelected}
             isPlatform={isPlatform}
           />

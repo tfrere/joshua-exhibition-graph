@@ -189,8 +189,8 @@ const HomePage = () => {
         {/* Effets de post-processing - seulement si le jeu a démarré */}
         {gameStarted && (
           <EffectComposer>
-            <Bloom intensity={0.25} threshold={0.18} radius={0.48} />
-            <ToneMapping exposure={1.0} mode={THREE.ACESFilmicToneMapping} />
+            <ToneMapping exposure={1.0} mode={THREE.ReinhardToneMapping} />
+            <Bloom intensity={0.25} threshold={0.28} radius={0.48} />
           </EffectComposer>
         )}
       </Canvas>
