@@ -60,6 +60,8 @@ export const calculateLinkPoints = (
     .copy(midPoint)
     .add(perpendicularVector.multiplyScalar(distance * arcHeight));
 
+  console.log("arcHeight", arcHeight);
+
   // Créer la courbe de Bézier avec les positions ajustées
   const curve = new THREE.QuadraticBezierCurve3(
     sourcePos,
@@ -71,9 +73,9 @@ export const calculateLinkPoints = (
   let startT = 0, endT = 1;
 
   // Calculer le nombre de points en fonction de la distance
-  const MIN_POINTS = 32; // Minimum de points pour les courtes distances
-  const MAX_POINTS = 64; // Maximum de points pour les longues distances
-  const POINTS_PER_UNIT = 10; // Facteur de points par unité de distance
+  const MIN_POINTS = 24; // Minimum de points pour les courtes distances
+  const MAX_POINTS = 96; // Maximum de points pour les longues distances
+  const POINTS_PER_UNIT = 5; // Facteur de points par unité de distance
   
   // Calculer le nombre de points basé sur la distance
   let numPoints = Math.round(distance * POINTS_PER_UNIT);

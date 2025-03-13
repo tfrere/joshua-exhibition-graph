@@ -111,7 +111,9 @@ const Graph = ({ data, postsData }) => {
 
         // Utiliser ArcLink pour les liens courbes ou Link pour les liens droits
         // Vous pouvez choisir en fonction d'une propriété du lien ou d'une autre logique
-        const LinkComponent = link.style === "arc" ? ArcLink : Link;
+        // Compostant ArcLink supprimé, utilisation de Link
+        // const LinkComponent = link.style === "arc" ? ArcLink : Link;
+        const LinkComponent = Link;
 
         return (
           <LinkComponent
@@ -120,7 +122,8 @@ const Graph = ({ data, postsData }) => {
             sourceNode={sourceNode}
             targetNode={targetNode}
             // Vous pouvez personnaliser l'intensité de l'arc pour les liens ArcLink
-            arcHeight={link.arcHeight || 0.3}
+            // Gestion de l'arcHeight laissée dans le composant Link
+            // arcHeight={link.arcHeight || 0.3}
             depth={depth}
           />
         );
