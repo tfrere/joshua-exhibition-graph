@@ -5,13 +5,7 @@ import { useSpring, animated } from "@react-spring/three";
 import useProximityCheck from "../hooks/useProximityCheck";
 
 // Composant NodeLabel avec logique conditionnelle et audio positionnel
-const NodeLabel = ({
-  node,
-  nodePosition,
-  meshRef,
-  baseSize,
-  isActive,
-}) => {
+const NodeLabel = ({ node, nodePosition, meshRef, baseSize, isActive }) => {
   const [shouldPlaySound, setShouldPlaySound] = useState(false);
   const [audioFile, setAudioFile] = useState("/sounds/character-touch.mp3");
   const audioRef = useRef();
@@ -23,12 +17,12 @@ const NodeLabel = ({
     threshold: 50,
     referenceOffset: 20,
     vibrateOnProximity: true, // Activer la vibration pour tous les nœuds
-    vibrationOptions: { 
-      duration: 100, 
+    vibrationOptions: {
+      duration: 100,
       // Des intensités différentes en fonction du type de nœud
       weakMagnitude: node.type === "character" ? 0.3 : 0.15,
-      strongMagnitude: node.type === "character" ? 0.7 : 0.4
-    }
+      strongMagnitude: node.type === "character" ? 0.7 : 0.4,
+    },
   });
 
   // Animation de fade in/fade out avec des paramètres améliorés pour une transition plus douce
@@ -54,7 +48,7 @@ const NodeLabel = ({
   if (node.type === "character") {
     displayType = node.isJoshua === true ? "persona" : "victime";
   } else if (node.type === "central") {
-    displayType = "protagoniste";
+    displayType = "troll";
   } else {
     displayType = node.type || "";
   }
