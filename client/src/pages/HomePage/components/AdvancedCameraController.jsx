@@ -18,7 +18,7 @@ import {
   sendStartCountingSignal,
 } from "./CameraIndicators";
 
-const DEBUG = true;
+const DEBUG = false;
 
 /**
  * Contrôleur de caméra avancé en mode vol libre uniquement
