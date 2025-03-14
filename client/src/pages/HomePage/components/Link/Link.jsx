@@ -18,7 +18,7 @@ const Link = ({
   arcHeight = 0.3, // Valeur par défaut plus élevée pour des arcs plus visibles
   linkWidth = 1.5,
   arrowSize = 10, // Taille de la flèche (facteur multiplicatif)
-  opacity = 0.6, // Opacité commune pour la ligne et la flèche
+  opacity = 0.4, // Opacité commune pour la ligne et la flèche
   // Paramètres pour le texte
   textSize = 1,
   textOpacity = 0.9,

@@ -125,7 +125,7 @@ const Graph = ({ data, postsData }) => {
             // Gestion de l'arcHeight laissée dans le composant Link
             // arcHeight={link.arcHeight || 0.3}
             arcHeight={0.35}
-            opacity={0.3}
+            opacity={0.2}
             depth={depth}
           />
         );

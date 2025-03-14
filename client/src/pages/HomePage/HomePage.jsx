@@ -6,6 +6,7 @@ import Posts from "./components/Posts/Posts.jsx";
 import NavigationUI from "./components/NavigationUI.jsx";
 import AdvancedCameraController, {
   GamepadIndicator,
+  CrosshairIndicator,
 } from "./components/AdvancedCameraController";
 import SoundPlayer from "./components/Audio/SoundPlayer.jsx";
 import {
@@ -128,8 +129,8 @@ const HomePage = () => {
             tooltipLabels={{ mute: "Couper le son", unmute: "Activer le son" }}
           />
           <SoundPlayer
-            soundPath="/sounds/interview.mp3"
-            defaultVolume={0.5}
+            soundPath="/sounds/interview.m4a"
+            defaultVolume={0.7}
             loop={true}
             autoPlay={true}
             displayControls={false}
@@ -150,6 +151,9 @@ const HomePage = () => {
 
       {/* Indicateur de connexion de manette - conditionné par le mode debug et le démarrage du jeu */}
       {debugMode && gameStarted && <GamepadIndicator />}
+
+      {/* Affichage du crosshair (viseur) si le jeu a démarré */}
+      {gameStarted && <CrosshairIndicator />}
 
       {/* Canvas - toujours rendu mais masqué par l'écran d'intro si le jeu n'a pas démarré */}
       <Canvas

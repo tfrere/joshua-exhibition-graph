@@ -7,7 +7,7 @@ import { Billboard, PositionalAudio } from "@react-three/drei";
 const DEFAULT_DURATION = 0.8; // seconds
 const DEFAULT_COLOR = [1.0, 1.0, 1.0]; // Pure white
 const DEFAULT_OPACITY_START = 0.1;
-const DEFAULT_RINGS = 2;
+const DEFAULT_RINGS = 5;
 const DEFAULT_MAX_SCALE = 3.0;
 const DEFAULT_MIN_THICKNESS = 1; // Starting thickness (thin)
 const DEFAULT_MAX_THICKNESS = 0.01; // Ending thickness (thicker)
@@ -42,6 +42,7 @@ export function PulseEffect({
   maxThickness = DEFAULT_MAX_THICKNESS,
   sound = 1,
   onComplete,
+  volume = 0.5,
 }) {
   // State to track animation completion
   const [isComplete, setIsComplete] = useState(false);
@@ -164,7 +165,8 @@ export function PulseEffect({
           ref={audioRef}
           url={soundUrl}
           distance={25}
-          intensity={.8}
+          intensity={volume}
+          volume={volume}
           loop={false}
         />
       )}

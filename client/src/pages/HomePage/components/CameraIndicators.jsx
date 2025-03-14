@@ -55,6 +55,94 @@ const GamepadIndicator = () => {
   );
 };
 
+/**
+ * Composant affichant une croix au centre de l'écran (viseur)
+ */
+const CrosshairIndicator = () => {
+  // Style pour le conteneur qui centre le viseur
+  const containerStyle = {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    pointerEvents: "none", // Ne pas intercepter les clics de souris
+    zIndex: 999,
+  };
+
+  // Styles pour les quatre segments du viseur (au lieu de deux lignes complètes)
+  // Cela évite la superposition au centre
+  const segmentStyle = {
+    position: "absolute",
+    backgroundColor: "rgba(255, 255, 255, 0.5)", // Blanc transparent
+  };
+
+  // Segment horizontal gauche
+  const leftSegmentStyle = {
+    ...segmentStyle,
+    width: "7px",
+    height: "1px",
+    top: "50%",
+    right: "50%",
+    marginRight: "2px", // Espace entre le segment et le centre
+    transform: "translateY(-50%)",
+  };
+
+  // Segment horizontal droit
+  const rightSegmentStyle = {
+    ...segmentStyle,
+    width: "7px",
+    height: "1px",
+    top: "50%",
+    left: "50%",
+    marginLeft: "2px", // Espace entre le segment et le centre
+    transform: "translateY(-50%)",
+  };
+
+  // Segment vertical haut
+  const topSegmentStyle = {
+    ...segmentStyle,
+    width: "1px",
+    height: "7px",
+    bottom: "50%",
+    left: "50%",
+    marginBottom: "2px", // Espace entre le segment et le centre
+    transform: "translateX(-50%)",
+  };
+
+  // Segment vertical bas
+  const bottomSegmentStyle = {
+    ...segmentStyle,
+    width: "1px",
+    height: "7px",
+    top: "50%",
+    left: "50%",
+    marginTop: "2px", // Espace entre le segment et le centre
+    transform: "translateX(-50%)",
+  };
+
+  // Style pour le point central
+  const centerDotStyle = {
+    position: "absolute",
+    width: "2px",
+    height: "2px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(255, 255, 255, 0.7)",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+  };
+
+  return (
+    <div style={containerStyle}>
+      <div style={leftSegmentStyle}></div>
+      <div style={rightSegmentStyle}></div>
+      <div style={topSegmentStyle}></div>
+      <div style={bottomSegmentStyle}></div>
+      <div style={centerDotStyle}></div>
+    </div>
+  );
+};
+
 // Fonction pour envoyer un signal de démarrage du comptage des posts
 export const sendStartCountingSignal = () => {
   console.log(
@@ -161,4 +249,4 @@ export const sendStartCountingSignal = () => {
   };
 };
 
-export { GamepadIndicator };
+export { GamepadIndicator, CrosshairIndicator };

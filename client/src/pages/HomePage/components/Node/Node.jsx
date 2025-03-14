@@ -1,210 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useFrame, useLoader, useThree } from "@react-three/fiber";
-import { Billboard, Text } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
 import * as THREE from "three";
-import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader";
-import { useSpring, animated, config } from "@react-spring/three";
+import { useSpring, animated } from "@react-spring/three";
 import NodeLabel from "./components/NodeLabel";
+import NodeSVG from "./components/NodeSVG";
+import NodeSphere from "./components/NodeSphere";
+import useSVGLoader from "./hooks/useSVGLoader";
 import useNodeProximitySync, {
   addEventListener,
   removeEventListener,
 } from "./hooks/useNodeProximitySync";
 import PulseEffect from "../Posts/effects/PulseEffect";
-
-// Composant pour afficher une sphère si aucune image SVG n'est disponible
-const NodeSphere = ({ size, color, isSelected }) => {
-  return (
-    <>
-      <sphereGeometry args={[size || 0.5, 32, 32]} />
-      <meshStandardMaterial
-        color={color}
-        roughness={0.3}
-        metalness={0.8}
-        emissive={isSelected ? "#FFF" : "#FFF"}
-        emissiveIntensity={0.5}
-      />
-    </>
-  );
-};
-
-// Composant pour afficher un SVG chargé
-const NodeSVG = ({ svgData, svgBounds, scale, isSelected, isPlatform }) => {
-  if (!svgData || !svgBounds) return null;
-
-  const SvgContent = () => (
-    <group scale={[scale, scale, scale]}>
-      {svgData.paths.map((path, i) => (
-        <group
-          key={i}
-          // Properly center the SVG on the node
-          position={[
-            -svgBounds.centerX,
-            svgBounds.centerY, // Invert Y position for correct centering
-            0,
-          ]}
-        >
-          {path.subPaths.map((subPath, j) => {
-            // Create a line for each subpath
-            const points = subPath.getPoints();
-            return (
-              <line key={`${i}-${j}`}>
-                <bufferGeometry attach="geometry">
-                  <bufferAttribute
-                    attach="attributes-position"
-                    count={points.length}
-                    array={
-                      new Float32Array(
-                        points.flatMap((p) => [p.x, -p.y, 0]) // Invert Y axis
-                      )
-                    }
-                    itemSize={3}
-                  />
-                </bufferGeometry>
-                <lineBasicMaterial
-                  attach="material"
-                  color={isSelected ? "#ff9500" : "#FFFFFF"}
-                  linewidth={2}
-                  linecap="round"
-                  linejoin="round"
-                />
-              </line>
-            );
-          })}
-        </group>
-      ))}
-    </group>
-  );
-
-  // Utiliser Billboard uniquement pour les nœuds qui ne sont pas des plateformes
-  return isPlatform ? (
-    <group>
-      <SvgContent />
-    </group>
-  ) : (
-    <Billboard>
-      <SvgContent />
-    </Billboard>
-  );
-};
-
-// Fonction utilitaire pour calculer les limites d'un SVG
-const calculateSVGBounds = (paths) => {
-  let minX = Infinity,
-    maxX = -Infinity,
-    minY = Infinity,
-    maxY = -Infinity;
-
-  paths.forEach((path) => {
-    path.subPaths.forEach((subPath) => {
-      const points = subPath.getPoints();
-      points.forEach((point) => {
-        minX = Math.min(minX, point.x);
-        maxX = Math.max(maxX, point.x);
-        minY = Math.min(minY, point.y);
-        maxY = Math.max(maxY, point.y);
-      });
-    });
-  });
-
-  return {
-    minX,
-    maxX,
-    minY,
-    maxY,
-    width: maxX - minX,
-    height: maxY - minY,
-    centerX: (minX + maxX) / 2,
-    centerY: (minY + maxY) / 2,
-  };
-};
-
-// Hook personnalisé pour vérifier et charger un SVG
-const useSVGLoader = (node) => {
-  const [useImage, setUseImage] = useState(false);
-  const [svgData, setSvgData] = useState(null);
-  const [svgBounds, setSvgBounds] = useState(null);
-
-  useEffect(() => {
-    const checkSvgExists = async () => {
-      if (!node) {
-        setUseImage(false);
-        return;
-      }
-
-      console.log(node.name.toLowerCase());
-
-      // Déterminer le nom du fichier SVG en fonction du type de nœud
-      let svgFileName;
-      if (node.type === "central") {
-        svgFileName = "joshua-goldberg";
-      } else if (node.name.toLowerCase().includes("fbi")) {
-        svgFileName = "fbi";
-      } else if (node.type === "character" && node.isJoshua === false) {
-        svgFileName = "journalist";
-      } else if (node.type === "character" && node.isJoshua === true) {
-        svgFileName = "character";
-      } else {
-        svgFileName = node.name;
-      }
-
-      // Fonction pour charger et traiter un SVG
-      const loadSvg = async (svgPath) => {
-        try {
-          const response = await fetch(svgPath);
-          if (response.ok) {
-            const loader = new SVGLoader();
-            const svgText = await response.text();
-
-            try {
-              const data = loader.parse(svgText);
-
-              // Verify that we have valid paths in the SVG data
-              if (data.paths && data.paths.length > 0) {
-                setUseImage(true);
-                setSvgData(data);
-                setSvgBounds(calculateSVGBounds(data.paths));
-                return true; // SVG chargé avec succès
-              }
-            } catch (parseError) {
-              console.log("Erreur de parsing SVG:", parseError);
-            }
-          }
-        } catch (error) {
-          console.log("Erreur de chargement SVG:", error);
-        }
-        return false; // Échec du chargement
-      };
-
-      try {
-        // Chemin du SVG principal à charger
-        const svgPath = `/img/${svgFileName}.svg`;
-
-        // Essayer de charger le SVG principal
-        const mainSvgLoaded = await loadSvg(svgPath);
-
-        // Si le chargement a échoué et que c'est une plateforme, essayer default.svg
-        if (!mainSvgLoaded && node.type === "platform") {
-          const defaultSvgPath = "/img/default.svg";
-          const defaultSvgLoaded = await loadSvg(defaultSvgPath);
-
-          // Si même le SVG par défaut échoue, revenir à la sphère
-          if (!defaultSvgLoaded) {
-            setUseImage(false);
-          }
-        } else if (!mainSvgLoaded) {
-          // Pour les non-plateformes, si le SVG principal échoue, revenir à la sphère
-          setUseImage(false);
-        }
-      } catch (error) {
-        setUseImage(false);
-      }
-    };
-
-    checkSvgExists();
-  }, [node]);
-
-  return { useImage, svgData, svgBounds };
-};
 
 // Composant principal Node qui utilise tous les sous-composants
 const Node = ({ node, onClick, isSelected }) => {
@@ -344,6 +151,7 @@ const Node = ({ node, onClick, isSelected }) => {
             scale={svgScale}
             isSelected={isSelected}
             isPlatform={isPlatform}
+            node={node}
           />
         )}
 
@@ -363,12 +171,13 @@ const Node = ({ node, onClick, isSelected }) => {
           key={activationEffect.id}
           position={activationEffect.position}
           sound={2}
+          volume={0.5}
           duration={1.5} // Durée plus longue
           opacityStart={0.8} // Plus visible
-          rings={3} // Plus d'anneaux
+          rings={1} // Plus d'anneaux
           maxScale={9.0} // Échelle bien plus grande que les posts
-          minThickness={0.05}
-          maxThickness={0.1} // Plus épais
+          minThickness={0.15}
+          maxThickness={0.3} // Plus épais
           onComplete={() => console.log("Animation nœud terminée")}
         />
       )}

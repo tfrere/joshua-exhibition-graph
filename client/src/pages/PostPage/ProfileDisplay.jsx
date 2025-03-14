@@ -217,8 +217,9 @@ function ProfileDisplay({
       <div
         style={{
           width: "100%",
-          maxWidth: "500px",
+          maxWidth: "600px",
           background: "transparent",
+          position: "relative",
           borderRadius: "8px",
           overflow: "hidden",
           display: "flex",
@@ -239,9 +240,9 @@ function ProfileDisplay({
             style={{
               width: "320px",
               height: "320px",
-              borderRadius: "0px",
+              borderRadius: "8px",
               marginBottom: "1.25rem",
-              border: "4px solid #222",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
               overflow: "hidden",
               position: "relative",
               boxSizing: "border-box",
@@ -265,13 +266,13 @@ function ProfileDisplay({
             style={{
               width: "320px",
               height: "320px",
-              borderRadius: isNodeCharacter ? "0px" : "0px",
+              borderRadius: "100%",
               background: showNodeInfo ? "#222222" : "#000000",
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
               marginBottom: "1.25rem",
-              border: `4px solid #444`,
+              border: `1px solid #444`,
               boxSizing: "border-box",
               overflow: "hidden",
               position: "relative",
@@ -294,9 +295,9 @@ function ProfileDisplay({
             style={{
               width: "320px",
               height: "320px",
-              borderRadius: "0px",
+              borderRadius: "5px",
               marginBottom: "1.25rem",
-              border: "4px solid #222",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
               background: "#000000",
               display: "flex",
               justifyContent: "center",
@@ -393,13 +394,14 @@ function ProfileDisplay({
             <p
               style={{
                 margin: 0,
-                lineHeight: "1.5",
+                lineHeight: "1.4",
                 fontSize: "0.95rem",
                 color: "#eee",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 display: "-webkit-box",
-                WebkitLineClamp: 3,
+                WebkitLineClamp: 5,
+                height: "120px",
                 WebkitBoxOrient: "vertical",
                 textShadow: "0 0 10px rgba(0, 0, 0, 0.7)",
               }}
@@ -649,29 +651,28 @@ function ProfileDisplay({
               </div>
             </div>
           </div>
+          {/* Indicateur de progression en bas de page - visible uniquement si au moins 2 posts visités et comptage activé */}
+          {navigationMode === "normal" &&
+            isCountingEnabled &&
+            visitedPosts.length > 1 && (
+              <div
+                style={{
+                  textAlign: "center",
+                  position: "absolute",
+                  left: "0",
+                  right: "0",
+                  bottom: "20px",
+                  fontSize: "0.8rem",
+                  color: "rgba(255, 255, 255, 0.5)",
+                  zIndex: "2",
+                }}
+              >
+                Vous avez visité {visitedPercentage}% du total (
+                {visitedPosts.length} sur {totalPosts} posts)
+              </div>
+            )}
         </div>
       </div>
-
-      {/* Indicateur de progression en bas de page - visible uniquement si au moins 2 posts visités et comptage activé */}
-      {navigationMode === "normal" &&
-        isCountingEnabled &&
-        visitedPosts.length > 1 && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: "1rem",
-              left: "0",
-              right: "0",
-              textAlign: "center",
-              fontSize: "0.8rem",
-              color: "rgba(255, 255, 255, 0.5)",
-              zIndex: "2",
-            }}
-          >
-            Vous avez visité {visitedPercentage}% du total (
-            {visitedPosts.length} sur {totalPosts} posts)
-          </div>
-        )}
     </div>
   );
 }

@@ -12,7 +12,11 @@ import {
 } from "../utils/advancedCameraControls";
 import { getInputManager, useInputs } from "../utils/inputManager";
 import { sendResetSignal } from "./Posts/hooks/useNearestPostDetection";
-import { GamepadIndicator, sendStartCountingSignal } from "./CameraIndicators";
+import {
+  GamepadIndicator,
+  CrosshairIndicator,
+  sendStartCountingSignal,
+} from "./CameraIndicators";
 
 const DEBUG = false;
 
@@ -890,6 +894,6 @@ export function AdvancedCameraController({ config = DEFAULT_FLIGHT_CONFIG }) {
   return null;
 }
 
-// Export le composant principal et re-export de GamepadIndicator
-export { GamepadIndicator, sendStartCountingSignal };
+// Export le composant principal et re-export de GamepadIndicator et CrosshairIndicator
+export { GamepadIndicator, CrosshairIndicator, sendStartCountingSignal };
 export default AdvancedCameraController;
