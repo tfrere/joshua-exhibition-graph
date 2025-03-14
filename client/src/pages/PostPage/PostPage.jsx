@@ -198,7 +198,7 @@ function PostPage() {
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch(`/public/img/characters/${slug}.png`, {
+      const response = await fetch(`/img/characters/${slug}.png`, {
         signal: abortControllerRef.current.signal,
       });
       // Il faut vérifier si le contenu de la réponse est une image PNG valide

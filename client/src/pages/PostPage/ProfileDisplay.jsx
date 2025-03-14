@@ -2,6 +2,292 @@ import React from "react";
 import TextScramble from "../../components/TextScramble";
 import "../../components/TextScramble.css";
 
+// Styles constants
+const styles = {
+  container: {
+    width: "100vw",
+    height: "100vh",
+    background: "#000000",
+    color: "#FFFFFF",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "1rem",
+    position: "relative",
+    overflow: "hidden",
+  },
+  blurBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0,
+    opacity: 0.15,
+    filter: "blur(15px)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  backgroundImage: {
+    width: "150%",
+    height: "150%",
+    objectFit: "cover",
+  },
+  initial: {
+    fontSize: "80vh",
+    fontWeight: "bold",
+    color: "#111111",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+    height: "100%",
+  },
+  contentContainer: {
+    width: "100%",
+    maxWidth: "600px",
+    background: "transparent",
+    position: "relative",
+    borderRadius: "8px",
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: "2rem 1.5rem",
+    zIndex: 1,
+    height: "100vh",
+    maxHeight: "900px",
+    justifyContent: "center",
+  },
+  imageContainer: {
+    width: "320px",
+    height: "320px",
+    borderRadius: "8px",
+    marginBottom: "1.25rem",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    overflow: "hidden",
+    position: "relative",
+    boxSizing: "border-box",
+  },
+  nodeImageContainer: {
+    width: "320px",
+    height: "320px",
+    borderRadius: "100%",
+    background: "#222222",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: "1.25rem",
+    border: "1px solid #444",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    position: "relative",
+  },
+  fallbackContainer: {
+    width: "320px",
+    height: "320px",
+    borderRadius: "5px",
+    marginBottom: "1.25rem",
+    border: "1px solid rgba(255, 255, 255, 0.2)",
+    background: "#000000",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+    boxSizing: "border-box",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    padding: "0",
+  },
+  initialDisplay: {
+    width: "100%",
+    height: "100%",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#000",
+    color: "#ffffff",
+    fontSize: "8rem",
+    fontWeight: 100,
+  },
+  nameContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    marginBottom: "1rem",
+    textAlign: "center",
+  },
+  nameText: (isJoshua) => ({
+    margin: "0 0 0.5rem 0",
+    color: isJoshua ? "#ffffff" : "#cccccc",
+    fontSize: "1.75rem",
+  }),
+  badge: {
+    background: "#444",
+    padding: "0.25rem 0.75rem",
+    borderRadius: "0.25rem",
+    fontSize: "0.75rem",
+    marginTop: "0.5rem",
+  },
+  bioContainer: {
+    width: "100%",
+    textAlign: "center",
+    marginBottom: "1.5rem",
+    height: "120px",
+    display: "flex",
+    flexDirection: "column",
+  },
+  sectionTitle: {
+    fontSize: "1.1rem",
+    color: "#999",
+    margin: "0 0 0.75rem 0",
+    fontWeight: "normal",
+    flexShrink: 0,
+  },
+  bioContent: {
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  bioText: {
+    margin: 0,
+    lineHeight: "1.4",
+    fontSize: "0.95rem",
+    color: "#eee",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    display: "-webkit-box",
+    WebkitLineClamp: 5,
+    height: "120px",
+    WebkitBoxOrient: "vertical",
+    textShadow: "0 0 10px rgba(0, 0, 0, 0.7)",
+  },
+  postContainer: (opacity, useGrayscale) => ({
+    width: "100%",
+    marginBottom: "1rem",
+    opacity: opacity,
+    filter: useGrayscale ? "grayscale(100%)" : "none",
+    transition: "opacity 0.3s ease, filter 0.3s ease",
+    height: "340px",
+    display: "flex",
+    flexDirection: "column",
+  }),
+  postTitleContainer: {
+    fontSize: "1.1rem",
+    color: "#999",
+    margin: "0 0 0.75rem 0",
+    textAlign: "center",
+    fontWeight: "normal",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "0.5rem",
+    flexShrink: 0,
+  },
+  postNote: {
+    fontSize: "0.75rem",
+    color: "#777",
+    fontStyle: "italic",
+  },
+  postContent: (showBorder) => ({
+    background: "transparent",
+    padding: "1rem",
+    borderRadius: "0.5rem",
+    border: showBorder ? "1px solid rgba(255, 255, 255, 0.2)" : "none",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
+    backdropFilter: "blur(2.5px)",
+    WebkitBackdropFilter: "blur(2.5px)",
+    pointerEvents: "auto",
+    position: "relative",
+  }),
+  postOverlay: (isDarker) => ({
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: isDarker ? "rgba(50, 50, 50, 0.3)" : "rgba(50, 50, 50, 0.2)",
+    borderRadius: "0.5rem",
+    zIndex: 10,
+  }),
+  postTextContainer: {
+    overflow: "hidden",
+    flex: "1 1 auto",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    height: "180px",
+  },
+  postText: {
+    margin: 0,
+    lineHeight: "1.5",
+    fontSize: "0.95rem",
+    color: "#fff",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    textAlign: "center",
+    display: "-webkit-box",
+    WebkitLineClamp: 4,
+    WebkitBoxOrient: "vertical",
+    textShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
+  },
+  postFooter: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    justifyItems: "center",
+    fontSize: "0.8rem",
+    color: "#fff",
+    marginTop: "1rem",
+    borderTop: "1px solid rgba(255, 255, 255, 0.2)",
+    paddingTop: "0.75rem",
+    height: "30px",
+    flexShrink: 0,
+  },
+  postDate: {
+    display: "flex",
+    gap: ".3rem",
+  },
+  postSource: {
+    padding: "0.15rem 0.5rem",
+    borderRadius: "0.25rem",
+    background: "rgba(255, 255, 255, 0.15)",
+    color: "#ffffff",
+    textTransform: "uppercase",
+    letterSpacing: "0.05rem",
+    fontSize: "0.65rem",
+  },
+  progressIndicator: {
+    textAlign: "center",
+    position: "absolute",
+    left: "0",
+    right: "0",
+    bottom: "10px",
+    fontSize: "0.85rem",
+    color: "rgba(255, 255, 255, 0.7)",
+    zIndex: "5",
+    padding: "8px",
+    background: "rgba(0, 0, 0, 0.4)",
+    backdropFilter: "blur(2px)",
+    borderRadius: "4px",
+    marginLeft: "auto",
+    marginRight: "auto",
+    width: "fit-content",
+    fontWeight: "500",
+  },
+};
+
 function ProfileDisplay({
   activeCharacterData,
   activePost,
@@ -14,113 +300,52 @@ function ProfileDisplay({
   databaseData,
   mostImpactfulPost,
 }) {
-  // Vérifier que activeNode a des propriétés valides
-  console.log("[ProfileDisplay] Received activeNode:", activeNode);
-
-  // Fonction pour vérifier si un nœud est valide (reproduire la même logique que dans PostPage)
+  // Helper functions
   const isValidNode = (node) => {
     return node && (node.name || node.label || node.id || node.type);
   };
 
+  // Calculated values
   const isValidActiveNode = isValidNode(activeNode);
-  console.log("[ProfileDisplay] isValidActiveNode:", isValidActiveNode);
-
-  if (isValidActiveNode) {
-    console.log("[ProfileDisplay] Node properties:", {
-      name: activeNode.name,
-      label: activeNode.label,
-      id: activeNode.id,
-      type: activeNode.type,
-      isJoshua: activeNode.isJoshua,
-    });
-  }
-
-  // Calculate visited percentage
+  const showNodeInfo = isValidActiveNode;
+  const isNodeCharacter = activeNode && activeNode.type === "character";
   const visitedPercentage =
     totalPosts > 0 ? ((visitedPosts.length / totalPosts) * 100).toFixed(2) : 0;
 
-  // Déterminer s'il faut afficher les informations du nœud au lieu du personnage
-  const showNodeInfo = isValidActiveNode;
+  // Get character biography if available
+  const characterBiography =
+    isNodeCharacter && databaseData && activeNode.id
+      ? databaseData.find((char) => char.slug === activeNode.id)?.biography ||
+        null
+      : null;
 
-  // Déterminer si le nœud actif est un personnage
-  const isNodeCharacter = activeNode && activeNode.type === "character";
-
-  console.log("[ProfileDisplay] showNodeInfo:", showNodeInfo);
-  console.log("[ProfileDisplay] isNodeCharacter:", isNodeCharacter);
-  console.log("[ProfileDisplay] mostImpactfulPost:", mostImpactfulPost);
-
-  // Pour les nœuds de type "character", chercher les infos dans databaseData
-  let characterBiography = null;
-  if (isNodeCharacter && databaseData && activeNode.id) {
-    // Chercher la correspondance par slug (id du nœud)
-    const matchedCharacter = databaseData.find(
-      (char) => char.slug === activeNode.id
-    );
-    if (matchedCharacter) {
-      console.log(
-        "[ProfileDisplay] Found matching character in database:",
-        matchedCharacter.slug
-      );
-      characterBiography = matchedCharacter.biography;
-    }
-  }
-
-  // Déterminer si le nœud actif est un journaliste ou du FBI
+  // Check if node is journalist or FBI
   const isJournalistOrFBI =
     activeNode &&
-    (activeNode.isJoshua === false || // Un nœud est journaliste si isJoshua est false
+    (activeNode.isJoshua === false ||
       (activeNode.name && activeNode.name.toLowerCase().includes("fbi")) ||
       (activeNode.label && activeNode.label.toLowerCase().includes("fbi")));
 
-  console.log("[ProfileDisplay] isJournalistOrFBI:", isJournalistOrFBI);
-  console.log(
-    "[ProfileDisplay] Nouvelle détection de journaliste basée sur isJoshua:",
-    activeNode && activeNode.isJoshua === false
-  );
-  // Log détaillé pour comprendre pourquoi les journalistes ne sont pas détectés
-  if (activeNode) {
-    console.log("[ProfileDisplay] Détails du nœud pour détection journalist:", {
-      isJoshua: activeNode.isJoshua,
-      isJournalist: activeNode.isJoshua === false,
-      name: activeNode.name,
-      label: activeNode.label,
-      hasFbiInName:
-        activeNode.name && activeNode.name.toLowerCase().includes("fbi"),
-      hasFbiInLabel:
-        activeNode.label && activeNode.label.toLowerCase().includes("fbi"),
-    });
-    console.log("[ProfileDisplay] Type de nœud actif:", activeNode.type);
-  }
-
-  // Utiliser les données du nœud actif ou du personnage en fonction de la condition
+  // Derived data
   const displayName = showNodeInfo
     ? activeNode.name || activeNode.label || activeNode.id
     : activeCharacterData?.displayName || activeCharacterData?.slug;
 
-  // Obtenir la biographie - pour un nœud de type character, utiliser celle de la base de données
   const biography = showNodeInfo
     ? isNodeCharacter
-      ? characterBiography || "Personnage" // Utiliser la biographie trouvée dans la base de données
-      : activeNode.description || `Type: ${activeNode.type || "Nœud"}` // Pour les autres types de nœuds
+      ? characterBiography || "Personnage"
+      : activeNode.description || `Type: ${activeNode.type || "Nœud"}`
     : activeCharacterData?.biography || "Aucune biographie disponible";
 
-  // Déterminer l'initiale pour l'affichage si pas d'image
   const initial = (displayName || "?").charAt(0).toUpperCase();
 
-  // Déterminer si c'est un nœud Joshua (pour la couleur)
   const isJoshua = showNodeInfo
     ? activeNode.isJoshua || activeNode.type === "character"
     : activeCharacterData?.isJoshua;
 
-  // Déterminer l'image SVG à utiliser en fonction du type de nœud
+  // Get appropriate image for node
   const getNodeSvgImage = (node) => {
     if (!node) return null;
-
-    console.log("[ProfileDisplay] Sélection d'image pour le nœud:", {
-      type: node.type,
-      name: node.name || node.label,
-      isJoshua: node.isJoshua,
-    });
 
     let svgFileName;
     if (node.type === "central") {
@@ -132,545 +357,189 @@ function ProfileDisplay({
     } else if (node.type === "character" && node.isJoshua === true) {
       svgFileName = "character";
     } else {
-      // Par défaut, utiliser un nœud générique
       svgFileName = "journalist";
     }
 
-    console.log("[ProfileDisplay] Selected SVG for node:", svgFileName);
-    return `/public/img/${svgFileName}.png`;
+    return `/img/${svgFileName}.png`;
   };
 
-  // Déterminer l'image à utiliser pour le nœud actif
   const nodeSvgImage = showNodeInfo ? getNodeSvgImage(activeNode) : null;
 
+  // Calculate post section properties
+  const showPostContent = !(
+    isJournalistOrFBI &&
+    !mostImpactfulPost &&
+    !activePost
+  );
+  const useGrayscale = showNodeInfo && !isNodeCharacter && !mostImpactfulPost;
+  const postOpacity =
+    isJournalistOrFBI && !mostImpactfulPost && !activePost
+      ? 0.4
+      : showNodeInfo && !isNodeCharacter && !mostImpactfulPost
+      ? 0.2
+      : 1;
+
+  // Determine post content
+  const postContent =
+    isJournalistOrFBI && !mostImpactfulPost && !activePost
+      ? ""
+      : mostImpactfulPost && showNodeInfo
+      ? mostImpactfulPost.content ||
+        mostImpactfulPost.title ||
+        "Post avec le plus d'impact"
+      : activePost && (activePost.content || activePost.title)
+      ? activePost.content || activePost.title
+      : isJournalistOrFBI
+      ? ""
+      : "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+
+  // Determine post date
+  const getPostDate = () => {
+    if (mostImpactfulPost && showNodeInfo) {
+      return new Date(
+        mostImpactfulPost.creationDate * 1000
+      ).toLocaleDateString();
+    } else if (activePost && activePost.creationDate) {
+      return new Date(activePost.creationDate * 1000).toLocaleDateString();
+    }
+    return "01/01/2023";
+  };
+
+  // Determine post source
+  const getPostSource = () => {
+    if (mostImpactfulPost && showNodeInfo) {
+      return mostImpactfulPost.source || "Source inconnue";
+    } else if (activePost && activePost.source) {
+      return activePost.source;
+    }
+    return "Source inconnue";
+  };
+
   return (
-    <div
-      style={{
-        width: "100vw",
-        height: "100vh",
-        background: "#000000",
-        color: "#FFFFFF",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "1rem",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Fond flouté en arrière-plan */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 0,
-          opacity: 0.15,
-          filter: "blur(15px)",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          overflow: "hidden",
-        }}
-      >
+    <div style={styles.container}>
+      {/* Background blur */}
+      <div style={styles.blurBackground}>
         {characterImageExists && !showNodeInfo ? (
           <img
-            src={`/public/img/characters/${activeCharacterData.slug}.png`}
+            src={`/img/characters/${activeCharacterData.slug}.png`}
             alt=""
-            style={{
-              width: "150%",
-              height: "150%",
-              objectFit: "cover",
-            }}
+            style={styles.backgroundImage}
           />
         ) : showNodeInfo && nodeSvgImage ? (
           <img
             src={nodeSvgImage}
             alt=""
-            style={{
-              width: "150%",
-              height: "150%",
-              objectFit: "cover",
-              opacity: 0.5,
-            }}
+            style={{ ...styles.backgroundImage, opacity: 0.5 }}
           />
         ) : (
-          <div
-            style={{
-              fontSize: "80vh",
-              fontWeight: "bold",
-              color: "#111111",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: "100%",
-              height: "100%",
-            }}
-          >
-            {initial}
-          </div>
+          <div style={styles.initial}>{initial}</div>
         )}
       </div>
 
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "600px",
-          background: "transparent",
-          position: "relative",
-          borderRadius: "8px",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "2rem 1.5rem",
-          position: "relative",
-          zIndex: 1,
-          height: "100vh", // Hauteur fixe de la fenêtre
-          maxHeight: "900px", // Hauteur maximale pour les grands écrans
-          justifyContent: "center", // Centre le contenu verticalement
-        }}
-      >
-        {/* Photo de profil ou représentation du nœud */}
+      <div style={styles.contentContainer}>
+        {/* Profile Image */}
         {characterImageExists && !showNodeInfo ? (
-          // Image du personnage pour activeCharacterData
-          <div
-            style={{
-              width: "320px",
-              height: "320px",
-              borderRadius: "8px",
-              marginBottom: "1.25rem",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              overflow: "hidden",
-              position: "relative",
-              boxSizing: "border-box",
-            }}
-          >
+          <div style={styles.imageContainer}>
             <img
-              src={`/public/img/characters/${activeCharacterData.slug}.png`}
+              src={`/img/characters/${activeCharacterData.slug}.png`}
               alt={displayName}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                padding: "0",
-                background: "#ffffff",
-              }}
+              style={{ ...styles.image, background: "#ffffff" }}
             />
           </div>
         ) : showNodeInfo && nodeSvgImage ? (
-          // Image SVG spécifique pour le nœud actif
-          <div
-            style={{
-              width: "320px",
-              height: "320px",
-              borderRadius: "100%",
-              background: showNodeInfo ? "#222222" : "#000000",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              marginBottom: "1.25rem",
-              border: `1px solid #444`,
-              boxSizing: "border-box",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <img
-              src={nodeSvgImage}
-              alt={displayName}
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                padding: "0",
-              }}
-            />
+          <div style={styles.nodeImageContainer}>
+            <img src={nodeSvgImage} alt={displayName} style={styles.image} />
           </div>
         ) : (
-          // Fallback avec l'initiale si pas d'image spécifique
-          <div
-            style={{
-              width: "320px",
-              height: "320px",
-              borderRadius: "5px",
-              marginBottom: "1.25rem",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              background: "#000000",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-              position: "relative",
-              boxSizing: "border-box",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#000",
-                color: "#ffffff",
-                fontSize: "8rem",
-                fontWeight: 100,
-              }}
-            >
-              {initial}
-            </div>
+          <div style={styles.fallbackContainer}>
+            <div style={styles.initialDisplay}>{initial}</div>
           </div>
         )}
 
-        {/* Nom du personnage/nœud et badge Joshua */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginBottom: "1rem",
-            textAlign: "center",
-          }}
-        >
-          <h2
-            style={{
-              margin: "0 0 0.5rem 0",
-              color: isJoshua ? "#ffffff" : "#cccccc",
-              fontSize: "1.75rem",
-            }}
-          >
+        {/* Name */}
+        <div style={styles.nameContainer}>
+          <h2 style={styles.nameText(isJoshua)}>
             <TextScramble text={displayName} />
           </h2>
-          {/* Badge pour indiquer si c'est un nœud - uniquement pour les nœuds non-character */}
           {showNodeInfo && !isNodeCharacter && (
-            <div
-              style={{
-                background: "#444",
-                padding: "0.25rem 0.75rem",
-                borderRadius: "0.25rem",
-                fontSize: "0.75rem",
-                marginTop: "0.5rem",
-              }}
-            >
-              {activeNode.type || "Nœud"}
-            </div>
+            <div style={styles.badge}>{activeNode.type || "Nœud"}</div>
           )}
         </div>
 
-        {/* Biographie/Description */}
-        <div
-          style={{
-            width: "100%",
-            textAlign: "center",
-            marginBottom: "1.5rem",
-            height: "120px", // Hauteur fixe pour la section de biographie
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "1.1rem",
-              color: "#999",
-              margin: "0 0 0.75rem 0",
-              fontWeight: "normal",
-              flexShrink: 0, // Empêche le titre de rétrécir
-            }}
-          >
+        {/* Biography */}
+        <div style={styles.bioContainer}>
+          <h3 style={styles.sectionTitle}>
             {showNodeInfo && !isNodeCharacter ? "Description" : "Biographie"}
           </h3>
-          <div
-            style={{
-              flex: 1, // Prend tout l'espace restant
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center", // Centrer verticalement le contenu
-              overflow: "hidden", // Cacher le contenu qui dépasse
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                lineHeight: "1.4",
-                fontSize: "0.95rem",
-                color: "#eee",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                display: "-webkit-box",
-                WebkitLineClamp: 5,
-                height: "120px",
-                WebkitBoxOrient: "vertical",
-                textShadow: "0 0 10px rgba(0, 0, 0, 0.7)",
-              }}
-            >
+          <div style={styles.bioContent}>
+            <p style={styles.bioText}>
               <TextScramble text={biography} />
             </p>
           </div>
         </div>
 
-        {/* Post avec le plus d'impact - avec opacité réduite lorsqu'un nœud est actif (sauf si c'est un character) */}
-        <div
-          style={{
-            width: "100%",
-            marginBottom: "1rem",
-            opacity:
-              // Opacité très réduite (0.1) pour les journalistes et FBI sans post
-              isJournalistOrFBI && !mostImpactfulPost && !activePost
-                ? 0.4
-                : // Opacité réduite (0.2) pour les autres nœuds sans post d'impact
-                showNodeInfo && !isNodeCharacter && !mostImpactfulPost
-                ? 0.2
-                : 1,
-            filter:
-              showNodeInfo && !isNodeCharacter && !mostImpactfulPost
-                ? "grayscale(100%)"
-                : "none", // Filtre gris uniquement si pas de post d'impact
-            transition: "opacity 0.3s ease, filter 0.3s ease", // Animation fluide
-            height: "340px", // Hauteur fixe pour la section de post
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <h3
-            style={{
-              fontSize: "1.1rem",
-              color: "#999",
-              margin: "0 0 0.75rem 0",
-              textAlign: "center",
-              fontWeight: "normal",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "0.5rem",
-              flexShrink: 0, // Empêche le titre de rétrécir
-            }}
-          >
+        {/* Post */}
+        <div style={styles.postContainer(postOpacity, useGrayscale)}>
+          <h3 style={styles.postTitleContainer}>
             {mostImpactfulPost && showNodeInfo
               ? "Post avec le plus d'impact"
               : "Post sélectionné"}
+
             {isJournalistOrFBI && !mostImpactfulPost && !activePost ? (
-              <span
-                style={{
-                  fontSize: "0.75rem",
-                  color: "#777",
-                  fontStyle: "italic",
-                }}
-              >
-                (aucun post disponible)
-              </span>
+              <span style={styles.postNote}>(aucun post disponible)</span>
             ) : (
               showNodeInfo &&
               !isNodeCharacter &&
               !mostImpactfulPost && (
-                <span
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#777",
-                    fontStyle: "italic",
-                  }}
-                >
-                  (désactivé pour les nœuds)
-                </span>
+                <span style={styles.postNote}>(désactivé pour les nœuds)</span>
               )
             )}
           </h3>
 
-          <div
-            style={{
-              background: "transparent",
-              padding: "1rem",
-              borderRadius: "0.5rem",
-              border:
-                isJournalistOrFBI && !mostImpactfulPost && !activePost
-                  ? "none" // Pas de bordure pour les journalistes/FBI sans post
-                  : "1px solid rgba(255, 255, 255, 0.2)",
-              flex: 1, // Prend tout l'espace restant
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              backdropFilter: "blur(2.5px)",
-              WebkitBackdropFilter: "blur(2.5px)",
-              // Ajouter un effet visuel de désactivation pour les nœuds
-              pointerEvents:
-                (isJournalistOrFBI && !mostImpactfulPost && !activePost) ||
-                (showNodeInfo && !isNodeCharacter && !mostImpactfulPost)
-                  ? "none"
-                  : "auto", // Désactiver les interactions
-              position: "relative", // Pour positionner le pseudo-élément
-            }}
-          >
-            {/* Overlay semi-transparent pour les nœuds sans post d'impact */}
+          <div style={styles.postContent(showPostContent)}>
+            {/* Overlay for nodes without impact post */}
             {((isJournalistOrFBI && !mostImpactfulPost && !activePost) ||
               (showNodeInfo && !isNodeCharacter && !mostImpactfulPost)) && (
               <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background:
-                    isJournalistOrFBI && !mostImpactfulPost && !activePost
-                      ? "rgba(50, 50, 50, 0.3)" // Un peu plus foncé pour les journalistes/FBI
-                      : "rgba(50, 50, 50, 0.2)",
-                  borderRadius: "0.5rem",
-                  zIndex: 10,
-                }}
+                style={styles.postOverlay(
+                  isJournalistOrFBI && !mostImpactfulPost && !activePost
+                )}
               />
             )}
-            <div
-              style={{
-                overflow: "hidden",
-                flex: "1 1 auto",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center", // Centrer verticalement le contenu
-                height: "180px", // Hauteur fixe pour le contenu du post
-              }}
-            >
-              {/* Log supplémentaire juste avant l'affichage du texte */}
-              {console.log("[ProfileDisplay] Valeurs pour le texte du post:", {
-                isJournalistOrFBI,
-                haveNoPost: !mostImpactfulPost && !activePost,
-                shouldBeEmpty:
-                  isJournalistOrFBI && !mostImpactfulPost && !activePost,
-                contentToShow:
-                  isJournalistOrFBI && !mostImpactfulPost && !activePost
-                    ? "VIDE"
-                    : "TEXTE_NORMAL",
-              })}
 
-              {/* Log de debug pour comprendre le contenu affiché pour le post */}
-              <p
-                style={{
-                  margin: 0,
-                  lineHeight: "1.5",
-                  fontSize: "0.95rem",
-                  color: "#fff",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  textAlign: "center",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 4,
-                  WebkitBoxOrient: "vertical",
-                  textShadow: "0 0 5px rgba(0, 0, 0, 0.5)",
-                }}
-              >
-                <TextScramble
-                  text={
-                    // Pour les journalistes et FBI sans post, n'afficher aucun texte
-                    isJournalistOrFBI && !mostImpactfulPost && !activePost
-                      ? ""
-                      : mostImpactfulPost && showNodeInfo
-                      ? mostImpactfulPost.content ||
-                        mostImpactfulPost.title ||
-                        "Post avec le plus d'impact"
-                      : activePost && (activePost.content || activePost.title)
-                      ? activePost.content || activePost.title
-                      : isJournalistOrFBI
-                      ? ""
-                      : "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-                  }
-                />
+            <div style={styles.postTextContainer}>
+              <p style={styles.postText}>
+                <TextScramble text={postContent} />
               </p>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                justifyItems: "center",
-                fontSize: "0.8rem",
-                color: "#fff",
-                marginTop: "1rem",
-                borderTop: "1px solid rgba(255, 255, 255, 0.2)",
-                paddingTop: "0.75rem",
-                height: "30px",
-                flexShrink: 0, // Empêche cette section de rétrécir
-              }}
-            >
-              <div style={{ display: "flex", gap: ".3rem" }}>
+            <div style={styles.postFooter}>
+              <div style={styles.postDate}>
                 {!isJournalistOrFBI || mostImpactfulPost || activePost ? (
                   <>
                     <span style={{ opacity: 0.5 }}> Posté le</span>
-                    {mostImpactfulPost && showNodeInfo ? (
-                      <span>
-                        {new Date(
-                          mostImpactfulPost.creationDate * 1000
-                        ).toLocaleDateString()}
-                      </span>
-                    ) : activePost && activePost.creationDate ? (
-                      <span>
-                        {new Date(
-                          activePost.creationDate * 1000
-                        ).toLocaleDateString()}
-                      </span>
-                    ) : (
-                      <span>01/01/2023</span>
-                    )}
+                    <span>{getPostDate()}</span>
                   </>
                 ) : null}
               </div>
 
-              {/* Plateforme alignée à droite */}
               <div>
                 {isJournalistOrFBI &&
                 !mostImpactfulPost &&
-                !activePost ? null : mostImpactfulPost && showNodeInfo ? (
-                  <span
-                    style={{
-                      padding: "0.15rem 0.5rem",
-                      borderRadius: "0.25rem",
-                      background: "rgba(255, 255, 255, 0.15)",
-                      color: "#ffffff",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.05rem",
-                      fontSize: "0.65rem",
-                    }}
-                  >
-                    {mostImpactfulPost.source || "Source inconnue"}
-                  </span>
-                ) : activePost && activePost.source ? (
-                  <span
-                    style={{
-                      color: "#ffffff",
-                      fontSize: "0.85rem",
-                      padding: "0.25rem 0.5rem",
-                      borderRadius: "0.25rem",
-                    }}
-                  >
-                    {activePost.source}
-                  </span>
-                ) : (
-                  <span>Source inconnue</span>
+                !activePost ? null : (
+                  <span style={styles.postSource}>{getPostSource()}</span>
                 )}
               </div>
             </div>
           </div>
-          {/* Indicateur de progression en bas de page - visible uniquement si au moins 2 posts visités et comptage activé */}
-          {navigationMode === "normal" &&
-            isCountingEnabled &&
-            visitedPosts.length > 1 && (
-              <div
-                style={{
-                  textAlign: "center",
-                  position: "absolute",
-                  left: "0",
-                  right: "0",
-                  bottom: "20px",
-                  fontSize: "0.8rem",
-                  color: "rgba(255, 255, 255, 0.5)",
-                  zIndex: "2",
-                }}
-              >
-                Vous avez visité {visitedPercentage}% du total (
-                {visitedPosts.length} sur {totalPosts} posts)
-              </div>
-            )}
+
+          {/* Progress indicator - maintenant visible même avec 1 seul post visité */}
+          {navigationMode === "normal" && isCountingEnabled && (
+            <div style={styles.progressIndicator}>
+              Vous avez visité {visitedPercentage}% du total (
+              {visitedPosts.length} sur {totalPosts} posts)
+            </div>
+          )}
         </div>
       </div>
     </div>
