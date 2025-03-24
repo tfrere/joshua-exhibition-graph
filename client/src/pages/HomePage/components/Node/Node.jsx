@@ -63,7 +63,7 @@ const Node = ({ node, onClick, isSelected }) => {
     node: node,
     meshRef: meshRef,
     position: [node.x, node.y, node.z],
-    threshold: 25, // Distance de proximité (ajuster selon les besoins)
+    threshold: 100, // Distance de proximité (ajuster selon les besoins)
   });
 
   // S'abonner aux événements de changement de nœud actif
