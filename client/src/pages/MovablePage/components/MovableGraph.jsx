@@ -102,7 +102,7 @@ const ArrowLine = ({ sourceNode, targetNode, color = "#FFFFFF" }) => {
 };
 
 // Composant principal du graphe
-const MovableGraph = forwardRef(({ data }, ref) => {
+const MovableGraph = forwardRef(({ data, isClusterMode }, ref) => {
   // États pour la sélection et les positions
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [activeNodeId, setActiveNodeId] = useState(null); // Nœud actif pour TransformControls
@@ -136,7 +136,41 @@ const MovableGraph = forwardRef(({ data }, ref) => {
   // Gestion de la sélection de nœuds
   const handleNodeClick = useCallback(
     (node, shiftKey) => {
-      console.log("Click sur nœud:", node.id, "Shift:", shiftKey);
+      console.log(
+        "Click sur nœud:",
+        node.id,
+        "Shift:",
+        shiftKey,
+        "Mode cluster:",
+        isClusterMode
+      );
+
+      // Mode cluster: sélectionner tous les nœuds du même cluster
+      if (isClusterMode && node.cluster !== undefined) {
+        console.log("Sélection du cluster:", node.cluster);
+
+        // Récupérer tous les nœuds du même cluster
+        const clusterNodes = data.nodes
+          .filter((n) => n.cluster === node.cluster)
+          .map((n) => n.id);
+
+        // Si tous les nœuds du cluster sont déjà sélectionnés, désélectionner
+        const allNodesInClusterSelected = clusterNodes.every((id) =>
+          selectedNodes.includes(id)
+        );
+
+        if (allNodesInClusterSelected) {
+          console.log("Désélection du cluster complet");
+          setSelectedNodes([]);
+          setActiveNodeId(null);
+        } else {
+          console.log("Sélection du cluster complet:", clusterNodes);
+          setSelectedNodes(clusterNodes);
+          setActiveNodeId(node.id); // Le nœud cliqué devient le nœud actif
+        }
+
+        return;
+      }
 
       if (shiftKey) {
         // Mode multi-sélection avec Shift
@@ -197,7 +231,7 @@ const MovableGraph = forwardRef(({ data }, ref) => {
         }
       }
     },
-    [selectedNodes, activeNodeId]
+    [selectedNodes, activeNodeId, isClusterMode, data.nodes]
   );
 
   // Début du déplacement d'un nœud

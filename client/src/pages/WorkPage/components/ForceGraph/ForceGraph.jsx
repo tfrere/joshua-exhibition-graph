@@ -5,10 +5,10 @@ import {
   createContext,
   forwardRef,
   useImperativeHandle,
+  useCallback,
 } from "react";
 import { useThree } from "@react-three/fiber";
 import R3fForceGraph from "r3f-forcegraph";
-import { useData } from "../../../../contexts/DataContext";
 import {
   createNodeObject,
   createLinkObject,
@@ -46,11 +46,10 @@ const exportJsonFile = (data, filename) => {
 };
 
 // Composant UI simplifié
-export const ForceGraphUI = ({ graphRef }) => {
+export const ForceGraphUI = ({ graphRef, graphData, postsData }) => {
   // Accéder à l'état global pour connaître l'état d'animation
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [cameraMode, setCameraMode] = useState("orbit");
-  const { graphData, postsData } = useData();
   const [showExportButton, setShowExportButton] = useState(false);
 
   // Fonction pour nettoyer les données avant export
@@ -305,7 +304,13 @@ export const ForceGraphUI = ({ graphRef }) => {
 
 // Composant principal du graphe 3D - simplifié sans gestion de caméra ni nœuds
 const ForceGraphComponent = forwardRef((props, ref) => {
-  const { graphData, isLoadingGraph, graphError } = useData();
+  // Au lieu d'utiliser le contexte, utiliser les props
+  // const { graphData, isLoadingGraph, graphError } = useData();
+  const { graphData = { nodes: [], links: [] } } = props;
+  const isLoadingGraph =
+    !graphData || !graphData.nodes || graphData.nodes.length === 0;
+  const graphError = props.graphError || null;
+
   const fgRef = useRef();
 
   // Exposer des méthodes via la référence
@@ -339,10 +344,20 @@ const ForceGraphComponent = forwardRef((props, ref) => {
             return graphData.nodes.map((node) => {
               const nodeObj = nodeObjects[node.id];
 
+              // Propriétés de cluster à conserver
+              const clusterProps = {
+                cluster: node.cluster,
+                offsetX: node.offsetX,
+                offsetY: node.offsetY,
+                offsetZ: node.offsetZ,
+                // Conserver d'autres propriétés spécifiques au cluster si nécessaire
+              };
+
               // Si le nœud a un objet associé avec position dans le graphe, l'utiliser
               if (nodeObj && nodeObj.position) {
                 return {
                   ...node, // Conserver toutes les propriétés du nœud fusionné
+                  ...clusterProps, // S'assurer que les propriétés de cluster sont préservées
                   x: nodeObj.position.x,
                   y: nodeObj.position.y,
                   z: nodeObj.position.z,
@@ -361,6 +376,7 @@ const ForceGraphComponent = forwardRef((props, ref) => {
                 if (d3Node) {
                   return {
                     ...node, // Conserver toutes les propriétés du nœud fusionné
+                    ...clusterProps, // S'assurer que les propriétés de cluster sont préservées
                     x: d3Node.x || node.x || 0,
                     y: d3Node.y || node.y || 0,
                     z: d3Node.z || node.z || 0,
@@ -371,6 +387,7 @@ const ForceGraphComponent = forwardRef((props, ref) => {
               // Dernier recours: utiliser les données disponibles dans le nœud
               return {
                 ...node,
+                ...clusterProps, // S'assurer que les propriétés de cluster sont préservées
                 x: node.x || node.coordinates?.x || 0,
                 y: node.y || node.coordinates?.y || 0,
                 z: node.z || node.coordinates?.z || 0,
@@ -381,8 +398,18 @@ const ForceGraphComponent = forwardRef((props, ref) => {
           // Méthode de secours - si la méthode précédente ne fonctionne pas
           console.log("Utilisation des coordonnées existantes dans graphData");
           return graphData.nodes.map((node) => {
+            // S'assurer que les propriétés de cluster sont préservées
+            const clusterProps = {
+              cluster: node.cluster,
+              offsetX: node.offsetX,
+              offsetY: node.offsetY,
+              offsetZ: node.offsetZ,
+              // Conserver d'autres propriétés spécifiques au cluster si nécessaire
+            };
+
             return {
               ...node, // Utiliser directement les nœuds fusionnés
+              ...clusterProps, // S'assurer que les propriétés de cluster sont préservées
               x: node.x || node.coordinates?.x || 0,
               y: node.y || node.coordinates?.y || 0,
               z: node.z || node.coordinates?.z || 0,
@@ -396,8 +423,18 @@ const ForceGraphComponent = forwardRef((props, ref) => {
 
           // Dernier recours: utiliser les données du contexte directement
           return graphData.nodes.map((node) => {
+            // S'assurer que les propriétés de cluster sont préservées
+            const clusterProps = {
+              cluster: node.cluster,
+              offsetX: node.offsetX,
+              offsetY: node.offsetY,
+              offsetZ: node.offsetZ,
+              // Conserver d'autres propriétés spécifiques au cluster si nécessaire
+            };
+
             return {
               ...node, // Utiliser directement les nœuds fusionnés
+              ...clusterProps, // S'assurer que les propriétés de cluster sont préservées
               x: node.x || node.coordinates?.x || 0,
               y: node.y || node.coordinates?.y || 0,
               z: node.z || node.coordinates?.z || 0,
@@ -460,6 +497,43 @@ const ForceGraphComponent = forwardRef((props, ref) => {
     };
   }, [dataIsReady]);
 
+  // Définition des couleurs pour une référence constante
+  const COLORS = {
+    joshua: "#FF5733", // orange foncé pour Joshua
+    character: "#3498DB", // bleu pour les personnages
+    source: "#2ECC71", // vert pour les sources/plateformes
+  };
+
+  // Déterminer les connexions pour chaque nœud
+  const getNodeConnections = useCallback(() => {
+    if (!displayData || !displayData.nodes || !displayData.links) return {};
+
+    const connections = {};
+
+    // Initialiser le tableau de connexions pour chaque nœud
+    displayData.nodes.forEach((node) => {
+      connections[node.id] = [];
+    });
+
+    // Remplir les connexions basées sur les liens
+    displayData.links.forEach((link) => {
+      const sourceId =
+        typeof link.source === "object" ? link.source.id : link.source;
+      const targetId =
+        typeof link.target === "object" ? link.target.id : link.target;
+
+      if (connections[sourceId]) {
+        connections[sourceId].push(targetId);
+      }
+
+      if (connections[targetId]) {
+        connections[targetId].push(sourceId);
+      }
+    });
+
+    return connections;
+  }, [displayData]);
+
   // Afficher l'état de chargement directement dans la scène 3D
   if (!dataIsReady) {
     return (
@@ -489,41 +563,365 @@ const ForceGraphComponent = forwardRef((props, ref) => {
         ref={fgRef}
         graphData={displayData}
         nodeLabel="name"
-        linkOpacity={1}
+        linkOpacity={0.3}
         showNavInfo={false}
-        cooldownTicks={3000}
-        cooldownTime={3000}
+        cooldownTicks={1000}
+        cooldownTime={5000}
         backgroundColor="#000000"
-        // Paramètres de force pour un graphe plus aéré
-        d3AlphaDecay={0.1} // Valeur réduite pour ralentir la stabilisation (défaut: 0.0228)
-        d3VelocityDecay={0.1} // Valeur réduite pour moins de friction (défaut: 0.4)
-        d3AlphaMin={0.01} // Valeur légèrement augmentée pour une meilleure convergence (défaut: 0)
-        // Force de répulsion entre les nœuds augmentée
-        forceEngine="ngraph"
-        dagMode="lr"
+        // Paramètres ajustés pour gérer les mini-graphes
+        d3AlphaDecay={0.01} // Valeur très faible pour donner plus de temps à la simulation
+        d3VelocityDecay={0.5} // Plus de friction pour éviter que les nœuds ne s'éloignent trop
+        d3AlphaMin={0.001}
+        // Force de répulsion entre les nœuds réduite, graphe plus compact
+        forceEngine="d3"
+        dagMode={null}
+        nodeRelSize={25} // Taille des nœuds relativement aux liens
+        linkDirectionalParticles={0}
+        // Utiliser notre propre positionnement initial des nœuds
+        nodeVal={(node) => node.value || 1}
+        nodeColor={(node) => {
+          // Coloration basée sur le cluster pour distinguer les mini-graphes
+          if (node.color) return node.color;
+
+          const clusterColors = [
+            "#e41a1c", // rouge
+            "#377eb8", // bleu
+            "#4daf4a", // vert
+            "#984ea3", // violet
+            "#ff7f00", // orange
+            "#ffff33", // jaune
+            "#a65628", // marron
+            "#f781bf", // rose
+            "#999999", // gris
+            "#66c2a5", // turquoise
+          ];
+
+          if (node.cluster !== undefined) {
+            return clusterColors[node.cluster % clusterColors.length];
+          }
+
+          return node.isJoshua
+            ? COLORS.joshua
+            : node.type === "platform"
+            ? COLORS.source
+            : COLORS.character;
+        }}
+        linkColor={(link) => {
+          // Utiliser la couleur du nœud source pour le lien
+          const sourceNode = displayData.nodes.find(
+            (n) => n.id === link.source
+          );
+          if (sourceNode && sourceNode.cluster !== undefined) {
+            const clusterColors = [
+              "#e41a1c",
+              "#377eb8",
+              "#4daf4a",
+              "#984ea3",
+              "#ff7f00",
+              "#ffff33",
+              "#a65628",
+              "#f781bf",
+              "#999999",
+              "#66c2a5",
+            ];
+            return clusterColors[sourceNode.cluster % clusterColors.length];
+          }
+          return "#aaaaaa";
+        }}
+        nodeAutoColorBy="cluster" // Coloration automatique par cluster
+        // Positionnement initial des nœuds avec les offsets
+        nodePositionUpdate={(node) => {
+          // Si le nœud n'a pas encore de position définie
+          if (
+            node.x === undefined ||
+            node.y === undefined ||
+            node.z === undefined
+          ) {
+            if (
+              node.offsetX !== undefined &&
+              node.offsetY !== undefined &&
+              node.offsetZ !== undefined
+            ) {
+              // Position initiale basée sur les offsets du cluster
+              node.x = node.offsetX;
+              node.y = node.offsetY;
+              node.z = node.offsetZ;
+
+              // Pour les plateformes, on ajoute une légère élévation (y) pour les placer "au-dessus"
+              if (node.type === "platform") {
+                node.y += 20; // Élever légèrement la plateforme
+              }
+              // Pour les caractères principaux (sans underscore dans l'ID), les placer au centre
+              else if (node.type === "character" && !node.id.includes("_")) {
+                // C'est un personnage central - le placer au centre de son cluster
+              }
+              // Pour les caractères secondaires (avec underscore dans l'ID), les placer en périphérie
+              else if (node.type === "character") {
+                // C'est un personnage connecté - créer une distribution radiale autour du centre
+                const angle = Math.random() * Math.PI * 2; // Angle aléatoire
+                const radius = 30 + Math.random() * 20; // Distance aléatoire du centre
+
+                node.x += Math.cos(angle) * radius;
+                node.z += Math.sin(angle) * radius;
+              }
+
+              // Ajouter une légère perturbation aléatoire pour éviter les superpositions
+              node.x += (Math.random() - 0.5) * 10;
+              node.y += (Math.random() - 0.5) * 10;
+              node.z += (Math.random() - 0.5) * 10;
+            }
+          }
+          return false; // ne pas remplacer la position calculée par force-directed algorithm
+        }}
         d3Force={(engine) => {
+          // Force de charge (répulsion entre nœuds)
           engine
             .force("charge")
-            .strength(10) // Force de répulsion augmentée (valeur négative plus élevée)
-            .distanceMax(100); // Distance maximale d'effet de la répulsion
+            .strength((node) => (node.type === "platform" ? -30 : -40)) // Force de répulsion légèrement réduite pour les plateformes
+            .distanceMax(100);
 
-          // Ajouter une force de collision pour éviter que les nœuds se chevauchent trop
-          engine.force("collision", d3.forceCollide().radius(1));
+          // Force de centre pour maintenir le graphe dans le champ de vision
+          engine.force("center").strength(0.05);
+
+          // Force des liens pour garder les nœuds connectés ensemble
+          engine.force("link").strength((link) => {
+            // Identifier si un des nœuds est une plateforme
+            const sourceNode = displayData.nodes.find(
+              (n) =>
+                n.id ===
+                (typeof link.source === "object" ? link.source.id : link.source)
+            );
+            const targetNode = displayData.nodes.find(
+              (n) =>
+                n.id ===
+                (typeof link.target === "object" ? link.target.id : link.target)
+            );
+
+            // Si le lien relie une plateforme et un personnage, force plus forte
+            if (
+              (sourceNode?.type === "platform" &&
+                targetNode?.type === "character") ||
+              (sourceNode?.type === "character" &&
+                targetNode?.type === "platform")
+            ) {
+              return 0.7; // Force plus forte pour les liens plateforme-personnage
+            }
+
+            return 0.5; // Force standard pour les autres liens
+          });
+
+          // Force de collision pour éviter que les nœuds se superposent trop
+          engine.force("collision", d3.forceCollide().radius(10).strength(0.7));
+
+          // Force pour maintenir les plateformes en position intermédiaire entre les personnages
+          engine.force("platformPositioning", (alpha) => {
+            const connections = getNodeConnections();
+            const strength = 0.2 * alpha;
+
+            // Parcourir tous les nœuds de plateforme
+            displayData.nodes.forEach((node) => {
+              if (node.type !== "platform") return;
+
+              // Récupérer tous les personnages connectés à cette plateforme
+              const connectedCharacters =
+                connections[node.id]?.filter((connId) => {
+                  const connNode = displayData.nodes.find(
+                    (n) => n.id === connId
+                  );
+                  return connNode && connNode.type === "character";
+                }) || [];
+
+              if (connectedCharacters.length < 2) return; // Besoin d'au moins 2 personnages
+
+              // Calculer le centre entre les personnages connectés
+              let centerX = 0,
+                centerY = 0,
+                centerZ = 0;
+              let count = 0;
+
+              connectedCharacters.forEach((charId) => {
+                const charNode = displayData.nodes.find((n) => n.id === charId);
+                if (
+                  charNode &&
+                  charNode.x !== undefined &&
+                  charNode.y !== undefined &&
+                  charNode.z !== undefined
+                ) {
+                  centerX += charNode.x;
+                  centerY += charNode.y;
+                  centerZ += charNode.z;
+                  count++;
+                }
+              });
+
+              if (count > 0) {
+                centerX /= count;
+                centerY /= count;
+                centerZ /= count;
+
+                // Déplacer la plateforme vers le centre des personnages, mais légèrement plus haut
+                node.vx = (node.vx || 0) + (centerX - (node.x || 0)) * strength;
+                node.vy =
+                  (node.vy || 0) + (centerY + 15 - (node.y || 0)) * strength; // +15 pour élever légèrement
+                node.vz = (node.vz || 0) + (centerZ - (node.z || 0)) * strength;
+              }
+            });
+          });
+
+          // Ajouter une force qui maintient les nœuds du même cluster ensemble
+          engine.force("cluster", (alpha) => {
+            const centroids = {};
+
+            // Calculer les centres de chaque cluster
+            displayData.nodes.forEach((node) => {
+              if (node.cluster === undefined) return;
+
+              if (!centroids[node.cluster]) {
+                centroids[node.cluster] = { x: 0, y: 0, z: 0, count: 0 };
+              }
+
+              centroids[node.cluster].x += node.x || 0;
+              centroids[node.cluster].y += node.y || 0;
+              centroids[node.cluster].z += node.z || 0;
+              centroids[node.cluster].count++;
+            });
+
+            // Normaliser les centroïdes
+            Object.keys(centroids).forEach((cluster) => {
+              const c = centroids[cluster];
+              if (c.count > 0) {
+                c.x /= c.count;
+                c.y /= c.count;
+                c.z /= c.count;
+              }
+            });
+
+            // Appliquer une force pour attirer les nœuds vers le centre de leur cluster
+            displayData.nodes.forEach((node) => {
+              if (node.cluster === undefined) return;
+
+              const centroid = centroids[node.cluster];
+              if (!centroid) return;
+
+              // Force réduite pour les plateformes pour leur permettre d'être positionnées entre les personnages
+              const nodeStrength = node.type === "platform" ? 0.2 : 0.3;
+              const strength = nodeStrength * alpha;
+
+              node.vx =
+                (node.vx || 0) + (centroid.x - (node.x || 0)) * strength;
+              node.vy =
+                (node.vy || 0) + (centroid.y - (node.y || 0)) * strength;
+              node.vz =
+                (node.vz || 0) + (centroid.z - (node.z || 0)) * strength;
+            });
+          });
+
+          // Force de répulsion entre clusters
+          engine.force("interCluster", (alpha) => {
+            const repulsionStrength = 0.5 * alpha;
+            const minDistance = 200; // Distance minimale entre centres de clusters
+
+            // Calculer les centres de chaque cluster
+            const centroids = {};
+            displayData.nodes.forEach((node) => {
+              if (node.cluster === undefined) return;
+
+              if (!centroids[node.cluster]) {
+                centroids[node.cluster] = { x: 0, y: 0, z: 0, count: 0 };
+              }
+
+              centroids[node.cluster].x += node.x || 0;
+              centroids[node.cluster].y += node.y || 0;
+              centroids[node.cluster].z += node.z || 0;
+              centroids[node.cluster].count++;
+            });
+
+            // Normaliser les centroïdes
+            Object.keys(centroids).forEach((cluster) => {
+              const c = centroids[cluster];
+              if (c.count > 0) {
+                c.x /= c.count;
+                c.y /= c.count;
+                c.z /= c.count;
+              }
+            });
+
+            // Appliquer répulsion entre clusters
+            const clusters = Object.keys(centroids);
+            for (let i = 0; i < clusters.length; i++) {
+              for (let j = i + 1; j < clusters.length; j++) {
+                const c1 = centroids[clusters[i]];
+                const c2 = centroids[clusters[j]];
+
+                const dx = c2.x - c1.x;
+                const dy = c2.y - c1.y;
+                const dz = c2.z - c1.z;
+
+                const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                if (distance === 0) continue;
+
+                // Calculer la force de répulsion
+                const force = Math.min(
+                  1,
+                  Math.max(0, (minDistance - distance) / minDistance)
+                );
+                if (force <= 0) continue;
+
+                const forceX = (dx / distance) * force * repulsionStrength;
+                const forceY = (dy / distance) * force * repulsionStrength;
+                const forceZ = (dz / distance) * force * repulsionStrength;
+
+                // Appliquer la force à tous les nœuds des deux clusters
+                displayData.nodes.forEach((node) => {
+                  if (node.cluster === undefined) return;
+
+                  if (node.cluster === parseInt(clusters[i])) {
+                    node.vx = (node.vx || 0) - forceX;
+                    node.vy = (node.vy || 0) - forceY;
+                    node.vz = (node.vz || 0) - forceZ;
+                  } else if (node.cluster === parseInt(clusters[j])) {
+                    node.vx = (node.vx || 0) + forceX;
+                    node.vy = (node.vy || 0) + forceY;
+                    node.vz = (node.vz || 0) + forceZ;
+                  }
+                });
+              }
+            }
+          });
         }}
         nodeThreeObject={(node) => createNodeObject(node)}
         linkThreeObject={(link) => {
-          // Créer une position temporaire pour les liens, sera mise à jour à chaque frame
-          const pos = {
-            source: { x: 0, y: 0, z: 0 },
-            target: { x: 0, y: 0, z: 0 },
+          // Obtenir les positions réelles des nœuds
+          const sourceNode =
+            graphData.nodes.find((n) => n.id === link.source) || {};
+          const targetNode =
+            graphData.nodes.find((n) => n.id === link.target) || {};
+
+          // Créer des positions avec des coordonnées par défaut mais valides
+          const sourcePos = {
+            x: sourceNode.x || 0,
+            y: sourceNode.y || 0,
+            z: sourceNode.z || 0,
+            ...sourceNode, // Conserver les autres propriétés
           };
-          return createLinkObject(link, pos.source, pos.target);
+
+          const targetPos = {
+            x: targetNode.x || 0,
+            y: targetNode.y || 0,
+            z: targetNode.z || 0,
+            ...targetNode, // Conserver les autres propriétés
+          };
+
+          // Créer l'objet lien avec les positions des nœuds
+          return createLinkObject(link, sourcePos, targetPos);
         }}
         linkPositionUpdate={(linkObj, { start, end }, link) => {
+          // Log pour débogage
+
+          // Mettre à jour la position du lien
           updateLinkPosition(linkObj, start, end);
           return true; // Indique que nous avons géré la mise à jour nous-mêmes
         }}
-        linkDirectionalParticles={0}
       />
     </ForceGraphContext.Provider>
   );

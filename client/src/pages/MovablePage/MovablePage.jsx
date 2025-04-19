@@ -3,7 +3,6 @@ import { Stats } from "@react-three/drei";
 import { useState, useEffect, useRef } from "react";
 import MovableGraph from "./components/MovableGraph";
 import GridReferences from "./components/GridReferences";
-import Posts from "../HomePage/components/Posts/Posts";
 import "./MovablePage.css";
 
 // Fonction utilitaire pour télécharger un fichier JSON
@@ -23,16 +22,31 @@ const downloadJSON = (content, fileName) => {
 
 const MovablePage = () => {
   const [graphData, setGraphData] = useState(null);
-  const [postsData, setPostsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showPosts, setShowPosts] = useState(true);
   const graphInstanceRef = useRef(null);
+  // Nouvel état pour suivre le mode cluster
+  const [isClusterMode, setIsClusterMode] = useState(false);
 
   // Ajout des états pour les paramètres de la grille
   const [showGrid, setShowGrid] = useState(true);
   const [rotationInterval, setRotationInterval] = useState(20);
   const [maxRotation, setMaxRotation] = useState(180);
   const [gridOpacity, setGridOpacity] = useState(0.4);
+
+  // Écouteur pour le mode cluster
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key.toLowerCase() === "g") {
+        setIsClusterMode((prevMode) => !prevMode);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   // Fonction pour charger les données JSON
   const loadJsonData = async () => {
@@ -51,18 +65,6 @@ const MovablePage = () => {
       } else {
         console.error("Format de données du graphe invalide:", graphJsonData);
       }
-
-      // Charger les données des posts
-      const postsResponse = await fetch("/data/spatialized_posts.data.json");
-      const postsJsonData = await postsResponse.json();
-
-      // Validation basique des données des posts
-      if (Array.isArray(postsJsonData)) {
-        setPostsData(postsJsonData);
-        console.log("Données des posts chargées:", postsJsonData);
-      } else {
-        console.error("Format de données des posts invalide:", postsJsonData);
-      }
     } catch (error) {
       console.error("Erreur lors du chargement des données JSON:", error);
     } finally {
@@ -75,11 +77,6 @@ const MovablePage = () => {
     loadJsonData();
   }, []);
 
-  // Fonction pour basculer l'affichage des posts
-  const togglePosts = () => {
-    setShowPosts(!showPosts);
-  };
-
   // Fonction pour basculer l'affichage de la grille
   const toggleGrid = () => {
     setShowGrid(!showGrid);
@@ -90,26 +87,16 @@ const MovablePage = () => {
     console.log("Début de l'exportation...");
     console.log("État actuel des données:");
     console.log("- graphData:", graphData);
-    console.log("- postsData:", postsData);
     console.log("- graphInstance:", graphInstanceRef.current);
 
     // Vérifier si les données sont disponibles
     const hasGraphData =
       graphData && graphData.nodes && graphData.nodes.length > 0;
-    const hasPostsData =
-      postsData && Array.isArray(postsData) && postsData.length > 0;
 
     if (!hasGraphData) {
       console.warn("Aucune donnée de graphe à exporter");
       alert(
         "Attention: Aucune donnée de graphe disponible. Les données exportées seront vides."
-      );
-    }
-
-    if (!hasPostsData) {
-      console.warn("Aucune donnée de posts à exporter");
-      alert(
-        "Attention: Aucune donnée de posts disponible. Les données exportées seront vides."
       );
     }
 
@@ -215,7 +202,7 @@ const MovablePage = () => {
         console.log("Aucun lien disponible dans graphData");
       }
 
-      // 4. Exporter le premier fichier (noeuds et liens)
+      // 4. Exporter le fichier (noeuds et liens)
       const spatializedNodesAndLinks = {
         nodes: nodesWithPositions || [],
         links: links || [],
@@ -229,37 +216,10 @@ const MovablePage = () => {
         "spatialized_nodes_and_links.data.json"
       );
 
-      // // Création de l'export des posts
-      // // ------------------------------------------------
-      // let spatializedPosts = [];
-
-      // // 5. Préparer les données des posts si disponibles
-      // if (hasPostsData) {
-      //   spatializedPosts = postsData.map((post) => {
-
-      //     return {
-      //       id: post.id,
-      //       postUID: post.postUID || post.id, // Ajout de postUID, avec fallback sur id si non disponible
-      //       slug: post.slug || "",
-      //       impact: post.impact || 0,
-      //       x: post.x || 0,
-      //       y: post.y || 0,
-      //       z: post.z || 0,
-      //       // isJoshuaCharacter supprimé
-      //     };
-      //   });
-      //   console.log(`Préparé ${spatializedPosts.length} posts pour l'export`);
-      // }
-
-      // // 6. Exporter le deuxième fichier (posts)
-      // console.log(`Export des posts: ${spatializedPosts.length}`);
-      // downloadJSON(spatializedPosts, "spatialized_posts.data.json");
-
       // 7. Afficher un message de confirmation
       alert(`Exportation terminée!
 - Noeuds: ${nodesWithPositions.length}
-- Liens: ${links.length} 
-- Posts: ${spatializedPosts.length}`);
+- Liens: ${links.length}`);
     } catch (error) {
       console.error("Erreur pendant l'exportation:", error);
       alert(`Erreur pendant l'exportation: ${error.message}`);
@@ -267,144 +227,49 @@ const MovablePage = () => {
   };
 
   return (
-    <div className="movable-canvas-container">
-      {isLoading && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-        </div>
+    <div className="movable-page">
+      {isLoading ? (
+        <div className="loading">Chargement des données...</div>
+      ) : (
+        <>
+          <div className="controls">
+            <button onClick={toggleGrid}>
+              {showGrid ? "Masquer la grille" : "Afficher la grille"}
+            </button>
+            <button onClick={exportSpatializedData}>
+              Exporter les données spatialisées
+            </button>
+            <div className="mode-indicator">
+              Mode: {isClusterMode ? "Cluster (g)" : "Normal"}
+              {isClusterMode && (
+                <div className="cluster-help">
+                  Cliquez sur un nœud pour sélectionner tout son cluster
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="canvas-container">
+            <Canvas camera={{ position: [0, 0, 100], fov: 75 }}>
+              {graphData && (
+                <MovableGraph
+                  ref={graphInstanceRef}
+                  data={graphData}
+                  isClusterMode={isClusterMode}
+                />
+              )}
+              {showGrid && (
+                <GridReferences
+                  rotationInterval={rotationInterval}
+                  maxRotation={maxRotation}
+                  opacity={gridOpacity}
+                />
+              )}
+              <Stats />
+            </Canvas>
+          </div>
+        </>
       )}
-
-      {/* Tooltip d'aide */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          left: "20px",
-          padding: "10px 15px",
-          backgroundColor: "rgba(0, 0, 0, 0.7)",
-          color: "white",
-          borderRadius: "4px",
-          fontSize: "14px",
-          zIndex: 1000,
-          maxWidth: "300px",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-        }}
-      >
-        <p style={{ margin: "0 0 5px 0" }}>
-          <strong>Sélection multiple :</strong>
-        </p>
-        <ul style={{ margin: "0 0 10px 0", paddingLeft: "20px" }}>
-          <li>
-            Utilisez <strong>Shift + Clic</strong> pour sélectionner plusieurs
-            nœuds
-          </li>
-          <li>Le dernier nœud sélectionné devient le point de contrôle</li>
-          <li>Déplacer ce point de contrôle déplace tout le groupe ensemble</li>
-        </ul>
-
-        <p style={{ margin: "0 0 5px 0" }}>
-          <strong>Légende des couleurs :</strong>
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#0088ff",
-                marginRight: "8px",
-                borderRadius: "50%",
-              }}
-            ></span>
-            Non sélectionné
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#ffcc00",
-                marginRight: "8px",
-                borderRadius: "50%",
-              }}
-            ></span>
-            Sélectionné
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#9900ff",
-                marginRight: "8px",
-                borderRadius: "50%",
-              }}
-            ></span>
-            Multi-sélectionné
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "12px",
-                height: "12px",
-                backgroundColor: "#ff9500",
-                marginRight: "8px",
-                borderRadius: "50%",
-              }}
-            ></span>
-            Point de contrôle actif
-          </div>
-        </div>
-      </div>
-
-      {/* Bouton d'exportation */}
-      <button
-        className="export-button"
-        onClick={exportSpatializedData}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          padding: "10px 15px",
-          backgroundColor: "#4CAF50",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          fontSize: "14px",
-          cursor: "pointer",
-          zIndex: 1000,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-        }}
-      >
-        Exporter les données JSON
-      </button>
-
-      <Canvas
-        camera={{ position: [0, 0, 500], fov: 50, near: 0.1, far: 1000000 }}
-      >
-        <Stats />
-        <color attach="background" args={["#000000"]} />
-        {/* Éclairage */}
-        <ambientLight intensity={1.2} />
-        {/* Afficher le graphe si les données sont disponibles et valides */}
-        {graphData && graphData.nodes && graphData.links && (
-          <MovableGraph ref={graphInstanceRef} data={graphData} />
-        )}
-
-        {/* Utilisation du nouveau composant GridReferences */}
-        {showGrid && (
-          <GridReferences
-            rotationInterval={rotationInterval}
-            maxRotation={maxRotation}
-            circleRadii={[50, 100, 150, 200, 250]}
-            opacity={gridOpacity}
-          />
-        )}
-      </Canvas>
     </div>
   );
 };

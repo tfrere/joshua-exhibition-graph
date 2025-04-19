@@ -392,7 +392,39 @@ export const createLinkObject = (link, source, target) => {
  */
 export const updateLinkPosition = (linkObject, source, target) => {
   try {
-    // Vérifier si l'objet est un groupe avec userData
+    console.log("updateLinkPosition - source:", source, "target:", target);
+
+    // Vérifier que les positions sont valides
+    if (
+      !source ||
+      !target ||
+      source.x === undefined ||
+      target.x === undefined ||
+      isNaN(source.x) ||
+      isNaN(target.x)
+    ) {
+      console.warn(
+        "Positions non valides pour la mise à jour du lien",
+        source,
+        target
+      );
+      return;
+    }
+
+    // Si l'objet linkObject contient une référence à l'instance Link, l'utiliser
+    if (linkObject.userData && linkObject.userData.link) {
+      const linkInstance = linkObject.userData.link;
+
+      // Mettre à jour les positions de l'instance Link
+      linkInstance.source = source;
+      linkInstance.target = target;
+
+      // Appeler la méthode updatePosition de l'instance
+      linkInstance.updatePosition(source, target);
+      return;
+    }
+
+    // Fallback: mise à jour directe (ancienne méthode, sans offset)
     if (linkObject.userData && linkObject.userData.positions) {
       // Mettre à jour les positions de la ligne
       const positions = linkObject.userData.positions;
@@ -410,16 +442,6 @@ export const updateLinkPosition = (linkObject, source, target) => {
       if (linkObject.userData.updatePlane) {
         linkObject.userData.updatePlane(source, target);
       }
-    } else {
-      // Ancienne méthode de mise à jour (pour compatibilité)
-      const positions = linkObject.geometry.attributes.position.array;
-      positions[0] = source.x;
-      positions[1] = source.y;
-      positions[2] = source.z;
-      positions[3] = target.x;
-      positions[4] = target.y;
-      positions[5] = target.z;
-      linkObject.geometry.attributes.position.needsUpdate = true;
     }
   } catch (e) {
     console.warn("Erreur lors de la mise à jour de la position du lien:", e);

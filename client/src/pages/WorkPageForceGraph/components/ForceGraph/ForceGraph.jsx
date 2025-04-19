@@ -447,14 +447,45 @@ const ForceGraphComponent = forwardRef((props, ref) => {
         backgroundColor="#000000"
         nodeThreeObject={(node) => createNodeObject(node)}
         linkThreeObject={(link) => {
-          // Créer une position temporaire pour les liens, sera mise à jour à chaque frame
-          const pos = {
-            source: { x: 0, y: 0, z: 0 },
-            target: { x: 0, y: 0, z: 0 },
+          // Obtenir les positions réelles des nœuds
+          const sourceNode =
+            graphData.nodes.find((n) => n.id === link.source) || {};
+          const targetNode =
+            graphData.nodes.find((n) => n.id === link.target) || {};
+
+          // Créer des positions avec des coordonnées par défaut mais valides
+          const sourcePos = {
+            x: sourceNode.x || 0,
+            y: sourceNode.y || 0,
+            z: sourceNode.z || 0,
+            ...sourceNode, // Conserver les autres propriétés
           };
-          return createLinkObject(link, pos.source, pos.target);
+
+          const targetPos = {
+            x: targetNode.x || 0,
+            y: targetNode.y || 0,
+            z: targetNode.z || 0,
+            ...targetNode, // Conserver les autres propriétés
+          };
+
+          console.log(
+            `Création de lien: ${link.source} -> ${link.target}`,
+            sourcePos,
+            targetPos
+          );
+
+          // Créer l'objet lien avec les positions des nœuds
+          return createLinkObject(link, sourcePos, targetPos);
         }}
         linkPositionUpdate={(linkObj, { start, end }, link) => {
+          // Log pour débogage
+          console.log(
+            `Mise à jour de lien: ${link.source} -> ${link.target}`,
+            start,
+            end
+          );
+
+          // Mettre à jour la position du lien
           updateLinkPosition(linkObj, start, end);
           return true; // Indique que nous avons géré la mise à jour nous-mêmes
         }}

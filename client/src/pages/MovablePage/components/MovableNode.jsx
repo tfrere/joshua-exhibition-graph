@@ -11,6 +11,7 @@ const NodeSphere = ({
   isSelected,
   isMultiSelected,
   isActiveNode,
+  isInCluster,
   transparent = false,
 }) => {
   // Déterminer la couleur en fonction du statut de sélection
@@ -19,6 +20,9 @@ const NodeSphere = ({
   if (isActiveNode) {
     // Le nœud actif (avec TransformControls) est orange vif
     sphereColor = "#ff9500";
+  } else if (isInCluster) {
+    // Les nœuds en mode cluster ont une couleur verte
+    sphereColor = "#00cc44";
   } else if (isMultiSelected) {
     // Les nœuds en multi-sélection (mais pas actifs) sont violet
     sphereColor = "#9900ff";
@@ -31,7 +35,8 @@ const NodeSphere = ({
   }
 
   // Intensité de l'émission pour renforcer la visibilité
-  const emissiveIntensity = isSelected || isActiveNode ? 0.6 : 0.3;
+  const emissiveIntensity =
+    isSelected || isActiveNode || isInCluster ? 0.6 : 0.3;
 
   return (
     <>
@@ -40,7 +45,9 @@ const NodeSphere = ({
         color={sphereColor}
         roughness={0.3}
         metalness={0.8}
-        emissive={isSelected || isActiveNode ? sphereColor : "#FFF"}
+        emissive={
+          isSelected || isActiveNode || isInCluster ? sphereColor : "#FFF"
+        }
         emissiveIntensity={emissiveIntensity}
         transparent={transparent}
         opacity={transparent ? 0.3 : 1.0}
@@ -57,6 +64,7 @@ const NodeSVG = ({
   isSelected,
   isMultiSelected,
   isActiveNode,
+  isInCluster,
 }) => {
   if (!svgData || !svgBounds) return null;
 
@@ -64,6 +72,8 @@ const NodeSVG = ({
   let strokeColor;
   if (isActiveNode) {
     strokeColor = "#ff9500"; // Orange pour le nœud actif
+  } else if (isInCluster) {
+    strokeColor = "#00cc44"; // Vert pour les nœuds en mode cluster
   } else if (isMultiSelected) {
     strokeColor = "#9900ff"; // Violet pour les nœuds en multi-sélection
   } else if (isSelected) {
@@ -126,11 +136,14 @@ const NodeLabel = ({
   isSelected,
   isActiveNode,
   isMultiSelected,
+  isInCluster,
 }) => {
   // Déterminer la couleur du texte selon l'état de sélection
   let textColor;
   if (isActiveNode) {
     textColor = "#ffa500"; // Orange pour le nœud actif
+  } else if (isInCluster) {
+    textColor = "#00ff44"; // Vert vif pour les nœuds en mode cluster
   } else if (isMultiSelected) {
     textColor = "#d699ff"; // Violet clair pour les nœuds en multi-sélection
   } else if (isSelected) {
@@ -140,7 +153,7 @@ const NodeLabel = ({
   }
 
   // Taille du texte légèrement plus grande pour les nœuds sélectionnés
-  const fontSize = isSelected || isActiveNode ? 2.2 : 2;
+  const fontSize = isSelected || isActiveNode || isInCluster ? 2.2 : 2;
 
   return (
     <group position={[0, size * 3 + 0.3, 0]}>
@@ -272,6 +285,7 @@ const MovableNode = ({
   isSelected,
   isMultiSelected,
   isActiveNode,
+  isInCluster,
   onPositionUpdate,
   onTransformStart,
   onTransformEnd,
@@ -463,6 +477,7 @@ const MovableNode = ({
           isSelected={isSelected}
           isMultiSelected={isMultiSelected}
           isActiveNode={isActiveNode}
+          isInCluster={isInCluster}
           transparent={useImage && svgData}
         />
 
@@ -475,6 +490,7 @@ const MovableNode = ({
             isSelected={isSelected}
             isMultiSelected={isMultiSelected}
             isActiveNode={isActiveNode}
+            isInCluster={isInCluster}
           />
         )}
 
@@ -485,6 +501,7 @@ const MovableNode = ({
           isSelected={isSelected}
           isActiveNode={isActiveNode}
           isMultiSelected={isMultiSelected}
+          isInCluster={isInCluster}
         />
       </mesh>
 
